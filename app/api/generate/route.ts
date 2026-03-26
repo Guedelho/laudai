@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from "@/lib/supabase/server";
 import { TEMPLATES } from "@/lib/templates";
 import { GenerateRequest } from "@/types";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -30,22 +30,16 @@ export async function POST(req: NextRequest) {
     .replace(/{veterinario}/g, veterinarian)
     .replace(/{crmv}/g, crmv);
 
-  const message = await anthropic.messages.create({
-    model: "claude-opus-4-6",
-    max_tokens: 2048,
-    system: systemPrompt,
-    messages: [
-      {
-        role: "user",
-        content: `Achados do exame:\n\n${rawInput}\n\nGere o laudo completo e formal com base nesses achados. Use linguagem técnica veterinária adequada. Preencha todas as seções — se um órgão não foi mencionado, escreva "Sem alterações detectadas" ou equivalente clínico adequado.`,
-      },
-    ],
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    systemInstruction: systemPrompt,
   });
 
-  const content = message.content[0];
-  if (content.type !== "text") {
-    return NextResponse.json({ error: "Generation failed" }, { status: 500 });
-  }
+  const result = await model.generateContent(
+    `Achados do exame:\n\n${rawInput}\n\nGere o laudo completo e formal com base nesses achados. Use linguagem técnica veterinária adequada. Preencha todas as seções — se um órgão não foi mencionado, escreva "Sem alterações detectadas" ou equivalente clínico adequado.`
+  );
+
+  const generatedContent = result.response.text();
 
   // Save to database
   const { data: laudo, error } = await supabase
@@ -59,7 +53,7 @@ export async function POST(req: NextRequest) {
       age,
       owner_name: ownerName,
       raw_input: rawInput,
-      generated_content: content.text,
+      generated_content: generatedContent,
     })
     .select()
     .single();
