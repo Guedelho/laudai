@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { SPECIALTY_LABELS } from "@/lib/templates";
 import { Laudo } from "@/types";
+import PrintButton from "./PrintButton";
 
 export default async function LaudoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -32,12 +33,7 @@ export default async function LaudoPage({ params }: { params: Promise<{ id: stri
           <h1 className="text-lg font-bold text-gray-900 mt-1">{l.patient_name}</h1>
           <p className="text-sm text-gray-500">{SPECIALTY_LABELS[l.specialty]}</p>
         </div>
-        <button
-          onClick={() => window.print()}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
-        >
-          Imprimir / PDF
-        </button>
+        <PrintButton />
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-8">
