@@ -35,9 +35,15 @@ export async function POST(req: NextRequest) {
     systemInstruction: systemPrompt,
   });
 
-  const result = await model.generateContent(
-    `Achados do exame:\n\n${rawInput}\n\nGere o laudo completo e formal com base nesses achados. Use linguagem técnica veterinária adequada. Preencha todas as seções — se um órgão não foi mencionado, escreva "Sem alterações detectadas" ou equivalente clínico adequado.`
-  );
+  let result;
+  try {
+    result = await model.generateContent(
+      `Achados do exame:\n\n${rawInput}\n\nGere o laudo completo e formal com base nesses achados. Use linguagem técnica veterinária adequada. Preencha todas as seções — se um órgão não foi mencionado, escreva "Sem alterações detectadas" ou equivalente clínico adequado.`
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: `Gemini error: ${message}` }, { status: 500 });
+  }
 
   const generatedContent = result.response.text();
 
@@ -59,7 +65,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: "Failed to save laudo" }, { status: 500 });
+    return NextResponse.json({ error: `DB error: ${error.message}` }, { status: 500 });
   }
 
   return NextResponse.json({ laudo });
