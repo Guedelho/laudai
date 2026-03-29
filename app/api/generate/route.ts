@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-
-export const maxDuration = 60;
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from "@/lib/supabase/server";
 import { TEMPLATES } from "@/lib/templates";
