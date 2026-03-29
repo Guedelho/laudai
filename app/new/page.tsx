@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Specialty } from "@/types";
 import { SPECIALTY_LABELS } from "@/lib/templates";
+import { createClient } from "@/lib/supabase/client";
 
 const SPECIALTIES = Object.entries(SPECIALTY_LABELS) as [Specialty, string][];
 
@@ -51,10 +52,17 @@ export default function NewLaudoPage() {
   async function transcribeAudio(blob: Blob) {
     setTranscribing(true);
     try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
 
-      const res = await fetch("/api/transcribe", { method: "POST", body: formData });
+      const res = await fetch("/api/transcribe", {
+        method: "POST",
+        headers: session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {},
+        body: formData,
+      });
       const data = await res.json();
       setRawInput((prev) => prev + (prev ? " " : "") + data.text);
     } catch {
@@ -70,9 +78,15 @@ export default function NewLaudoPage() {
     setError("");
 
     try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
       const res = await fetch("/api/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({
           specialty,
           rawInput,

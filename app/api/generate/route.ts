@@ -1,18 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createServerClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { TEMPLATES } from "@/lib/templates";
 import { GenerateRequest } from "@/types";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Try Authorization header first (explicit token), then fall back to cookie-based auth
+  let userId: string | null = null;
 
-  if (!user) {
+  const authHeader = req.headers.get("Authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+    const admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+    const { data: { user } } = await admin.auth.getUser(token);
+    userId = user?.id ?? null;
+  }
+
+  if (!userId) {
+    const supabase = await createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    userId = user?.id ?? null;
+  }
+
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // Use service role client for DB so it bypasses RLS (we already verified the user above)
+  const supabase = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
 
   const body: GenerateRequest = await req.json();
   const { specialty, rawInput, patientName, species, breed, age, ownerName, veterinarian, crmv } = body;
@@ -31,7 +57,7 @@ export async function POST(req: NextRequest) {
     .replace(/{crmv}/g, crmv);
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
+    model: "gemini-2.5-flash",
     systemInstruction: systemPrompt,
   });
 
@@ -51,7 +77,7 @@ export async function POST(req: NextRequest) {
   const { data: laudo, error } = await supabase
     .from("laudos")
     .insert({
-      user_id: user.id,
+      user_id: userId,
       specialty,
       patient_name: patientName,
       species,
