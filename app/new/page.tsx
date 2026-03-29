@@ -242,7 +242,7 @@ export default function NewLaudoPage() {
             <textarea
               value={rawInput}
               onChange={(e) => setRawInput(e.target.value)}
-              placeholder="Descreva os achados livremente... ex: fígado com ecotextura homogênea, baço sem alterações, rins com boa definição corticomedular..."
+              placeholder="Informe apenas as alterações encontradas... ex: fígado aumentado com ecotextura heterogênea, rim direito medindo 4,2cm. Deixe em branco para gerar laudo normal."
               rows={6}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               required

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
-import { TEMPLATES } from "@/lib/templates";
+import { TEMPLATES, DEFAULTS } from "@/lib/templates";
 import { GenerateRequest } from "@/types";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
   const today = new Date().toLocaleDateString("pt-BR");
 
   const systemPrompt = template
+    .replace(/{defaults}/g, DEFAULTS[specialty] || "")
     .replace(/{data}/g, today)
     .replace(/{paciente}/g, patientName)
     .replace(/{especie}/g, species)
@@ -63,9 +64,11 @@ export async function POST(req: NextRequest) {
 
   let result;
   try {
-    result = await model.generateContent(
-      `Achados do exame:\n\n${rawInput}\n\nGere o laudo completo e formal com base nesses achados. Use linguagem técnica veterinária adequada. Preencha todas as seções — se um órgão não foi mencionado, escreva "Sem alterações detectadas" ou equivalente clínico adequado.`
-    );
+    const userMessage = rawInput.trim()
+      ? `Alterações encontradas no exame:\n\n${rawInput}\n\nGere o laudo completo. Mantenha o texto padrão para todas as seções não mencionadas. Para as seções mencionadas, aplique as alterações informadas. Se houver medidas específicas, substitua os valores de referência (x cm, 0,00) pelos valores reais informados.`
+      : `Nenhuma alteração encontrada. Gere o laudo completo utilizando apenas os textos padrão para todas as seções.`;
+
+    result = await model.generateContent(userMessage);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: `Gemini error: ${message}` }, { status: 500 });
