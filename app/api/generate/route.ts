@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+
+export const maxDuration = 60;
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from "@/lib/supabase/server";
 import { TEMPLATES } from "@/lib/templates";
@@ -33,6 +35,10 @@ export async function POST(req: NextRequest) {
   const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",
     systemInstruction: systemPrompt,
+    generationConfig: {
+      // @ts-expect-error thinkingConfig not yet in types
+      thinkingConfig: { thinkingBudget: 0 },
+    },
   });
 
   let result;
