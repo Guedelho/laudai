@@ -31,12 +31,8 @@ export async function POST(req: NextRequest) {
     .replace(/{crmv}/g, crmv);
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.0-flash",
     systemInstruction: systemPrompt,
-    generationConfig: {
-      // @ts-expect-error thinkingConfig not yet in types
-      thinkingConfig: { thinkingBudget: 0 },
-    },
   });
 
   let result;
