@@ -4,6 +4,7 @@ import Link from "next/link";
 import { SPECIALTY_LABELS } from "@/lib/templates";
 import { Laudo } from "@/types";
 import PrintButton from "./PrintButton";
+import EditRawInput from "./EditRawInput";
 
 export default async function LaudoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -42,6 +43,7 @@ export default async function LaudoPage({ params }: { params: Promise<{ id: stri
             {l.generated_content}
           </pre>
         </div>
+        <EditRawInput laudoId={l.id} initialRawInput={l.raw_input} />
       </main>
     </div>
   );
