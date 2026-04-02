@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { TEMPLATES, DEFAULTS } from "@/lib/templates";
-import { Specialty } from "@/types";
+import { Profile, Specialty } from "@/types";
 
 export async function getUserId(req: NextRequest): Promise<string | null> {
   const authHeader = req.headers.get("Authorization");
@@ -19,6 +19,20 @@ export async function getUserId(req: NextRequest): Promise<string | null> {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   return user?.id ?? null;
+}
+
+export async function getProfile(userId: string): Promise<Profile | null> {
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+  const { data } = await admin
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
+  return data ?? null;
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);

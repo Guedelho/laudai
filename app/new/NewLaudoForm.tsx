@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Specialty } from "@/types";
+import { Specialty, Pet } from "@/types";
 import { SPECIALTY_LABELS } from "@/lib/templates";
 import { createClient } from "@/lib/supabase/client";
 
@@ -11,13 +11,13 @@ const SPECIALTIES = Object.entries(SPECIALTY_LABELS) as [Specialty, string][];
 export default function NewLaudoPage() {
   const router = useRouter();
   const [specialty, setSpecialty] = useState<Specialty>("ultrasound_abdominal");
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [selectedPetId, setSelectedPetId] = useState<string>("");
   const [patientName, setPatientName] = useState("");
   const [species, setSpecies] = useState("Canino");
   const [breed, setBreed] = useState("");
   const [age, setAge] = useState("");
   const [ownerName, setOwnerName] = useState("");
-  const [veterinarian, setVeterinarian] = useState("");
-  const [crmv, setCrmv] = useState("");
   const [rawInput, setRawInput] = useState("");
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -26,6 +26,41 @@ export default function NewLaudoPage() {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+
+  useEffect(() => {
+    async function loadPets() {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/pets", {
+        headers: session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPets(data.pets ?? []);
+      }
+    }
+    loadPets();
+  }, []);
+
+  function handlePetSelect(petId: string) {
+    setSelectedPetId(petId);
+    if (!petId) {
+      setPatientName("");
+      setSpecies("Canino");
+      setBreed("");
+      setAge("");
+      setOwnerName("");
+      return;
+    }
+    const pet = pets.find((p) => p.id === petId);
+    if (pet) {
+      setPatientName(pet.name);
+      setSpecies(pet.species);
+      setBreed(pet.breed ?? "");
+      setAge(pet.age ?? "");
+      setOwnerName(pet.owner_name);
+    }
+  }
 
   async function startRecording() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -95,8 +130,7 @@ export default function NewLaudoPage() {
           breed,
           age,
           ownerName,
-          veterinarian,
-          crmv,
+          petId: selectedPetId || undefined,
         }),
       });
 
@@ -141,9 +175,29 @@ export default function NewLaudoPage() {
             </div>
           </div>
 
-          {/* Patient info */}
+          {/* Pet selector */}
           <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
-            <p className="text-sm font-semibold text-gray-700">Dados do Paciente</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-gray-700">Paciente</p>
+              <a href="/pets" className="text-xs text-blue-600 hover:underline">
+                Gerenciar pacientes
+              </a>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Selecionar paciente cadastrado</label>
+              <select
+                value={selectedPetId}
+                onChange={(e) => handlePetSelect(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">— Novo paciente —</option>
+                {pets.map((pet) => (
+                  <option key={pet.id} value={pet.id}>
+                    {pet.name} ({pet.species}) · {pet.owner_name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Nome do animal</label>
@@ -190,31 +244,6 @@ export default function NewLaudoPage() {
                   onChange={(e) => setAge(e.target.value)}
                   placeholder="ex: 3 anos"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Veterinarian */}
-          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-            <p className="text-sm font-semibold text-gray-700">Médico Veterinário</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Nome</label>
-                <input
-                  value={veterinarian}
-                  onChange={(e) => setVeterinarian(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">CRMV</label>
-                <input
-                  value={crmv}
-                  onChange={(e) => setCrmv(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
                 />
               </div>
             </div>

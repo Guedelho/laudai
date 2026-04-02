@@ -23,6 +23,9 @@ export default async function DashboardPage() {
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
         <h1 className="text-lg font-bold text-gray-900">Laudai</h1>
         <div className="flex items-center gap-4">
+          <Link href="/pets" className="text-sm text-gray-600 hover:text-gray-900">
+            Pacientes
+          </Link>
           <LogoutButton />
           <Link
             href="/new"
@@ -57,7 +60,10 @@ export default async function DashboardPage() {
                   {SPECIALTY_LABELS[laudo.specialty]} · {laudo.owner_name}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  {new Date(laudo.created_at).toLocaleDateString("pt-BR")}
+                  Criado: {new Date(laudo.created_at).toLocaleDateString("pt-BR")}
+                  {laudo.updated_at && (
+                    <> · Editado: {new Date(laudo.updated_at).toLocaleDateString("pt-BR")}</>
+                  )}
                 </p>
               </div>
               <Link

@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
-import { generateLaudo, getUserId } from "@/lib/gemini";
+import { generateLaudo, getUserId, getProfile } from "@/lib/gemini";
 import { GenerateRequest } from "@/types";
 
 export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const profile = await getProfile(userId);
+  if (!profile) return NextResponse.json({ error: "Perfil não encontrado. Complete seu cadastro." }, { status: 400 });
 
   const supabase = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,11 +17,21 @@ export async function POST(req: NextRequest) {
   );
 
   const body: GenerateRequest = await req.json();
-  const { specialty, rawInput, patientName, species, breed, age, ownerName, veterinarian, crmv } = body;
+  const { specialty, rawInput, patientName, species, breed, age, ownerName, petId } = body;
 
   let generatedContent: string;
   try {
-    generatedContent = await generateLaudo({ specialty, rawInput, patientName, species, breed, age, ownerName, veterinarian, crmv });
+    generatedContent = await generateLaudo({
+      specialty,
+      rawInput,
+      patientName,
+      species,
+      breed,
+      age,
+      ownerName,
+      veterinarian: profile.full_name,
+      crmv: profile.crmv,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: `Gemini error: ${message}` }, { status: 500 });
@@ -26,7 +39,18 @@ export async function POST(req: NextRequest) {
 
   const { data: laudo, error } = await supabase
     .from("laudos")
-    .insert({ user_id: userId, specialty, patient_name: patientName, species, breed, age, owner_name: ownerName, raw_input: rawInput, generated_content: generatedContent })
+    .insert({
+      user_id: userId,
+      specialty,
+      patient_name: patientName,
+      species,
+      breed,
+      age,
+      owner_name: ownerName,
+      raw_input: rawInput,
+      generated_content: generatedContent,
+      pet_id: petId ?? null,
+    })
     .select()
     .single();
 

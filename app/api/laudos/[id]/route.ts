@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
-import { generateLaudo, getUserId } from "@/lib/gemini";
+import { generateLaudo, getUserId, getProfile } from "@/lib/gemini";
 import { Specialty } from "@/types";
 
 export async function PATCH(
@@ -11,6 +11,9 @@ export async function PATCH(
 
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const profile = await getProfile(userId);
+  if (!profile) return NextResponse.json({ error: "Perfil não encontrado." }, { status: 400 });
 
   const supabase = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,8 +32,6 @@ export async function PATCH(
 
   const { rawInput } = await req.json();
 
-  const vetMatch = existing.generated_content.match(/Médico Veterinário:\s*(.+?)\s*\|\s*CRMV:\s*(.+)/);
-
   let generatedContent: string;
   try {
     generatedContent = await generateLaudo({
@@ -41,8 +42,8 @@ export async function PATCH(
       breed: existing.breed,
       age: existing.age,
       ownerName: existing.owner_name,
-      veterinarian: vetMatch?.[1]?.trim() ?? "",
-      crmv: vetMatch?.[2]?.trim() ?? "",
+      veterinarian: profile.full_name,
+      crmv: profile.crmv,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

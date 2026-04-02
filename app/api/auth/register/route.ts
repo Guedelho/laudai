@@ -8,9 +8,9 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: NextRequest) {
-  const { email, password, name } = await req.json();
+  const { email, password, name, crmv, cpf } = await req.json();
 
-  if (!email || !password || !name) {
+  if (!email || !password || !name || !crmv || !cpf) {
     return NextResponse.json({ error: "Campos obrigatórios" }, { status: 400 });
   }
 
@@ -23,6 +23,15 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  const { error: profileError } = await supabaseAdmin
+    .from("profiles")
+    .insert({ id: data.user.id, full_name: name, crmv, cpf });
+
+  if (profileError) {
+    // User was created but profile failed — still allow login, profile can be fixed later
+    console.error("Profile insert error:", profileError.message);
   }
 
   return NextResponse.json({ user: data.user });
