@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
-import { createElement } from "react";
-import { getUserId, getProfile } from "@/lib/gemini";
-import { LaudoPDF, LaudoPDFData } from "@/lib/laudoPdf";
-import { renderToBuffer } from "@react-pdf/renderer";
+import { getUserId, getProfile, parseLaudoContent } from "@/lib/gemini";
+import { generatePdfBuffer, PdfData } from "@/lib/generatePdf";
 import { Specialty } from "@/types";
 
 const BUCKET = "laudo-images";
@@ -28,6 +26,14 @@ function slugify(s: string) {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-zA-Z0-9]/g, "")
     .slice(0, 20);
+}
+
+async function fetchAsBase64(url: string): Promise<string> {
+  const res = await fetch(url);
+  const arrayBuffer = await res.arrayBuffer();
+  const base64 = Buffer.from(arrayBuffer).toString("base64");
+  const contentType = res.headers.get("content-type") ?? "image/jpeg";
+  return `data:${contentType};base64,${base64}`;
 }
 
 export async function GET(
@@ -63,9 +69,17 @@ export async function GET(
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
 
-  const images = (rawImages ?? []).map((img) => ({
-    url: admin.storage.from(BUCKET).getPublicUrl(img.storage_path).data.publicUrl,
-  }));
+  // Fetch images as base64 for pdfmake
+  const imageBase64List: string[] = [];
+  for (const img of rawImages ?? []) {
+    const publicUrl = admin.storage.from(BUCKET).getPublicUrl(img.storage_path).data.publicUrl;
+    try {
+      const b64 = await fetchAsBase64(publicUrl);
+      imageBase64List.push(b64);
+    } catch {
+      // skip images that fail to load
+    }
+  }
 
   const specialty = laudo.specialty as Specialty;
   const createdAt = new Date(laudo.created_at);
@@ -76,22 +90,23 @@ export async function GET(
     String(createdAt.getFullYear()).slice(2),
   ].join(".");
 
-  const pdfData: LaudoPDFData = {
+  const pdfData: PdfData = {
     patientName: laudo.patient_name,
     species: laudo.species,
     breed: laudo.breed,
     age: laudo.age,
     ownerName: laudo.owner_name,
+    clinicName: laudo.clinic_name ?? undefined,
+    responsibleVet: laudo.responsible_vet ?? undefined,
     date,
     reportTitle: REPORT_TITLES[specialty],
     vetName: profile?.full_name ?? "",
     crmv: profile?.crmv ?? "",
-    generatedContent: laudo.generated_content,
-    images,
+    parsedLaudo: parseLaudoContent(laudo.generated_content),
+    imageBase64List,
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const buffer = await renderToBuffer(createElement(LaudoPDF, { data: pdfData }) as any) as Buffer;
+  const buffer = await generatePdfBuffer(pdfData);
 
   // Filename: Laudo.us.Chico.Juliana.09.03.26.pdf
   const filename = [

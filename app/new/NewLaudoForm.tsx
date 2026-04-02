@@ -18,6 +18,8 @@ export default function NewLaudoPage() {
   const [breed, setBreed] = useState("");
   const [age, setAge] = useState("");
   const [ownerName, setOwnerName] = useState("");
+  const [clinicName, setClinicName] = useState("");
+  const [responsibleVet, setResponsibleVet] = useState("");
   const [rawInput, setRawInput] = useState("");
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -28,18 +30,24 @@ export default function NewLaudoPage() {
   const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
-    async function loadPets() {
+    async function loadData() {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch("/api/pets", {
-        headers: session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {},
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const headers = session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {};
+      const [petsRes, profileRes] = await Promise.all([
+        fetch("/api/pets", { headers }),
+        fetch("/api/profile", { headers }),
+      ]);
+      if (petsRes.ok) {
+        const data = await petsRes.json();
         setPets(data.pets ?? []);
       }
+      if (profileRes.ok) {
+        const data = await profileRes.json();
+        if (data.full_name) setResponsibleVet(data.full_name);
+      }
     }
-    loadPets();
+    loadData();
   }, []);
 
   function handlePetSelect(petId: string) {
@@ -130,6 +138,8 @@ export default function NewLaudoPage() {
           breed,
           age,
           ownerName,
+          clinicName: clinicName || undefined,
+          responsibleVet: responsibleVet || undefined,
           petId: selectedPetId || undefined,
         }),
       });
@@ -172,6 +182,31 @@ export default function NewLaudoPage() {
                   {label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Clinic / Vet header */}
+          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+            <p className="text-sm font-semibold text-gray-700">Cabeçalho do Laudo</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Nome da clínica</label>
+                <input
+                  value={clinicName}
+                  onChange={(e) => setClinicName(e.target.value)}
+                  placeholder="ex: Clínica Vet Premium"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Médico veterinário responsável</label>
+                <input
+                  value={responsibleVet}
+                  onChange={(e) => setResponsibleVet(e.target.value)}
+                  placeholder="ex: Dr. João Silva"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
             </div>
           </div>
 

@@ -26,6 +26,9 @@ export default async function DashboardPage() {
           <Link href="/pets" className="text-sm text-gray-600 hover:text-gray-900">
             Pacientes
           </Link>
+          <Link href="/profile" className="text-sm text-gray-600 hover:text-gray-900">
+            Perfil
+          </Link>
           <LogoutButton />
           <Link
             href="/new"

@@ -69,8 +69,9 @@ const s = StyleSheet.create({
   obsBlock: { marginTop: 8, textAlign: "justify", fontFamily: "Times-Bold" },
 
   // Images section
-  imageGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  image: { width: "49.5%", objectFit: "contain", backgroundColor: "#000" },
+  imageGrid: { flexDirection: "row", flexWrap: "wrap" },
+  image: { width: "49%", marginRight: "2%", marginBottom: 6, objectFit: "contain", backgroundColor: "#000" },
+  imageEven: { width: "49%", marginRight: 0, marginBottom: 6, objectFit: "contain", backgroundColor: "#000" },
 
   // Fixed footer on every page
   footer: {
@@ -78,7 +79,9 @@ const s = StyleSheet.create({
     bottom: 14,
     left: MARGIN,
     right: MARGIN,
-    borderTop: "0.5pt solid #c00",
+    borderTopWidth: 0.5,
+    borderTopColor: "#c00",
+    borderTopStyle: "solid",
     paddingTop: 4,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -333,7 +336,7 @@ export function LaudoPDF({ data }: { data: LaudoPDFData }) {
         <Page key={`img-${pi}`} size="A4" style={s.imagePage}>
           <View style={s.imageGrid}>
             {pageImgs.map((img, ii) => (
-              <Image key={ii} src={img.url} style={s.image} />
+              <Image key={ii} src={img.url} style={ii % 2 === 1 ? s.imageEven : s.image} />
             ))}
           </View>
           <Footer vetName={vetName} crmv={crmv} />

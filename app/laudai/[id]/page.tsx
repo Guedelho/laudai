@@ -4,10 +4,12 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { SPECIALTY_LABELS } from "@/lib/templates";
 import { Laudo } from "@/types";
+import { parseLaudoContent } from "@/lib/gemini";
 import PrintButton from "./PrintButton";
 import DownloadPDFButton from "./DownloadPDFButton";
 import EditRawInput from "./EditRawInput";
 import ImageManager from "./ImageManager";
+import LaudoContent from "./LaudoContent";
 
 const BUCKET = "laudo-images";
 
@@ -60,15 +62,29 @@ export default async function LaudoPage({ params }: { params: Promise<{ id: stri
         </div>
         <div className="flex gap-2">
           <DownloadPDFButton laudoId={l.id} />
-          <PrintButton />
+          <PrintButton laudoId={l.id} />
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-8">
         <div className="bg-white border border-gray-200 rounded-xl p-8">
-          <pre className="whitespace-pre-wrap font-mono text-sm text-gray-800 leading-relaxed">
-            {l.generated_content}
-          </pre>
+          {/* Patient header */}
+          <div className="grid grid-cols-2 gap-x-6 text-sm mb-6 pb-4 border-b border-gray-200">
+            <div className="space-y-1">
+              {l.clinic_name && <div><span className="font-bold">Clínica:</span> {l.clinic_name}</div>}
+              {l.responsible_vet && <div><span className="font-bold">Médico Vet.:</span> {l.responsible_vet}</div>}
+              <div><span className="font-bold">Animal:</span> {l.patient_name}</div>
+              <div><span className="font-bold">Espécie:</span> {l.species}</div>
+              {l.breed && <div><span className="font-bold">Raça:</span> {l.breed}</div>}
+              {l.age && <div><span className="font-bold">Idade:</span> {l.age}</div>}
+            </div>
+            <div className="space-y-1">
+              <div><span className="font-bold">Tutor:</span> {l.owner_name}</div>
+              <div><span className="font-bold">Data:</span> {new Date(l.created_at).toLocaleDateString("pt-BR")}</div>
+            </div>
+          </div>
+          <div className="text-center font-bold underline text-sm mb-6">{SPECIALTY_LABELS[l.specialty].toUpperCase()}</div>
+          <LaudoContent parsedLaudo={parseLaudoContent(l.generated_content)} />
           <ImageManager laudoId={l.id} initialImages={images} />
         </div>
         <div className="print:hidden">

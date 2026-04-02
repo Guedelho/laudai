@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   );
 
   const body: GenerateRequest = await req.json();
-  const { specialty, rawInput, patientName, species, breed, age, ownerName, petId } = body;
+  const { specialty, rawInput, patientName, species, breed, age, ownerName, clinicName, responsibleVet, petId } = body;
 
   let generatedContent: string;
   try {
@@ -49,6 +49,8 @@ export async function POST(req: NextRequest) {
       owner_name: ownerName,
       raw_input: rawInput,
       generated_content: generatedContent,
+      clinic_name: clinicName ?? null,
+      responsible_vet: responsibleVet ?? null,
       pet_id: petId ?? null,
     })
     .select()
