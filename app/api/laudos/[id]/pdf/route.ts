@@ -3,10 +3,8 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { createElement } from "react";
 import { getUserId, getProfile } from "@/lib/gemini";
 import { LaudoPDF, LaudoPDFData } from "@/lib/laudoPdf";
+import { renderToBuffer } from "@react-pdf/renderer";
 import { Specialty } from "@/types";
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { renderToBuffer } = require("@react-pdf/renderer");
 
 const BUCKET = "laudo-images";
 
@@ -93,7 +91,7 @@ export async function GET(
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const buffer: Buffer = await renderToBuffer(createElement(LaudoPDF, { data: pdfData }) as any);
+  const buffer = await renderToBuffer(createElement(LaudoPDF, { data: pdfData }) as any) as Buffer;
 
   // Filename: Laudo.us.Chico.Juliana.09.03.26.pdf
   const filename = [
