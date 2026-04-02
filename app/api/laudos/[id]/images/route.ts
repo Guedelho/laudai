@@ -13,7 +13,9 @@ function getAdmin() {
 }
 
 async function ensureBucket(admin: ReturnType<typeof getAdmin>) {
-  await admin.storage.createBucket(BUCKET, { public: true, upsert: true });
+  const { error } = await admin.storage.createBucket(BUCKET, { public: true });
+  // Ignore "already exists" error
+  if (error && !error.message.includes("already exists")) throw error;
 }
 
 export async function GET(

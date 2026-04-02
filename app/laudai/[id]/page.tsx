@@ -5,6 +5,7 @@ import Link from "next/link";
 import { SPECIALTY_LABELS } from "@/lib/templates";
 import { Laudo } from "@/types";
 import PrintButton from "./PrintButton";
+import DownloadPDFButton from "./DownloadPDFButton";
 import EditRawInput from "./EditRawInput";
 import ImageManager from "./ImageManager";
 
@@ -57,7 +58,10 @@ export default async function LaudoPage({ params }: { params: Promise<{ id: stri
           <h1 className="text-lg font-bold text-gray-900 mt-1">{l.patient_name}</h1>
           <p className="text-sm text-gray-500">{SPECIALTY_LABELS[l.specialty]}</p>
         </div>
-        <PrintButton />
+        <div className="flex gap-2">
+          <DownloadPDFButton laudoId={l.id} />
+          <PrintButton />
+        </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-8">
