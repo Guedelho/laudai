@@ -18,11 +18,14 @@ export default function DownloadPDFButton({ laudoId }: { laudoId: string }) {
 
       if (!res.ok) throw new Error("Erro ao gerar PDF");
 
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const filename = disposition.match(/filename="([^"]+)"/)?.[1] ?? "laudo.pdf";
+
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = res.headers.get("Content-Disposition")?.match(/filename="(.+)"/)?.[1] ?? "laudo.pdf";
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {

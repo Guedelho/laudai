@@ -1,12 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { createElement } from "react";
+import { getUserId, getProfile } from "@/lib/gemini";
+import { LaudoPDF, LaudoPDFData } from "@/lib/laudoPdf";
+import { Specialty } from "@/types";
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { renderToBuffer } = require("@react-pdf/renderer");
-import { getUserId } from "@/lib/gemini";
-import { LaudoPDF } from "@/lib/laudoPdf";
 
 const BUCKET = "laudo-images";
+
+const REPORT_TITLES: Record<Specialty, string> = {
+  ultrasound_abdominal: "RELATÓRIO ULTRASSONOGRÁFICO",
+  ultrasound_thoracic: "RELATÓRIO ULTRASSONOGRÁFICO - TÓRAX",
+  dental: "RELATÓRIO ODONTOLÓGICO",
+  xray: "RELATÓRIO RADIOGRÁFICO",
+};
+
+const SPECIALTY_ABBR: Record<Specialty, string> = {
+  ultrasound_abdominal: "us",
+  ultrasound_thoracic: "us",
+  dental: "dental",
+  xray: "rx",
+};
+
+function slugify(s: string) {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 20);
+}
 
 export async function GET(
   req: NextRequest,
@@ -16,11 +40,14 @@ export async function GET(
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const admin = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
+  const [profile, admin] = [
+    await getProfile(userId),
+    createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    ),
+  ];
 
   const { data: laudo } = await admin
     .from("laudos")
@@ -33,21 +60,49 @@ export async function GET(
 
   const { data: rawImages } = await admin
     .from("laudo_images")
-    .select("*")
+    .select("storage_path")
     .eq("laudo_id", id)
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
 
   const images = (rawImages ?? []).map((img) => ({
     url: admin.storage.from(BUCKET).getPublicUrl(img.storage_path).data.publicUrl,
-    file_name: img.file_name,
   }));
 
-  const element = createElement(LaudoPDF, { content: laudo.generated_content, images });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const buffer: Buffer = await renderToBuffer(element as any);
+  const specialty = laudo.specialty as Specialty;
+  const createdAt = new Date(laudo.created_at);
+  const date = createdAt.toLocaleDateString("pt-BR");
+  const dateShort = [
+    String(createdAt.getDate()).padStart(2, "0"),
+    String(createdAt.getMonth() + 1).padStart(2, "0"),
+    String(createdAt.getFullYear()).slice(2),
+  ].join(".");
 
-  const filename = `laudo-${laudo.patient_name.toLowerCase().replace(/\s+/g, "-")}.pdf`;
+  const pdfData: LaudoPDFData = {
+    patientName: laudo.patient_name,
+    species: laudo.species,
+    breed: laudo.breed,
+    age: laudo.age,
+    ownerName: laudo.owner_name,
+    date,
+    reportTitle: REPORT_TITLES[specialty],
+    vetName: profile?.full_name ?? "",
+    crmv: profile?.crmv ?? "",
+    generatedContent: laudo.generated_content,
+    images,
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const buffer: Buffer = await renderToBuffer(createElement(LaudoPDF, { data: pdfData }) as any);
+
+  // Filename: Laudo.us.Chico.Juliana.09.03.26.pdf
+  const filename = [
+    "Laudo",
+    SPECIALTY_ABBR[specialty],
+    slugify(laudo.patient_name),
+    slugify(laudo.owner_name),
+    dateShort,
+  ].join(".") + ".pdf";
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
