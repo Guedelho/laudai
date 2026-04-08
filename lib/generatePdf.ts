@@ -26,6 +26,8 @@ export interface PdfData {
   species: string;
   breed?: string;
   age?: string;
+  sex?: string;
+  neutered?: boolean;
   ownerName: string;
   clinicName?: string;
   responsibleVet?: string;
@@ -114,6 +116,24 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
     }
   }
 
+  if (parsedLaudo.observacoes?.length) {
+    items.push({
+      text: "OBS:",
+      bold: true,
+      font: "Roboto",
+      margin: [0, 8, 0, 4],
+      fontSize: 10,
+    });
+    for (const line of parsedLaudo.observacoes) {
+      items.push({
+        text: line,
+        alignment: "justify",
+        margin: [0, 0, 0, 4],
+        fontSize: 10,
+      });
+    }
+  }
+
   // Fallback: if raw plain text from old records, render as paragraph
   if (!parsedLaudo.sections.length && parsedLaudo.raw) {
     items.push({
@@ -128,7 +148,7 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
 }
 
 export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
-  const { patientName, species, breed, age, ownerName, clinicName, responsibleVet, date, reportTitle, vetName, crmv, parsedLaudo, imageBase64List } = data;
+  const { patientName, species, breed, age, sex, neutered, ownerName, clinicName, responsibleVet, date, reportTitle, vetName, crmv, parsedLaudo, imageBase64List } = data;
 
   // Register fonts via VFS Buffers on the singleton each call
   pdfmake.virtualfs.writeFileSync("Roboto-Regular.ttf", FONT_REGULAR);
@@ -151,15 +171,16 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
 
   const leftCol = [
     ...(clinicName ? [[{ text: "Clínica: ", bold: true }, clinicName]] : []),
-    ...(responsibleVet ? [[{ text: "Médico Vet.: ", bold: true }, responsibleVet]] : []),
-    [{ text: "Animal: ", bold: true }, patientName],
+    ...(responsibleVet ? [[{ text: "Médico Responsável: ", bold: true }, responsibleVet]] : []),
+    [{ text: "Paciente: ", bold: true }, patientName],
     [{ text: "Espécie: ", bold: true }, species],
     ...(breed ? [[{ text: "Raça: ", bold: true }, breed]] : []),
     ...(age ? [[{ text: "Idade: ", bold: true }, age]] : []),
+    ...(sex ? [[{ text: "Sexo: ", bold: true }, (sex === "M" ? "Macho" : "Fêmea") + (neutered != null ? ` · ${neutered ? "Castrado(a)" : "Não castrado(a)"}` : "")]] : []),
   ].map(([label, value]) => ({ text: [label, value], fontSize: 10, margin: [0, 0, 0, 2] }));
 
   const rightCol = [
-    [{ text: "Tutor: ", bold: true }, ownerName],
+    [{ text: "Responsável: ", bold: true }, ownerName],
     [{ text: "Data: ", bold: true }, date],
   ].map(([label, value]) => ({ text: [label, value], fontSize: 10, margin: [0, 0, 0, 2] }));
 

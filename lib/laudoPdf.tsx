@@ -267,7 +267,7 @@ export function LaudoPDF({ data }: { data: LaudoPDFData }) {
           </View>
           <View style={s.headerCol}>
             <Text style={s.headerField}>
-              <Text style={s.headerBold}>Tutor: </Text>{ownerName}
+              <Text style={s.headerBold}>Responsável: </Text>{ownerName}
             </Text>
             <Text style={s.headerField}>
               <Text style={s.headerBold}>Veterinário: </Text>{vetName}

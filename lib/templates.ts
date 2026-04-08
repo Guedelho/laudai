@@ -2,9 +2,6 @@ import { Specialty } from "@/types";
 
 export const SPECIALTY_LABELS: Record<Specialty, string> = {
   ultrasound_abdominal: "Ultrassonografia Abdominal",
-  ultrasound_thoracic: "Ultrassonografia Torácica",
-  dental: "Odontologia Veterinária",
-  xray: "Radiografia",
 };
 
 export const DEFAULTS: Record<string, string> = {
@@ -192,7 +189,7 @@ CABEÇALHO DO LAUDO:
 ULTRASSONOGRAFIA ABDOMINAL
 Data: {data}
 Paciente: {paciente} | Espécie: {especie} | Raça: {raca} | Idade: {idade}
-Tutor: {tutor}
+Responsável: {tutor}
 Médico Veterinário: {veterinario} | CRMV: {crmv}
 
 Gere o laudo completo com todas as seções. Ao final, inclua:
@@ -211,56 +208,4 @@ RECOMENDAÇÕES:
 Assinatura: ___________________________
 {veterinario}
 CRMV: {crmv}`,
-
-  ultrasound_thoracic: `Você é um especialista em ultrassonografia veterinária. Gere um laudo ultrassonográfico torácico formal e completo em português brasileiro.
-
-FORMATO DE SAÍDA OBRIGATÓRIO: Retorne APENAS um objeto JSON válido, sem nenhum texto antes ou depois, sem markdown, sem blocos de código. O JSON deve seguir exatamente esta estrutura:
-{
-  "sections": [
-    { "label": "CORAÇÃO", "content": "Texto descritivo." },
-    { "label": "PERICÁRDIO", "content": "Texto descritivo." },
-    { "label": "PULMÕES / PLEURA", "content": "Texto descritivo." }
-  ],
-  "conclusion": "Texto da conclusão geral.",
-  "impressao": ["Frase de impressão diagnóstica 1."],
-  "recomendacoes": ["Frase de recomendação 1."]
-}
-Campos "impressao" e "recomendacoes" são arrays de strings. Omita-os se não houver alterações. O campo "conclusion" é sempre obrigatório. NÃO inclua cabeçalho, assinatura ou qualquer texto fora do JSON.
-
-Seções obrigatórias: CORAÇÃO, PERICÁRDIO, PULMÕES / PLEURA.`,
-
-  dental: `Você é um especialista em odontologia veterinária. Gere um laudo odontológico formal e completo em português brasileiro.
-
-FORMATO DE SAÍDA OBRIGATÓRIO: Retorne APENAS um objeto JSON válido, sem nenhum texto antes ou depois, sem markdown, sem blocos de código. O JSON deve seguir exatamente esta estrutura:
-{
-  "sections": [
-    { "label": "AVALIAÇÃO PERIODONTAL", "content": "Texto descritivo." },
-    { "label": "AVALIAÇÃO DENTE A DENTE", "content": "Texto descritivo." },
-    { "label": "ACHADOS RADIOGRÁFICOS", "content": "Texto descritivo." },
-    { "label": "PROCEDIMENTOS REALIZADOS", "content": "Texto descritivo." }
-  ],
-  "conclusion": "Impressão geral e prognóstico.",
-  "recomendacoes": ["Cuidado pós-procedimento 1.", "Medicação 1."]
-}
-O campo "conclusion" é sempre obrigatório. "recomendacoes" é um array de strings. NÃO inclua cabeçalho, assinatura ou qualquer texto fora do JSON.
-
-Seções obrigatórias: AVALIAÇÃO PERIODONTAL, AVALIAÇÃO DENTE A DENTE, ACHADOS RADIOGRÁFICOS, PROCEDIMENTOS REALIZADOS.`,
-
-  xray: `Você é um especialista em radiologia veterinária. Gere um laudo radiográfico formal e completo em português brasileiro.
-
-FORMATO DE SAÍDA OBRIGATÓRIO: Retorne APENAS um objeto JSON válido, sem nenhum texto antes ou depois, sem markdown, sem blocos de código. O JSON deve seguir exatamente esta estrutura:
-{
-  "sections": [
-    { "label": "REGIÃO AVALIADA", "content": "Especificar região." },
-    { "label": "PROJEÇÕES", "content": "Especificar projeções realizadas." },
-    { "label": "QUALIDADE DO EXAME", "content": "Adequada / Limitada por — razão." },
-    { "label": "ACHADOS", "content": "Descrição sistemática das estruturas avaliadas." }
-  ],
-  "conclusion": "Impressão diagnóstica.",
-  "impressao": ["Frase de impressão diagnóstica 1."],
-  "recomendacoes": ["Frase de recomendação 1."]
-}
-O campo "conclusion" é sempre obrigatório. "impressao" e "recomendacoes" são arrays de strings; omita-os se não houver alterações. NÃO inclua cabeçalho, assinatura ou qualquer texto fora do JSON.
-
-Seções obrigatórias: REGIÃO AVALIADA, PROJEÇÕES, QUALIDADE DO EXAME, ACHADOS.`,
 };

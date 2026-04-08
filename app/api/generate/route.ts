@@ -17,7 +17,22 @@ export async function POST(req: NextRequest) {
   );
 
   const body: GenerateRequest = await req.json();
-  const { specialty, rawInput, patientName, species, breed, age, ownerName, clinicName, responsibleVet, petId } = body;
+  const { specialty, rawInput, patientName, species, breed, age, sex, neutered, ownerName, clinicName, responsibleVet, petId } = body;
+
+  if (!patientName?.trim()) return NextResponse.json({ error: "Nome do paciente é obrigatório." }, { status: 400 });
+  if (!ownerName?.trim()) return NextResponse.json({ error: "Nome do tutor é obrigatório." }, { status: 400 });
+  if (!rawInput?.trim()) return NextResponse.json({ error: "Achados do exame são obrigatórios." }, { status: 400 });
+
+  // Create pet if not linking to an existing one
+  let resolvedPetId = petId ?? null;
+  if (!petId) {
+    const { data: newPet } = await supabase
+      .from("pets")
+      .insert({ user_id: userId, name: patientName.trim(), species, breed: breed || null, age: age || null, sex: sex || null, neutered: neutered ?? null, owner_name: ownerName.trim() })
+      .select()
+      .single();
+    if (newPet) resolvedPetId = newPet.id;
+  }
 
   let generatedContent: string;
   try {
@@ -49,9 +64,11 @@ export async function POST(req: NextRequest) {
       owner_name: ownerName,
       raw_input: rawInput,
       generated_content: generatedContent,
+      sex: sex ?? null,
+      neutered: neutered ?? null,
       clinic_name: clinicName ?? null,
       responsible_vet: responsibleVet ?? null,
-      pet_id: petId ?? null,
+      pet_id: resolvedPetId,
     })
     .select()
     .single();

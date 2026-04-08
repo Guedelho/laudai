@@ -8,10 +8,24 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: NextRequest) {
-  const { email, password, name, crmv, cpf } = await req.json();
+  const { email, password, name, crmv, cpf, inviteCode } = await req.json();
+
+  const registrationSecret = process.env.REGISTRATION_SECRET;
+  if (registrationSecret && inviteCode !== registrationSecret) {
+    return NextResponse.json({ error: "Código de convite inválido" }, { status: 403 });
+  }
 
   if (!email || !password || !name || !crmv || !cpf) {
     return NextResponse.json({ error: "Campos obrigatórios" }, { status: 400 });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email.trim())) {
+    return NextResponse.json({ error: "Email inválido" }, { status: 400 });
+  }
+
+  if (password.length < 8) {
+    return NextResponse.json({ error: "Senha deve ter no mínimo 8 caracteres" }, { status: 400 });
   }
 
   const { data, error } = await supabaseAdmin.auth.admin.createUser({

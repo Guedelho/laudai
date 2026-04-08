@@ -3,10 +3,10 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import LogoutButton from "@/components/LogoutButton";
-import PetsManager from "./PetsManager";
-import { Pet } from "@/types";
+import ClinicsManager from "./ClinicsManager";
+import { Clinic } from "@/types";
 
-export default async function PetsPage() {
+export default async function ClinicsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -18,9 +18,9 @@ export default async function PetsPage() {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
-  const { data: pets } = await admin
-    .from("pets")
-    .select("*")
+  const { data: clinics } = await admin
+    .from("clinics")
+    .select("*, clinic_vets(*)")
     .eq("user_id", user.id)
     .order("name", { ascending: true });
 
@@ -32,8 +32,11 @@ export default async function PetsPage() {
           <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">
             Laudos
           </Link>
-          <Link href="/clinics" className="text-sm text-gray-600 hover:text-gray-900">
-            Clínicas
+          <Link href="/pets" className="text-sm text-gray-600 hover:text-gray-900">
+            Pacientes
+          </Link>
+          <Link href="/profile" className="text-sm text-gray-600 hover:text-gray-900">
+            Perfil
           </Link>
           <LogoutButton />
           <Link
@@ -46,7 +49,7 @@ export default async function PetsPage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-8">
-        <PetsManager initialPets={(pets ?? []) as Pet[]} />
+        <ClinicsManager initialClinics={(clinics ?? []) as Clinic[]} />
       </main>
     </div>
   );

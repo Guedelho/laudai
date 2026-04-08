@@ -38,6 +38,15 @@ export default function LaudoContent({ parsedLaudo }: { parsedLaudo: ParsedLaudo
         </>
       ) : null}
 
+      {parsedLaudo.observacoes?.length ? (
+        <>
+          <div className="font-bold text-sm mt-3 mb-1">OBS:</div>
+          {parsedLaudo.observacoes.map((line, i) => (
+            <div key={i} className="mb-1 text-justify">{line}</div>
+          ))}
+        </>
+      ) : null}
+
       {/* Fallback for old plain-text records */}
       {!parsedLaudo.sections.length && parsedLaudo.raw && (
         <div className="whitespace-pre-wrap">{parsedLaudo.raw}</div>

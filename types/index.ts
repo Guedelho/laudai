@@ -1,4 +1,4 @@
-export type Specialty = "ultrasound_abdominal" | "ultrasound_thoracic" | "dental" | "xray";
+export type Specialty = "ultrasound_abdominal";
 
 export interface LaudoSection {
   label: string;
@@ -10,6 +10,7 @@ export interface ParsedLaudo {
   conclusion?: string;
   impressao?: string[];
   recomendacoes?: string[];
+  observacoes?: string[];
   raw?: string; // fallback for old plain text
 }
 
@@ -28,8 +29,26 @@ export interface Pet {
   species: string;
   breed?: string;
   age?: string;
+  sex?: string;
+  neutered?: boolean;
   owner_name: string;
   created_at: string;
+}
+
+export interface ClinicVet {
+  id: string;
+  clinic_id: string;
+  user_id: string;
+  name: string;
+  created_at: string;
+}
+
+export interface Clinic {
+  id: string;
+  user_id: string;
+  name: string;
+  created_at: string;
+  clinic_vets: ClinicVet[];
 }
 
 export interface Laudo {
@@ -40,6 +59,8 @@ export interface Laudo {
   species: string;
   breed?: string;
   age?: string;
+  sex?: string;
+  neutered?: boolean;
   owner_name: string;
   clinic_name?: string;
   responsible_vet?: string;
@@ -57,6 +78,8 @@ export interface GenerateRequest {
   species: string;
   breed?: string;
   age?: string;
+  sex?: string;
+  neutered?: boolean;
   ownerName: string;
   clinicName?: string;
   responsibleVet?: string;

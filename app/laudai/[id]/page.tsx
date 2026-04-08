@@ -4,10 +4,9 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { SPECIALTY_LABELS } from "@/lib/templates";
 import { Laudo } from "@/types";
-import { parseLaudoContent } from "@/lib/gemini";
+import { parseLaudoContent } from "@/lib/parseLaudo";
 import PrintButton from "./PrintButton";
 import DownloadPDFButton from "./DownloadPDFButton";
-import EditRawInput from "./EditRawInput";
 import ImageManager from "./ImageManager";
 import LaudoContent from "./LaudoContent";
 
@@ -42,11 +41,15 @@ export default async function LaudoPage({ params }: { params: Promise<{ id: stri
     .eq("user_id", user.id)
     .order("created_at", { ascending: true });
 
-  const images = (rawImages ?? []).map((img) => ({
-    id: img.id,
-    file_name: img.file_name,
-    url: admin.storage.from(BUCKET).getPublicUrl(img.storage_path).data.publicUrl,
-  }));
+  const images = (
+    await Promise.all(
+      (rawImages ?? []).map(async (img) => {
+        const { data } = await admin.storage.from(BUCKET).createSignedUrl(img.storage_path, 7200);
+        if (!data) return null;
+        return { id: img.id, file_name: img.file_name, url: data.signedUrl };
+      })
+    )
+  ).filter(Boolean) as { id: string; file_name: string; url: string }[];
 
   const l = laudo as Laudo;
 
@@ -68,27 +71,25 @@ export default async function LaudoPage({ params }: { params: Promise<{ id: stri
 
       <main className="max-w-3xl mx-auto px-6 py-8">
         <div className="bg-white border border-gray-200 rounded-xl p-8">
-          {/* Patient header */}
-          <div className="grid grid-cols-2 gap-x-6 text-sm mb-6 pb-4 border-b border-gray-200">
+          <div className="grid grid-cols-2 gap-x-8 text-sm mb-6 pb-4 border-b border-gray-200">
             <div className="space-y-1">
-              {l.clinic_name && <div><span className="font-bold">Clínica:</span> {l.clinic_name}</div>}
-              {l.responsible_vet && <div><span className="font-bold">Médico Vet.:</span> {l.responsible_vet}</div>}
-              <div><span className="font-bold">Animal:</span> {l.patient_name}</div>
+              <div><span className="font-bold">Paciente:</span> {l.patient_name}</div>
               <div><span className="font-bold">Espécie:</span> {l.species}</div>
               {l.breed && <div><span className="font-bold">Raça:</span> {l.breed}</div>}
               {l.age && <div><span className="font-bold">Idade:</span> {l.age}</div>}
+              {l.sex && <div><span className="font-bold">Sexo:</span> {l.sex === "M" ? "Macho" : "Fêmea"}</div>}
+              {l.neutered != null && <div><span className="font-bold">Castrado(a):</span> {l.neutered ? "Sim" : "Não"}</div>}
             </div>
             <div className="space-y-1">
-              <div><span className="font-bold">Tutor:</span> {l.owner_name}</div>
+              {l.clinic_name && <div><span className="font-bold">Clínica:</span> {l.clinic_name}</div>}
+              {l.responsible_vet && <div><span className="font-bold">Médico Responsável:</span> {l.responsible_vet}</div>}
+              <div><span className="font-bold">Responsável:</span> {l.owner_name}</div>
               <div><span className="font-bold">Data:</span> {new Date(l.created_at).toLocaleDateString("pt-BR")}</div>
             </div>
           </div>
           <div className="text-center font-bold underline text-sm mb-6">{SPECIALTY_LABELS[l.specialty].toUpperCase()}</div>
           <LaudoContent parsedLaudo={parseLaudoContent(l.generated_content)} />
-          <ImageManager laudoId={l.id} initialImages={images} />
-        </div>
-        <div className="print:hidden">
-          <EditRawInput laudoId={l.id} initialRawInput={l.raw_input} />
+          <ImageManager initialImages={images} />
         </div>
       </main>
     </div>

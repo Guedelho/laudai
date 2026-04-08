@@ -3,7 +3,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { TEMPLATES, DEFAULTS } from "@/lib/templates";
-import { Profile, Specialty, ParsedLaudo } from "@/types";
+import { Profile, Specialty } from "@/types";
+export { parseLaudoContent } from "@/lib/parseLaudo";
 
 export async function getUserId(req: NextRequest): Promise<string | null> {
   const authHeader = req.headers.get("Authorization");
@@ -58,88 +59,6 @@ function extractJson(text: string): string {
   const end = text.lastIndexOf("}");
   if (start !== -1 && end !== -1 && end > start) return text.slice(start, end + 1);
   return text.trim();
-}
-
-const SECTION_RE_PARSE = /^([A-ZÁÂÃÀÉÊÍÓÔÕÚÇ][A-ZÁÂÃÀÉÊÍÓÔÕÚÇ\s\/\-]{0,40}):\s*(.*)/;
-
-export function parseLaudoContent(content: string): ParsedLaudo {
-  // Try JSON first (new format)
-  try {
-    const raw = extractJson(content);
-    const parsed = JSON.parse(raw);
-    if (parsed && Array.isArray(parsed.sections)) {
-      return parsed as ParsedLaudo;
-    }
-  } catch {
-    // fall through to plain text parsing
-  }
-
-  // Strip markdown bold markers and parse
-  // Handles both plain text and markdown output from LLM
-  function stripMd(s: string): string {
-    return s.replace(/\*\*(.+?)\*\*/g, "$1").replace(/^\s*[-*]\s+/, "").trim();
-  }
-
-  const lines = content.split("\n");
-  const sections: ParsedLaudo["sections"] = [];
-  const impressao: string[] = [];
-  const recomendacoes: string[] = [];
-  let conclusion: string | undefined;
-  let inImpressao = false;
-  let inRecomendacoes = false;
-  let inConclusion = false;
-  let lastSection: { label: string; content: string } | null = null;
-
-  for (const line of lines) {
-    // Strip markdown bold from the whole line first
-    const t = stripMd(line.trim());
-    if (!t) {
-      // blank line ends multi-line section content accumulation
-      if (lastSection) { sections.push(lastSection); lastSection = null; }
-      continue;
-    }
-
-    // Skip header lines
-    if (/^(ULTRASSONOGRAFI|RELATÓRIO|Data:|Paciente:|Tutor:|Médico Vet|CRMV:|---)/i.test(t)) continue;
-
-    if (/^CONCLUS[ÃA]O\s*:?\s*$/i.test(t)) {
-      if (lastSection) { sections.push(lastSection); lastSection = null; }
-      inConclusion = true; inImpressao = false; inRecomendacoes = false; continue;
-    }
-    if (/^IMPRESS[ÃA]O\s+DIAGN[ÓO]STICA\s*:?\s*$/i.test(t)) {
-      if (lastSection) { sections.push(lastSection); lastSection = null; }
-      inImpressao = true; inRecomendacoes = false; inConclusion = false; continue;
-    }
-    if (/^RECOMENDA[ÇC][ÕO]ES\s*:?\s*$/i.test(t)) {
-      if (lastSection) { sections.push(lastSection); lastSection = null; }
-      inRecomendacoes = true; inImpressao = false; inConclusion = false; continue;
-    }
-
-    if (inImpressao) { impressao.push(t); continue; }
-    if (inRecomendacoes) { recomendacoes.push(t); continue; }
-    if (inConclusion) {
-      conclusion = conclusion ? conclusion + " " + t : t;
-      continue;
-    }
-
-    const m = t.match(SECTION_RE_PARSE);
-    if (m) {
-      if (lastSection) sections.push(lastSection);
-      lastSection = { label: m[1].trim(), content: m[2].trim() };
-    } else if (lastSection) {
-      // continuation line of the previous section
-      lastSection.content = lastSection.content ? lastSection.content + " " + t : t;
-    }
-  }
-  if (lastSection) sections.push(lastSection);
-
-  return {
-    sections,
-    conclusion: conclusion || undefined,
-    impressao: impressao.length ? impressao : undefined,
-    recomendacoes: recomendacoes.length ? recomendacoes : undefined,
-    raw: content,
-  };
 }
 
 export async function generateLaudo(params: GenerateParams): Promise<string> {

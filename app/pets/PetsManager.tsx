@@ -14,6 +14,29 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
   const [ownerName, setOwnerName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {};
+
+      const res = await fetch(`/api/pets/${id}`, { method: "DELETE", headers });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error);
+      }
+      setPets((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erro ao excluir paciente.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -76,7 +99,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Tutor</label>
+              <label className="block text-xs text-gray-500 mb-1">Responsável</label>
               <input
                 value={ownerName}
                 onChange={(e) => setOwnerName(e.target.value)}
@@ -133,12 +156,21 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
 
       <div className="space-y-3">
         {pets.map((pet) => (
-          <div key={pet.id} className="bg-white border border-gray-200 rounded-xl p-4">
-            <p className="font-medium text-gray-900">{pet.name}</p>
-            <p className="text-sm text-gray-500">
-              {pet.species}{pet.breed ? ` · ${pet.breed}` : ""}{pet.age ? ` · ${pet.age}` : ""}
-            </p>
-            <p className="text-xs text-gray-400 mt-1">Tutor: {pet.owner_name}</p>
+          <div key={pet.id} className="bg-white border border-gray-200 rounded-xl p-4 flex items-start justify-between gap-4">
+            <div>
+              <p className="font-medium text-gray-900">{pet.name}</p>
+              <p className="text-sm text-gray-500">
+                {pet.species}{pet.breed ? ` · ${pet.breed}` : ""}{pet.age ? ` · ${pet.age}` : ""}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">Responsável: {pet.owner_name}</p>
+            </div>
+            <button
+              onClick={() => handleDelete(pet.id)}
+              disabled={deletingId === pet.id}
+              className="text-xs text-red-500 hover:text-red-700 disabled:opacity-40 shrink-0 mt-0.5"
+            >
+              {deletingId === pet.id ? "Excluindo..." : "Excluir"}
+            </button>
           </div>
         ))}
       </div>

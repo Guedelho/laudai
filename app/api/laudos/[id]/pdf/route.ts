@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
-import { getUserId, getProfile, parseLaudoContent } from "@/lib/gemini";
+import { getUserId, getProfile } from "@/lib/gemini";
+import { parseLaudoContent } from "@/lib/parseLaudo";
 import { generatePdfBuffer, PdfData } from "@/lib/generatePdf";
 import { Specialty } from "@/types";
 
@@ -8,16 +9,10 @@ const BUCKET = "laudo-images";
 
 const REPORT_TITLES: Record<Specialty, string> = {
   ultrasound_abdominal: "RELATÓRIO ULTRASSONOGRÁFICO",
-  ultrasound_thoracic: "RELATÓRIO ULTRASSONOGRÁFICO - TÓRAX",
-  dental: "RELATÓRIO ODONTOLÓGICO",
-  xray: "RELATÓRIO RADIOGRÁFICO",
 };
 
 const SPECIALTY_ABBR: Record<Specialty, string> = {
   ultrasound_abdominal: "us",
-  ultrasound_thoracic: "us",
-  dental: "dental",
-  xray: "rx",
 };
 
 function slugify(s: string) {
@@ -72,9 +67,10 @@ export async function GET(
   // Fetch images as base64 for pdfmake
   const imageBase64List: string[] = [];
   for (const img of rawImages ?? []) {
-    const publicUrl = admin.storage.from(BUCKET).getPublicUrl(img.storage_path).data.publicUrl;
     try {
-      const b64 = await fetchAsBase64(publicUrl);
+      const { data } = await admin.storage.from(BUCKET).createSignedUrl(img.storage_path, 60);
+      if (!data) continue;
+      const b64 = await fetchAsBase64(data.signedUrl);
       imageBase64List.push(b64);
     } catch {
       // skip images that fail to load
@@ -96,6 +92,8 @@ export async function GET(
     breed: laudo.breed,
     age: laudo.age,
     ownerName: laudo.owner_name,
+    sex: laudo.sex ?? undefined,
+    neutered: laudo.neutered ?? undefined,
     clinicName: laudo.clinic_name ?? undefined,
     responsibleVet: laudo.responsible_vet ?? undefined,
     date,
