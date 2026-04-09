@@ -48,8 +48,8 @@ export async function POST(req: NextRequest) {
       crmv: profile.crmv,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: `Gemini error: ${message}` }, { status: 500 });
+    console.error("Gemini generation error:", err);
+    return NextResponse.json({ error: "Erro ao gerar laudo. Tente novamente." }, { status: 500 });
   }
 
   const { data: laudo, error } = await supabase
@@ -73,7 +73,10 @@ export async function POST(req: NextRequest) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: `DB error: ${error.message}` }, { status: 500 });
+  if (error) {
+    console.error("DB insert error:", error);
+    return NextResponse.json({ error: "Erro ao salvar laudo." }, { status: 500 });
+  }
 
   return NextResponse.json({ laudo });
 }

@@ -4,16 +4,9 @@ import { getUserId, getProfile } from "@/lib/gemini";
 import { parseLaudoContent } from "@/lib/parseLaudo";
 import { generatePdfBuffer, PdfData } from "@/lib/generatePdf";
 import { Specialty } from "@/types";
+import { REPORT_TITLES, SPECIALTY_ABBR } from "@/lib/templates";
 
 const BUCKET = "laudo-images";
-
-const REPORT_TITLES: Record<Specialty, string> = {
-  ultrasound_abdominal: "RELATÓRIO ULTRASSONOGRÁFICO",
-};
-
-const SPECIALTY_ABBR: Record<Specialty, string> = {
-  ultrasound_abdominal: "us",
-};
 
 function slugify(s: string) {
   return s
@@ -66,14 +59,16 @@ export async function GET(
 
   // Fetch images as base64 for pdfmake
   const imageBase64List: string[] = [];
+  let imageFailures = 0;
   for (const img of rawImages ?? []) {
     try {
       const { data } = await admin.storage.from(BUCKET).createSignedUrl(img.storage_path, 60);
-      if (!data) continue;
+      if (!data) { imageFailures++; continue; }
       const b64 = await fetchAsBase64(data.signedUrl);
       imageBase64List.push(b64);
-    } catch {
-      // skip images that fail to load
+    } catch (err) {
+      console.error("Failed to load laudo image:", img.storage_path, err);
+      imageFailures++;
     }
   }
 
@@ -115,10 +110,11 @@ export async function GET(
     dateShort,
   ].join(".") + ".pdf";
 
-  return new NextResponse(new Uint8Array(buffer), {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-    },
-  });
+  const responseHeaders: Record<string, string> = {
+    "Content-Type": "application/pdf",
+    "Content-Disposition": `attachment; filename="${filename}"`,
+  };
+  if (imageFailures > 0) responseHeaders["X-Image-Failures"] = String(imageFailures);
+
+  return new NextResponse(new Uint8Array(buffer), { headers: responseHeaders });
 }

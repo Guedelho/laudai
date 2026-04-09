@@ -209,3 +209,11 @@ Assinatura: ___________________________
 {veterinario}
 CRMV: {crmv}`,
 };
+
+export const REPORT_TITLES: Record<Specialty, string> = {
+  ultrasound_abdominal: "RELATÓRIO ULTRASSONOGRÁFICO",
+};
+
+export const SPECIALTY_ABBR: Record<Specialty, string> = {
+  ultrasound_abdominal: "us",
+};

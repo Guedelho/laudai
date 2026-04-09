@@ -38,7 +38,12 @@ export default function NewLaudoPage() {
 
   // Images (selected before submit)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [objectUrls, setObjectUrls] = useState<string[]>([]);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => { objectUrls.forEach(URL.revokeObjectURL); };
+  }, [objectUrls]);
 
   // Review phase
   const [phase, setPhase] = useState<"form" | "review">("form");
@@ -89,15 +94,28 @@ export default function NewLaudoPage() {
     setNewClinicName("");
   }
 
+  const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    setSelectedFiles((prev) => [...prev, ...files]);
+    const valid = files.filter((f) => {
+      if (f.size > MAX_IMAGE_SIZE) {
+        setError(`Imagem "${f.name}" excede 10 MB.`);
+        return false;
+      }
+      return true;
+    });
+    if (!valid.length) return;
+    setSelectedFiles((prev) => [...prev, ...valid]);
+    setObjectUrls((prev) => [...prev, ...valid.map((f) => URL.createObjectURL(f))]);
     if (imageInputRef.current) imageInputRef.current.value = "";
   }
 
   function removeFile(index: number) {
+    URL.revokeObjectURL(objectUrls[index]);
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setObjectUrls((prev) => prev.filter((_, i) => i !== index));
   }
 
   const selectedClinic = clinics.find((c) => c.id === selectedClinicId);
@@ -156,8 +174,11 @@ export default function NewLaudoPage() {
 
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
-    setGenerating(true);
     setError("");
+    if (!patientName.trim()) { setError("Nome do paciente é obrigatório."); return; }
+    if (!ownerName.trim()) { setError("Nome do responsável é obrigatório."); return; }
+    if (!rawInput.trim()) { setError("Achados do exame são obrigatórios."); return; }
+    setGenerating(true);
 
     try {
       const headers = await getAuthHeaders();
@@ -435,7 +456,7 @@ export default function NewLaudoPage() {
                   <div key={i} className="relative group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={URL.createObjectURL(file)}
+                      src={objectUrls[i]}
                       alt={file.name}
                       className="w-full h-24 object-cover rounded-lg border border-gray-200 bg-black"
                     />

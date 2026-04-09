@@ -101,7 +101,8 @@ export async function POST(
       .upload(storagePath, arrayBuffer, { contentType: file.type });
 
     if (uploadError) {
-      return NextResponse.json({ error: `Upload failed: ${uploadError.message}` }, { status: 500 });
+      console.error("Image upload error:", uploadError);
+      return NextResponse.json({ error: "Erro ao enviar imagem." }, { status: 500 });
     }
 
     const { data: record, error: dbError } = await admin
@@ -111,8 +112,9 @@ export async function POST(
       .single();
 
     if (dbError) {
+      console.error("Image DB insert error:", dbError);
       await admin.storage.from(BUCKET).remove([storagePath]);
-      return NextResponse.json({ error: `DB error: ${dbError.message}` }, { status: 500 });
+      return NextResponse.json({ error: "Erro ao registrar imagem." }, { status: 500 });
     }
 
     results.push({
