@@ -5,8 +5,10 @@ import { parseLaudoContent } from "@/lib/parseLaudo";
 import { generatePdfBuffer, PdfData } from "@/lib/generatePdf";
 import { Specialty } from "@/types";
 import { REPORT_TITLES, SPECIALTY_ABBR } from "@/lib/templates";
+import sharp from "sharp";
 
 const BUCKET = "laudo-images";
+const SUPPORTED_MIME = new Set(["image/jpeg", "image/jpg", "image/png"]);
 
 function slugify(s: string) {
   return s
@@ -16,12 +18,24 @@ function slugify(s: string) {
     .slice(0, 20);
 }
 
-async function fetchAsBase64(url: string): Promise<string> {
+async function fetchAsBase64(url: string, maxWidth?: number, maxHeight?: number): Promise<string> {
   const res = await fetch(url);
   const arrayBuffer = await res.arrayBuffer();
-  const base64 = Buffer.from(arrayBuffer).toString("base64");
+  let buf = Buffer.from(arrayBuffer);
   const contentType = res.headers.get("content-type") ?? "image/jpeg";
-  return `data:${contentType};base64,${base64}`;
+  const mime = contentType.split(";")[0].trim();
+
+  const needsConvert = !SUPPORTED_MIME.has(mime) || maxWidth || maxHeight;
+  if (needsConvert) {
+    let s = sharp(buf);
+    if (maxWidth || maxHeight) {
+      s = s.resize(maxWidth ?? null, maxHeight ?? null, { fit: "inside" });
+    }
+    buf = Buffer.from(await s.jpeg({ quality: 85 }).toBuffer());
+  }
+
+  const finalMime = needsConvert ? "image/jpeg" : mime;
+  return `data:${finalMime};base64,${buf.toString("base64")}`;
 }
 
 export async function GET(
@@ -57,7 +71,7 @@ export async function GET(
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
 
-  // Fetch images as base64 for pdfmake
+  // Fetch images as base64 for pdfmake — auto-converted to JPEG if not JPEG/PNG
   const imageBase64List: string[] = [];
   let imageFailures = 0;
   for (const img of rawImages ?? []) {
@@ -81,6 +95,15 @@ export async function GET(
     String(createdAt.getFullYear()).slice(2),
   ].join(".");
 
+  let logoBase64: string | undefined;
+  if (profile?.logo_url) {
+    try {
+      logoBase64 = await fetchAsBase64(profile.logo_url);
+    } catch (err) {
+      console.error("Failed to fetch user logo:", err);
+    }
+  }
+
   const pdfData: PdfData = {
     patientName: laudo.patient_name,
     species: laudo.species,
@@ -97,6 +120,9 @@ export async function GET(
     crmv: profile?.crmv ?? "",
     parsedLaudo: parseLaudoContent(laudo.generated_content),
     imageBase64List,
+    logoBase64,
+    signatureFont: profile?.signature_font ?? undefined,
+    crmvState: profile?.crmv_state ?? undefined,
   };
 
   const buffer = await generatePdfBuffer(pdfData);
@@ -113,6 +139,7 @@ export async function GET(
   const responseHeaders: Record<string, string> = {
     "Content-Type": "application/pdf",
     "Content-Disposition": `attachment; filename="${filename}"`,
+    "Cache-Control": "no-store",
   };
   if (imageFailures > 0) responseHeaders["X-Image-Failures"] = String(imageFailures);
 

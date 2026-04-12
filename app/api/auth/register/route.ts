@@ -36,7 +36,8 @@ export async function POST(req: NextRequest) {
   });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    console.error("Register error:", error);
+    return NextResponse.json({ error: "Erro ao criar conta. Verifique os dados." }, { status: 400 });
   }
 
   const { error: profileError } = await supabaseAdmin

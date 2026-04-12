@@ -3,7 +3,7 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { getUserId } from "@/lib/gemini";
 
 const BUCKET = "laudo-images";
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_TYPES = ["image/jpeg", "image/png"];
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const MAX_FILES = 10;
 
@@ -44,7 +44,10 @@ export async function GET(
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Laudo images fetch error:", error);
+    return NextResponse.json({ error: "Erro ao buscar imagens." }, { status: 500 });
+  }
 
   const withUrls = await Promise.all(
     (images ?? []).map(async (img) => ({
@@ -91,7 +94,7 @@ export async function POST(
       return NextResponse.json({ error: `Arquivo muito grande (máx 20MB): ${file.name}` }, { status: 400 });
     }
 
-    const ext = file.name.split(".").pop() ?? "jpg";
+    const ext = file.type === "image/png" ? "png" : "jpg";
     const imageId = crypto.randomUUID();
     const storagePath = `${userId}/${id}/${imageId}.${ext}`;
 

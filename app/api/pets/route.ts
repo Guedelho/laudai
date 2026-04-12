@@ -18,7 +18,10 @@ export async function GET(req: NextRequest) {
     .eq("user_id", userId)
     .order("name", { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Pets fetch error:", error);
+    return NextResponse.json({ error: "Erro ao buscar pacientes." }, { status: 500 });
+  }
 
   return NextResponse.json({ pets });
 }
@@ -45,7 +48,10 @@ export async function POST(req: NextRequest) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Pet create error:", error);
+    return NextResponse.json({ error: "Erro ao criar paciente." }, { status: 500 });
+  }
 
   return NextResponse.json({ pet });
 }

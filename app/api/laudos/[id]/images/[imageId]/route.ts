@@ -31,7 +31,10 @@ export async function DELETE(
   await admin.storage.from(BUCKET).remove([image.storage_path]);
 
   const { error } = await admin.from("laudo_images").delete().eq("id", imageId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Image delete error:", error);
+    return NextResponse.json({ error: "Erro ao excluir imagem." }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }

@@ -38,6 +38,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No audio file" }, { status: 400 });
   }
 
+  const ALLOWED_AUDIO = ["audio/webm", "audio/mp4", "audio/mpeg", "audio/ogg", "audio/wav", "audio/mp3"];
+  if (!ALLOWED_AUDIO.includes(audio.type)) {
+    return NextResponse.json({ error: "Formato de áudio não suportado." }, { status: 400 });
+  }
+
+  const MAX_AUDIO_SIZE = 25 * 1024 * 1024;
+  if (audio.size > MAX_AUDIO_SIZE) {
+    return NextResponse.json({ error: "Arquivo de áudio muito grande. Máximo 25 MB." }, { status: 400 });
+  }
+
   const audioBuffer = await audio.arrayBuffer();
   const audioBase64 = Buffer.from(audioBuffer).toString("base64");
 

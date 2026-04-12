@@ -5,9 +5,11 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function DownloadPDFButton({ laudoId }: { laudoId: string }) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleDownload() {
     setLoading(true);
+    setError("");
     try {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
@@ -29,19 +31,22 @@ export default function DownloadPDFButton({ laudoId }: { laudoId: string }) {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao gerar PDF");
+      setError(err instanceof Error ? err.message : "Erro ao gerar PDF");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <button
-      onClick={handleDownload}
-      disabled={loading}
-      className="print:hidden bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:border-gray-400 disabled:opacity-50"
-    >
-      {loading ? "Gerando PDF..." : "Baixar PDF"}
-    </button>
+    <div className="print:hidden">
+      <button
+        onClick={handleDownload}
+        disabled={loading}
+        className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:border-gray-400 disabled:opacity-50"
+      >
+        {loading ? "Gerando PDF..." : "Baixar PDF"}
+      </button>
+      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+    </div>
   );
 }

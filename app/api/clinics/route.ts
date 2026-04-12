@@ -21,7 +21,10 @@ export async function GET(req: NextRequest) {
     .eq("user_id", userId)
     .order("name", { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Clinics fetch error:", error);
+    return NextResponse.json({ error: "Erro ao buscar clínicas." }, { status: 500 });
+  }
   return NextResponse.json({ clinics });
 }
 
@@ -39,7 +42,10 @@ export async function POST(req: NextRequest) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Clinic create error:", error);
+    return NextResponse.json({ error: "Erro ao criar clínica." }, { status: 500 });
+  }
 
   let vet = null;
   if (vetName?.trim()) {

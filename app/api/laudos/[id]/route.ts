@@ -44,7 +44,10 @@ export async function PATCH(
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: `DB error: ${error.message}` }, { status: 500 });
+  if (error) {
+    console.error("Laudo update error:", error);
+    return NextResponse.json({ error: "Erro ao salvar laudo." }, { status: 500 });
+  }
 
   return NextResponse.json({ laudo: updated });
 }

@@ -11,6 +11,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
   const [vetName, setVetName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function getAuthHeaders(): Promise<Record<string, string>> {
@@ -50,6 +51,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
 
   async function handleDelete(id: string) {
     setDeletingId(id);
+    setDeleteError("");
     try {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
@@ -64,7 +66,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
       }
       setClinics((prev) => prev.filter((c) => c.id !== id));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao excluir clínica.");
+      setDeleteError(err instanceof Error ? err.message : "Erro ao excluir clínica.");
     } finally {
       setDeletingId(null);
     }
@@ -114,6 +116,8 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
           </button>
         </form>
       )}
+
+      {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
 
       {!clinics.length && !showForm && (
         <div className="text-center py-16 text-gray-400">

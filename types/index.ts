@@ -20,6 +20,9 @@ export interface Profile {
   crmv: string;
   cpf: string;
   created_at: string;
+  logo_url?: string;
+  signature_font?: string;
+  crmv_state?: string;
 }
 
 export interface Pet {

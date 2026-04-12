@@ -14,10 +14,12 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
   const [ownerName, setOwnerName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function handleDelete(id: string) {
     setDeletingId(id);
+    setDeleteError("");
     try {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
@@ -32,7 +34,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
       }
       setPets((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao excluir paciente.");
+      setDeleteError(err instanceof Error ? err.message : "Erro ao excluir paciente.");
     } finally {
       setDeletingId(null);
     }
@@ -147,6 +149,8 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
           </button>
         </form>
       )}
+
+      {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
 
       {!pets.length && !showForm && (
         <div className="text-center py-16 text-gray-400">

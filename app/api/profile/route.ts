@@ -23,14 +23,17 @@ export async function PUT(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { full_name, crmv, cpf } = body;
+  const { full_name, cpf, signature_font } = body;
 
   const { data, error } = await admin()
     .from("profiles")
-    .upsert({ id: userId, full_name, crmv, cpf }, { onConflict: "id" })
+    .upsert({ id: userId, full_name, cpf, signature_font }, { onConflict: "id" })
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Profile save error:", error);
+    return NextResponse.json({ error: "Erro ao salvar perfil." }, { status: 500 });
+  }
   return NextResponse.json(data);
 }

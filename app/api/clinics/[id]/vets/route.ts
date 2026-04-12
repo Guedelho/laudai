@@ -38,6 +38,9 @@ export async function POST(
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Clinic vet add error:", error);
+    return NextResponse.json({ error: "Erro ao adicionar médico." }, { status: 500 });
+  }
   return NextResponse.json({ vet });
 }

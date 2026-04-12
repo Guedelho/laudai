@@ -5,7 +5,6 @@ import Link from "next/link";
 import { SPECIALTY_LABELS } from "@/lib/templates";
 import { Laudo } from "@/types";
 import { parseLaudoContent } from "@/lib/parseLaudo";
-import PrintButton from "./PrintButton";
 import DownloadPDFButton from "./DownloadPDFButton";
 import ImageManager from "./ImageManager";
 import LaudoContent from "./LaudoContent";
@@ -65,7 +64,6 @@ export default async function LaudoPage({ params }: { params: Promise<{ id: stri
         </div>
         <div className="flex gap-2">
           <DownloadPDFButton laudoId={l.id} />
-          <PrintButton laudoId={l.id} />
         </div>
       </header>
 

@@ -1,14 +1,33 @@
-import path from "path";
 import fs from "fs";
+import path from "path";
 import { ParsedLaudo } from "@/types";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfmake = require("pdfmake");
 
-const FONTS_DIR = path.resolve(process.cwd(), "node_modules/pdfmake/build/fonts/Roboto");
+const FONT_URLS: Record<string, string> = {
+  "Roboto-Regular.ttf": "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/fonts/Roboto/Roboto-Regular.ttf",
+  "Roboto-Medium.ttf": "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/fonts/Roboto/Roboto-Medium.ttf",
+};
 
-// Read at module load — Buffers embedded in the VFS, no runtime path resolution
-const FONT_REGULAR = fs.readFileSync(path.join(FONTS_DIR, "Roboto-Regular.ttf"));
-const FONT_BOLD = fs.readFileSync(path.join(FONTS_DIR, "Roboto-Bold.ttf"));
+const SIGNATURE_FONT_URLS: Record<string, string> = {
+  "sacramento":      "https://raw.githubusercontent.com/google/fonts/main/ofl/sacramento/Sacramento-Regular.ttf",
+  "pinyon-script":   "https://raw.githubusercontent.com/google/fonts/main/ofl/pinyonscript/PinyonScript-Regular.ttf",
+  "alex-brush":      "https://raw.githubusercontent.com/google/fonts/main/ofl/alexbrush/AlexBrush-Regular.ttf",
+  "homemade-apple":  "https://raw.githubusercontent.com/google/fonts/main/apache/homemadeapple/HomemadeApple-Regular.ttf",
+};
+
+const fontCache = new Map<string, Buffer>();
+
+async function fetchFont(name: string): Promise<Buffer> {
+  if (fontCache.has(name)) return fontCache.get(name)!;
+  const url = FONT_URLS[name] ?? SIGNATURE_FONT_URLS[name];
+  if (!url) throw new Error(`Unknown font: ${name}`);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch font ${name}: ${res.status}`);
+  const buf = Buffer.from(await res.arrayBuffer());
+  fontCache.set(name, buf);
+  return buf;
+}
 
 function getLogoBase64(): string | null {
   try {
@@ -37,6 +56,9 @@ export interface PdfData {
   crmv: string;
   parsedLaudo: ParsedLaudo;
   imageBase64List: string[];
+  logoBase64?: string;
+  signatureFont?: string;
+  crmvState?: string;
 }
 
 // ─── pdfmake content builder ─────────────────────────────────────────────────
@@ -55,7 +77,7 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
       ],
       margin: [0, 2, 0, 5],
       alignment: "justify",
-      fontSize: 10,
+      fontSize: 12,
     });
   }
 
@@ -66,7 +88,7 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
       font: "Roboto",
       decoration: "underline",
       margin: [0, 12, 0, 6],
-      fontSize: 10.5,
+      fontSize: 12.5,
     });
   }
 
@@ -75,7 +97,7 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
       text: parsedLaudo.conclusion,
       alignment: "justify",
       margin: [0, 0, 0, 5],
-      fontSize: 10,
+      fontSize: 12,
     });
   }
 
@@ -85,14 +107,14 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
       bold: true,
       font: "Roboto",
       margin: [0, 4, 0, 4],
-      fontSize: 10,
+      fontSize: 12,
     });
     for (const line of parsedLaudo.impressao) {
       items.push({
         text: line,
         alignment: "justify",
         margin: [0, 0, 0, 4],
-        fontSize: 10,
+        fontSize: 12,
       });
     }
   }
@@ -103,13 +125,13 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
       bold: true,
       font: "Roboto",
       margin: [0, 8, 0, 4],
-      fontSize: 10,
+      fontSize: 12,
     });
     for (const line of parsedLaudo.recomendacoes) {
       items.push({
         columns: [
-          { text: "•", bold: true, width: 10, fontSize: 10 },
-          { text: line, alignment: "justify", width: "*", fontSize: 10 },
+          { text: "•", bold: true, width: 10, fontSize: 12 },
+          { text: line, alignment: "justify", width: "*", fontSize: 12 },
         ],
         margin: [14, 0, 0, 3],
       });
@@ -122,14 +144,14 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
       bold: true,
       font: "Roboto",
       margin: [0, 8, 0, 4],
-      fontSize: 10,
+      fontSize: 12,
     });
     for (const line of parsedLaudo.observacoes) {
       items.push({
         text: line,
         alignment: "justify",
         margin: [0, 0, 0, 4],
-        fontSize: 10,
+        fontSize: 12,
       });
     }
   }
@@ -139,7 +161,7 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
     items.push({
       text: parsedLaudo.raw,
       alignment: "justify",
-      fontSize: 10,
+      fontSize: 12,
       margin: [0, 0, 0, 5],
     });
   }
@@ -148,79 +170,115 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
 }
 
 export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
-  const { patientName, species, breed, age, sex, neutered, ownerName, clinicName, responsibleVet, date, reportTitle, vetName, crmv, parsedLaudo, imageBase64List } = data;
+  const { patientName, species, breed, age, sex, neutered, ownerName, clinicName, responsibleVet, date, reportTitle, vetName, crmv, parsedLaudo, imageBase64List, logoBase64: providedLogo, signatureFont, crmvState } = data;
+  const crmvLabel = crmvState ? `CRMV-${crmvState} ${crmv}` : `CRMV ${crmv}`;
+
+  // Fetch fonts from CDN (cached after first call)
+  const [fontRegular, fontMedium] = await Promise.all([
+    fetchFont("Roboto-Regular.ttf"),
+    fetchFont("Roboto-Medium.ttf"),
+  ]);
 
   // Register fonts via VFS Buffers on the singleton each call
-  pdfmake.virtualfs.writeFileSync("Roboto-Regular.ttf", FONT_REGULAR);
-  pdfmake.virtualfs.writeFileSync("Roboto-Bold.ttf", FONT_BOLD);
-  pdfmake.setFonts({
+  pdfmake.virtualfs.writeFileSync("Roboto-Regular.ttf", fontRegular);
+  pdfmake.virtualfs.writeFileSync("Roboto-Medium.ttf", fontMedium);
+
+  const fontDefs: Record<string, object> = {
     Roboto: {
       normal: "Roboto-Regular.ttf",
-      bold: "Roboto-Bold.ttf",
+      bold: "Roboto-Medium.ttf",
       italics: "Roboto-Regular.ttf",
-      bolditalics: "Roboto-Bold.ttf",
+      bolditalics: "Roboto-Medium.ttf",
     },
-  });
+  };
 
-  const logoBase64 = getLogoBase64();
+  if (signatureFont && SIGNATURE_FONT_URLS[signatureFont]) {
+    const sigFontBuf = await fetchFont(signatureFont);
+    pdfmake.virtualfs.writeFileSync(`${signatureFont}.ttf`, sigFontBuf);
+    fontDefs["SignatureFont"] = {
+      normal: `${signatureFont}.ttf`,
+      bold: `${signatureFont}.ttf`,
+      italics: `${signatureFont}.ttf`,
+      bolditalics: `${signatureFont}.ttf`,
+    };
+  }
+
+  pdfmake.setFonts(fontDefs);
+
+  const logoBase64 = providedLogo ?? getLogoBase64();
 
   // A4 dimensions in points: 595.28 x 841.89
   const PAGE_W = 595.28;
-  const LOGO_W = 120;
-  const LOGO_H = 32; // approximate height after scaling
+  const LOGO_W = 180;
+  const LOGO_H = 200;
+
+  const row = (label: string, value: string) => ({
+    text: [{ text: label, bold: true }, value],
+    fontSize: 12,
+    margin: [0, 0, 0, 2],
+  });
 
   const leftCol = [
-    ...(clinicName ? [[{ text: "Clínica: ", bold: true }, clinicName]] : []),
-    ...(responsibleVet ? [[{ text: "Médico Responsável: ", bold: true }, responsibleVet]] : []),
-    [{ text: "Paciente: ", bold: true }, patientName],
-    [{ text: "Espécie: ", bold: true }, species],
-    ...(breed ? [[{ text: "Raça: ", bold: true }, breed]] : []),
-    ...(age ? [[{ text: "Idade: ", bold: true }, age]] : []),
-    ...(sex ? [[{ text: "Sexo: ", bold: true }, (sex === "M" ? "Macho" : "Fêmea") + (neutered != null ? ` · ${neutered ? "Castrado(a)" : "Não castrado(a)"}` : "")]] : []),
-  ].map(([label, value]) => ({ text: [label, value], fontSize: 10, margin: [0, 0, 0, 2] }));
+    row("Paciente: ", patientName),
+    row("Espécie: ", species),
+    ...(breed ? [row("Raça: ", breed)] : []),
+    ...(age ? [row("Idade: ", age)] : []),
+    ...(sex ? [row("Sexo: ", sex === "M" ? "Macho" : "Fêmea")] : []),
+    ...(neutered != null ? [row("Castrado(a): ", neutered ? "Sim" : "Não")] : []),
+  ];
 
   const rightCol = [
-    [{ text: "Responsável: ", bold: true }, ownerName],
-    [{ text: "Data: ", bold: true }, date],
-  ].map(([label, value]) => ({ text: [label, value], fontSize: 10, margin: [0, 0, 0, 2] }));
+    ...(clinicName ? [row("Clínica: ", clinicName)] : []),
+    ...(responsibleVet ? [row("Médico Responsável: ", responsibleVet)] : []),
+    row("Responsável: ", ownerName),
+    row("Data: ", date),
+  ];
 
   const imageContent: Content[] = [];
   for (let i = 0; i < imageBase64List.length; i += 2) {
-    imageContent.push({
-      columns: [
-        { image: imageBase64List[i], width: 230, margin: [0, 0, 4, 6] },
-        imageBase64List[i + 1]
-          ? { image: imageBase64List[i + 1], width: 230, margin: [0, 0, 0, 6] }
-          : { text: "", width: 230 },
-      ],
-    });
+    const right = imageBase64List[i + 1];
+    // Content width: 595.28 - 50 - 50 = 495.28pt. Gutter: 16pt. Each image: (495 - 16) / 2 = 239pt
+    if (right) {
+      imageContent.push({
+        columns: [
+          { image: imageBase64List[i], fit: [239, 300] },
+          { text: "", width: 16 },
+          { image: right, fit: [239, 300] },
+        ],
+        margin: [0, 0, 0, 16],
+      });
+    } else {
+      imageContent.push({
+        image: imageBase64List[i],
+        fit: [400, 400],
+        alignment: "center",
+        margin: [0, 0, 0, 16],
+      });
+    }
   }
 
   const docDefinition: Content = {
     pageSize: "A4",
-    pageMargins: [50, logoBase64 ? 80 : 36, 50, 36],
+    pageMargins: [50, 36, 50, signatureFont && SIGNATURE_FONT_URLS[signatureFont] ? 130 : 48],
 
     // Centered watermark on every page
     ...(logoBase64 ? {
       background: () => ({
         image: logoBase64,
         width: 280,
-        opacity: 0.07,
-        absolutePosition: { x: (PAGE_W - 280) / 2, y: (841.89 - LOGO_H * (280 / LOGO_W)) / 2 },
+        opacity: 0.15,
+        absolutePosition: { x: (PAGE_W - 280) / 2, y: (841.89 - 280) / 2 },
       }),
     } : {}),
 
-    // Logo only on first page
-    ...(logoBase64 ? {
-      header: (currentPage: number) => currentPage === 1 ? ({
-        image: logoBase64,
-        width: LOGO_W,
-        alignment: "center",
-        margin: [0, 16, 0, 0],
-      }) : null,
-    } : {}),
-
     content: [
+      // Logo as first content item — only on page 1, naturally
+      ...(logoBase64 ? [{
+        image: logoBase64,
+        fit: [PAGE_W - 100, LOGO_H],
+        alignment: "center",
+        margin: [0, 0, 0, 20],
+      }] : []),
       {
         columns: [
           { stack: leftCol, width: "*" },
@@ -231,7 +289,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
       {
         text: reportTitle,
         bold: true,
-        fontSize: 11,
+        fontSize: 13,
         alignment: "center",
         decoration: "underline",
         margin: [0, 0, 0, 12],
@@ -242,9 +300,67 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
         : []),
     ],
 
+    footer: (currentPage: number, pageCount: number) => {
+      const hasSignature = !!(signatureFont && SIGNATURE_FONT_URLS[signatureFont]);
+
+      // On non-last pages when signature is active, push footer to bottom of the larger area
+      const redFooterMarginTop = hasSignature && currentPage !== pageCount ? 105 : 8;
+      const redFooter = {
+        text: [
+          { text: `Dr(a). ${vetName}`, color: "#b91c1c", bold: true },
+          { text: `  ·  ${crmvLabel}`, color: "#b91c1c" },
+        ],
+        alignment: "center",
+        fontSize: 9,
+        margin: [50, redFooterMarginTop, 50, 0],
+      };
+
+      if (hasSignature && currentPage === pageCount) {
+        return {
+          stack: [
+            {
+              text: vetName,
+              font: "SignatureFont",
+              fontSize: 28,
+              lineHeight: 1.4,
+              alignment: "center",
+              margin: [50, 4, 50, 0],
+            },
+            {
+              canvas: [{ type: "line", x1: 198, y1: 0, x2: 397, y2: 0, lineWidth: 0.5, lineColor: "#9ca3af" }],
+              margin: [0, -20, 0, 2],
+            },
+            {
+              text: `Dr(a). ${vetName}`,
+              fontSize: 9,
+              alignment: "center",
+              color: "#6b7280",
+              margin: [50, 2, 50, 0],
+            },
+            {
+              text: "Médico(a) Veterinário(a)",
+              fontSize: 9,
+              alignment: "center",
+              color: "#6b7280",
+              margin: [50, 0, 50, 0],
+            },
+            {
+              text: crmvLabel,
+              fontSize: 9,
+              alignment: "center",
+              color: "#6b7280",
+              margin: [50, 0, 50, 2],
+            },
+          ],
+        };
+      }
+
+      return { columns: [redFooter] };
+    },
+
     defaultStyle: {
       font: "Roboto",
-      fontSize: 10,
+      fontSize: 12,
       lineHeight: 1.35,
     },
   };
