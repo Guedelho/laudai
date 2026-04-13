@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { getUserId } from "@/lib/gemini";
+import { createAdmin } from "@/lib/supabase/admin";
 import sharp from "sharp";
 
 const BUCKET = "laudo-images";
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
-const MAX_FILES = 10;
+const MAX_FILES = 30;
 
 const SHARP_FORMAT_TO_MIME: Record<string, string> = {
   jpeg: "image/jpeg",
   png: "image/png",
   webp: "image/webp",
-  gif: "image/gif",
-  avif: "image/avif",
-  heif: "image/heif",
 };
 const ALLOWED_FORMATS = new Set(["jpeg", "png", "webp"]);
 
@@ -27,21 +24,13 @@ async function detectImageFormat(buf: Buffer): Promise<{ mime: string; ext: stri
   }
 }
 
-function getAdmin() {
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
-
-async function ensureBucket(admin: ReturnType<typeof getAdmin>) {
+async function ensureBucket(admin: ReturnType<typeof createAdmin>) {
   const { error } = await admin.storage.createBucket(BUCKET, { public: false });
   // Ignore "already exists" error
   if (error && !error.message.includes("already exists")) throw error;
 }
 
-async function getSignedUrl(admin: ReturnType<typeof getAdmin>, storagePath: string): Promise<string | null> {
+async function getSignedUrl(admin: ReturnType<typeof createAdmin>, storagePath: string): Promise<string | null> {
   const { data, error } = await admin.storage.from(BUCKET).createSignedUrl(storagePath, 7200);
   if (error || !data) return null;
   return data.signedUrl;
@@ -55,7 +44,7 @@ export async function GET(
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const admin = getAdmin();
+  const admin = createAdmin();
 
   const { data: images, error } = await admin
     .from("laudo_images")
@@ -87,7 +76,7 @@ export async function POST(
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const admin = getAdmin();
+  const admin = createAdmin();
   await ensureBucket(admin);
 
   // Verify laudo belongs to user

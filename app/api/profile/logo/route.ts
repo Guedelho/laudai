@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { getUserId } from "@/lib/gemini";
+import { createAdmin } from "@/lib/supabase/admin";
 
 const BUCKET = "profile-logos";
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png"];
-
-function admin() {
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
 
 export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
@@ -28,7 +20,7 @@ export async function POST(req: NextRequest) {
   const ext = file.type.split("/")[1].replace("jpeg", "jpg");
   const storagePath = `${userId}/logo.${ext}`;
 
-  const { error: uploadError } = await admin()
+  const { error: uploadError } = await createAdmin()
     .storage
     .from(BUCKET)
     .upload(storagePath, await file.arrayBuffer(), {
@@ -41,9 +33,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao enviar logo." }, { status: 500 });
   }
 
-  const { data: { publicUrl } } = admin().storage.from(BUCKET).getPublicUrl(storagePath);
+  const { data: { publicUrl } } = createAdmin().storage.from(BUCKET).getPublicUrl(storagePath);
 
-  const { error: updateError } = await admin()
+  const { error: updateError } = await createAdmin()
     .from("profiles")
     .update({ logo_url: publicUrl })
     .eq("id", userId);

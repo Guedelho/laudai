@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { getUserId } from "@/lib/gemini";
-
-function admin() {
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
+import { createAdmin } from "@/lib/supabase/admin";
 
 export async function GET(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data } = await admin().from("profiles").select("*").eq("id", userId).single();
+  const { data } = await createAdmin().from("profiles").select("*").eq("id", userId).single();
   return NextResponse.json(data ?? {});
 }
 
@@ -25,7 +17,7 @@ export async function PUT(req: NextRequest) {
   const body = await req.json();
   const { full_name, cpf, signature_font } = body;
 
-  const { data, error } = await admin()
+  const { data, error } = await createAdmin()
     .from("profiles")
     .upsert({ id: userId, full_name, cpf, signature_font }, { onConflict: "id" })
     .select()

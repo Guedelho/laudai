@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { getUserId, getProfile } from "@/lib/gemini";
+import { createAdmin } from "@/lib/supabase/admin";
 import { parseLaudoContent } from "@/lib/parseLaudo";
 import { generatePdfBuffer, PdfData } from "@/lib/generatePdf";
 import { Specialty } from "@/types";
@@ -48,11 +48,7 @@ export async function GET(
 
   const [profile, admin] = [
     await getProfile(userId),
-    createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    ),
+    createAdmin(),
   ];
 
   const { data: laudo } = await admin

@@ -7,7 +7,7 @@ export default function DownloadPDFButton({ laudoId }: { laudoId: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleDownload() {
+  async function handlePrint() {
     setLoading(true);
     setError("");
     try {
@@ -20,16 +20,9 @@ export default function DownloadPDFButton({ laudoId }: { laudoId: string }) {
 
       if (!res.ok) throw new Error("Erro ao gerar PDF");
 
-      const disposition = res.headers.get("Content-Disposition") ?? "";
-      const filename = disposition.match(/filename="([^"]+)"/)?.[1] ?? "laudo.pdf";
-
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
+      window.open(url, "_blank");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar PDF");
     } finally {
@@ -40,11 +33,11 @@ export default function DownloadPDFButton({ laudoId }: { laudoId: string }) {
   return (
     <div className="print:hidden">
       <button
-        onClick={handleDownload}
+        onClick={handlePrint}
         disabled={loading}
         className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:border-gray-400 disabled:opacity-50"
       >
-        {loading ? "Gerando PDF..." : "Baixar PDF"}
+        {loading ? "Gerando PDF..." : "Imprimir"}
       </button>
       {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
     </div>

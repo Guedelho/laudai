@@ -74,6 +74,12 @@ export interface Laudo {
   pet_id?: string;
 }
 
+export interface LaudoImage {
+  id: string;
+  file_name: string;
+  url: string;
+}
+
 export interface GenerateRequest {
   specialty: Specialty;
   rawInput: string;

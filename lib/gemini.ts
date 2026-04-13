@@ -1,40 +1,9 @@
-import { NextRequest } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { createClient as createServerClient } from "@/lib/supabase/server";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { TEMPLATES, DEFAULTS } from "@/lib/templates";
-import { Profile, Specialty } from "@/types";
-export { parseLaudoContent } from "@/lib/parseLaudo";
+import { extractJson } from "@/lib/parseLaudo";
+import { Specialty } from "@/types";
 
-export async function getUserId(req: NextRequest): Promise<string | null> {
-  const authHeader = req.headers.get("Authorization");
-  if (authHeader?.startsWith("Bearer ")) {
-    const admin = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-    const { data: { user } } = await admin.auth.getUser(authHeader.slice(7));
-    if (user?.id) return user.id;
-  }
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user?.id ?? null;
-}
-
-export async function getProfile(userId: string): Promise<Profile | null> {
-  const admin = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-  const { data } = await admin
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .single();
-  return data ?? null;
-}
+export { getUserId, getProfile } from "@/lib/auth";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
@@ -48,17 +17,6 @@ interface GenerateParams {
   ownerName: string;
   veterinarian: string;
   crmv: string;
-}
-
-function extractJson(text: string): string {
-  // Strip markdown code fences if present
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (fenced) return fenced[1].trim();
-  // Find first { to last }
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start !== -1 && end !== -1 && end > start) return text.slice(start, end + 1);
-  return text.trim();
 }
 
 export async function generateLaudo(params: GenerateParams): Promise<string> {

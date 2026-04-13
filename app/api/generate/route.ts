@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { generateLaudo, getUserId, getProfile } from "@/lib/gemini";
+import { createAdmin } from "@/lib/supabase/admin";
 import { GenerateRequest } from "@/types";
 
 export async function POST(req: NextRequest) {
@@ -10,11 +10,7 @@ export async function POST(req: NextRequest) {
   const profile = await getProfile(userId);
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado. Complete seu cadastro." }, { status: 400 });
 
-  const supabase = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
+  const supabase = createAdmin();
 
   const body: GenerateRequest = await req.json();
   const { specialty, rawInput, patientName, species, breed, age, sex, neutered, ownerName, clinicName, responsibleVet, petId } = body;

@@ -249,9 +249,11 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
       });
     } else {
       imageContent.push({
-        image: imageBase64List[i],
-        fit: [400, 400],
-        alignment: "center",
+        columns: [
+          { image: imageBase64List[i], fit: [239, 300] },
+          { text: "", width: 16 },
+          { text: "", width: 239 },
+        ],
         margin: [0, 0, 0, 16],
       });
     }

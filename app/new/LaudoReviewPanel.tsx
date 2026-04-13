@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ParsedLaudo } from "@/types";
+import { ParsedLaudo, LaudoImage } from "@/types";
 import { createClient } from "@/lib/supabase/client";
 import { SPECIALTY_LABELS } from "@/lib/templates";
 
@@ -18,12 +18,6 @@ interface ReviewFields {
   clinicName: string;
   responsibleVet: string;
   createdAt: string;
-}
-
-interface LaudoImage {
-  id: string;
-  file_name: string;
-  url: string;
 }
 
 interface Props {
@@ -117,7 +111,7 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
     }
   }
 
-  async function handlePdf(download: boolean) {
+  async function handlePrint() {
     setPdfLoading(true);
     setError("");
     try {
@@ -127,18 +121,7 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
       if (!res.ok) throw new Error("Erro ao gerar PDF.");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      if (download) {
-        const disposition = res.headers.get("Content-Disposition") ?? "";
-        const filename = disposition.match(/filename="(.+)"/)?.[1] ?? "laudo.pdf";
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
-      } else {
-        const w = window.open(url);
-        if (w) w.addEventListener("load", () => { w.print(); URL.revokeObjectURL(url); });
-      }
+      window.open(url, "_blank");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar PDF.");
     } finally {
@@ -219,18 +202,11 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
                 Editar laudo
               </button>
               <button
-                onClick={() => handlePdf(false)}
+                onClick={handlePrint}
                 disabled={pdfLoading}
                 className="text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg border border-gray-300 disabled:opacity-50"
               >
                 {pdfLoading ? "Aguarde..." : "Imprimir"}
-              </button>
-              <button
-                onClick={() => handlePdf(true)}
-                disabled={pdfLoading}
-                className="text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg border border-gray-300 disabled:opacity-50"
-              >
-                {pdfLoading ? "Aguarde..." : "Download PDF"}
               </button>
               <button
                 onClick={handleSaveAndClose}

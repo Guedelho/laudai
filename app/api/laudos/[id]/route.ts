@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { getUserId } from "@/lib/gemini";
+import { createAdmin } from "@/lib/supabase/admin";
 import { ParsedLaudo } from "@/types";
-
-function getAdmin() {
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
 
 export async function PATCH(
   req: NextRequest,
@@ -20,7 +12,7 @@ export async function PATCH(
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const admin = getAdmin();
+  const admin = createAdmin();
 
   const { data: existing } = await admin
     .from("laudos")

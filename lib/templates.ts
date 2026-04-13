@@ -54,7 +54,7 @@ REGRAS OBRIGATÓRIAS:
 
 3. Impressão diagnóstica e Recomendação → NÃO coloque inline após cada órgão. Todas as impressões e recomendações vão APENAS na seção CONCLUSÃO ao final do laudo, agrupadas.
 
-4. Se o veterinário informar medidas, substitua os "x cm" ou "0,00" pelos valores reais.
+4. Medidas no texto padrão ("x cm", "0,00", "0,00 x 0,00 x 0,00cm", etc.) são placeholders. Se o veterinário informar o valor real, substitua pelo valor informado. Se o veterinário NÃO mencionar medidas, remova completamente a parte da medida do texto gerado — nunca escreva "x cm" ou "0,00" no laudo.
 
 ESTRUTURA DA CONCLUSÃO (obrigatória quando houver alterações):
 IMPRESSÃO DIAGNÓSTICA:

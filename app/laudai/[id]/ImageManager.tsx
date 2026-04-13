@@ -1,10 +1,5 @@
 import Image from "next/image";
-
-interface LaudoImage {
-  id: string;
-  file_name: string;
-  url: string;
-}
+import { LaudoImage } from "@/types";
 
 export default function ImageManager({ initialImages }: { initialImages: LaudoImage[] }) {
   if (!initialImages.length) return null;
