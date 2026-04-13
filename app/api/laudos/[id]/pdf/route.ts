@@ -67,21 +67,6 @@ export async function GET(
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
 
-  // Fetch images as base64 for pdfmake — auto-converted to JPEG if not JPEG/PNG
-  const imageBase64List: string[] = [];
-  let imageFailures = 0;
-  for (const img of rawImages ?? []) {
-    try {
-      const { data } = await admin.storage.from(BUCKET).createSignedUrl(img.storage_path, 60);
-      if (!data) { imageFailures++; continue; }
-      const b64 = await fetchAsBase64(data.signedUrl);
-      imageBase64List.push(b64);
-    } catch (err) {
-      console.error("Failed to load laudo image:", img.storage_path, err);
-      imageFailures++;
-    }
-  }
-
   const specialty = laudo.specialty as Specialty;
   const createdAt = new Date(laudo.created_at);
   const date = createdAt.toLocaleDateString("pt-BR");
@@ -90,6 +75,23 @@ export async function GET(
     String(createdAt.getMonth() + 1).padStart(2, "0"),
     String(createdAt.getFullYear()).slice(2),
   ].join(".");
+
+  // Fetch images and logo in parallel
+  const imageResults = await Promise.all(
+    (rawImages ?? []).map(async (img) => {
+      try {
+        const { data } = await admin.storage.from(BUCKET).createSignedUrl(img.storage_path, 60);
+        if (!data) return null;
+        return await fetchAsBase64(data.signedUrl);
+      } catch (err) {
+        console.error("Failed to load laudo image:", img.storage_path, err);
+        return null;
+      }
+    })
+  );
+
+  const imageBase64List = imageResults.filter((b): b is string => b !== null);
+  const imageFailures = imageResults.filter((b) => b === null).length;
 
   let logoBase64: string | undefined;
   if (profile?.logo_url) {

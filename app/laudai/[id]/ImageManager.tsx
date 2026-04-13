@@ -15,6 +15,7 @@ export default function ImageManager({ initialImages }: { initialImages: LaudoIm
             alt={img.file_name}
             width={600}
             height={400}
+            sizes="(max-width: 768px) 100vw, 50vw"
             className="w-full rounded-lg border border-gray-200 object-contain bg-black"
           />
         ))}

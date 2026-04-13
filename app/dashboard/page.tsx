@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { SPECIALTY_LABELS } from "@/lib/templates";
-import { Laudo } from "@/types";
+import { Specialty } from "@/types";
 import LogoutButton from "@/components/LogoutButton";
 
 export default async function DashboardPage() {
@@ -13,7 +13,7 @@ export default async function DashboardPage() {
 
   const { data: laudos } = await supabase
     .from("laudos")
-    .select("*")
+    .select("id, patient_name, owner_name, specialty, created_at, updated_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(20);
@@ -55,7 +55,7 @@ export default async function DashboardPage() {
         )}
 
         <div className="space-y-3">
-          {laudos?.map((laudo: Laudo) => (
+          {laudos?.map((laudo: { id: string; patient_name: string; owner_name: string; specialty: Specialty; created_at: string; updated_at?: string }) => (
             <div
               key={laudo.id}
               className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between"
