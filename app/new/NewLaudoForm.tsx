@@ -240,7 +240,11 @@ export default function NewLaudoPage() {
         const authHeader: Record<string, string> = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
         const formData = new FormData();
         selectedFiles.forEach((f) => formData.append("images", f));
-        await fetch(`/api/laudos/${laudoId}/images`, { method: "POST", headers: authHeader, body: formData });
+        const imgRes = await fetch(`/api/laudos/${laudoId}/images`, { method: "POST", headers: authHeader, body: formData });
+        if (!imgRes.ok) {
+          const imgData = await imgRes.json().catch(() => ({}));
+          throw new Error(imgData.error || "Erro ao enviar imagens.");
+        }
       }
 
       // Switch to review phase

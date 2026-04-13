@@ -1,11 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { getUserId } from "@/lib/gemini";
+import sharp from "sharp";
 
 const BUCKET = "laudo-images";
-const ALLOWED_TYPES = ["image/jpeg", "image/png"];
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const MAX_FILES = 10;
+
+const SHARP_FORMAT_TO_MIME: Record<string, string> = {
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  avif: "image/avif",
+  heif: "image/heif",
+};
+const ALLOWED_FORMATS = new Set(["jpeg", "png", "webp"]);
+
+async function detectImageFormat(buf: Buffer): Promise<{ mime: string; ext: string } | null> {
+  try {
+    const { format } = await sharp(buf).metadata();
+    if (!format || !ALLOWED_FORMATS.has(format)) return null;
+    return { mime: SHARP_FORMAT_TO_MIME[format] ?? "image/jpeg", ext: format === "jpeg" ? "jpg" : format };
+  } catch {
+    return null;
+  }
+}
 
 function getAdmin() {
   return createAdminClient(
@@ -87,21 +107,24 @@ export async function POST(
 
   const results = [];
   for (const file of files) {
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: `Tipo de arquivo não permitido: ${file.type}` }, { status: 400 });
-    }
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json({ error: `Arquivo muito grande (máx 20MB): ${file.name}` }, { status: 400 });
     }
 
-    const ext = file.type === "image/png" ? "png" : "jpg";
+    const arrayBuffer = await file.arrayBuffer();
+    const buf = Buffer.from(arrayBuffer);
+    const detected = await detectImageFormat(buf);
+    if (!detected) {
+      return NextResponse.json({ error: `Formato não suportado: ${file.name}. Use JPEG, PNG ou WebP.` }, { status: 400 });
+    }
+    const { mime, ext } = detected;
+
     const imageId = crypto.randomUUID();
     const storagePath = `${userId}/${id}/${imageId}.${ext}`;
 
-    const arrayBuffer = await file.arrayBuffer();
     const { error: uploadError } = await admin.storage
       .from(BUCKET)
-      .upload(storagePath, arrayBuffer, { contentType: file.type });
+      .upload(storagePath, buf, { contentType: mime });
 
     if (uploadError) {
       console.error("Image upload error:", uploadError);
