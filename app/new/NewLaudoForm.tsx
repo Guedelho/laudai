@@ -515,8 +515,11 @@ export default function NewLaudoPage() {
             disabled={generating}
             className="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
           >
-            {generating ? generatingStatus : "Gerar Laudo"}
+            {generating ? "Aguarde..." : "Gerar Laudo"}
           </button>
+          {generating && (
+            <p className="text-center text-sm text-gray-500 animate-pulse">{generatingStatus}</p>
+          )}
         </form>
       </main>
     </div>

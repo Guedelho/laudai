@@ -114,6 +114,8 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
   async function handlePrint() {
     setPdfLoading(true);
     setError("");
+    // Open tab synchronously to preserve user gesture — browsers block window.open after await
+    const win = window.open("", "_blank");
     try {
       await saveToDb(editedParsed, editedFields);
       const authHeader = await getAuthHeader();
@@ -121,8 +123,9 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
       if (!res.ok) throw new Error("Erro ao gerar PDF.");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
+      if (win) win.location.href = url;
     } catch (err) {
+      win?.close();
       setError(err instanceof Error ? err.message : "Erro ao gerar PDF.");
     } finally {
       setPdfLoading(false);
