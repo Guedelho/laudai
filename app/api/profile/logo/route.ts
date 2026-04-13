@@ -29,25 +29,21 @@ export async function POST(req: NextRequest) {
   const ext = format === "jpeg" ? "jpg" : format;
   const mime = format === "jpeg" ? "image/jpeg" : "image/png";
   const storagePath = `${userId}/logo.${ext}`;
+  const admin = createAdmin();
 
-  const { error: uploadError } = await createAdmin()
-    .storage
+  const { error: uploadError } = await admin.storage
     .from(BUCKET)
-    .upload(storagePath, buf, {
-      contentType: mime,
-      upsert: true,
-    });
+    .upload(storagePath, buf, { contentType: mime, upsert: true });
 
   if (uploadError) {
     console.error("Logo upload error:", uploadError);
     return NextResponse.json({ error: "Erro ao enviar logo." }, { status: 500 });
   }
 
-  const { data: { publicUrl } } = createAdmin().storage.from(BUCKET).getPublicUrl(storagePath);
-
-  const { error: updateError } = await createAdmin()
+  // Store the storage path (not a public URL) — bucket is private
+  const { error: updateError } = await admin
     .from("profiles")
-    .update({ logo_url: publicUrl })
+    .update({ logo_url: storagePath })
     .eq("id", userId);
 
   if (updateError) {
@@ -55,5 +51,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao salvar logo no perfil." }, { status: 500 });
   }
 
-  return NextResponse.json({ logo_url: publicUrl });
+  // Return a signed URL for immediate client display
+  const { data: signed } = await admin.storage.from(BUCKET).createSignedUrl(storagePath, 7200);
+  return NextResponse.json({ logo_url: signed?.signedUrl ?? "" });
 }

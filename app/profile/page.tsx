@@ -18,6 +18,15 @@ export default async function ProfilePage() {
     .eq("id", user.id)
     .single();
 
+  // logo_url stores a storage path (private bucket) — generate signed URL for display
+  let initialLogoUrl = "";
+  if (profile?.logo_url) {
+    const { data: signed } = await admin.storage
+      .from("profile-logos")
+      .createSignedUrl(profile.logo_url, 7200);
+    initialLogoUrl = signed?.signedUrl ?? "";
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
@@ -33,7 +42,7 @@ export default async function ProfilePage() {
           initialFullName={profile?.full_name ?? ""}
           initialCrmv={profile?.crmv ?? ""}
           initialCpf={profile?.cpf ?? ""}
-          initialLogoUrl={profile?.logo_url ?? ""}
+          initialLogoUrl={initialLogoUrl}
           initialSignatureFont={profile?.signature_font ?? ""}
           initialCrmvState={profile?.crmv_state ?? ""}
           initialEmail={user.email ?? ""}

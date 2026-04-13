@@ -96,7 +96,12 @@ export async function GET(
   let logoBase64: string | undefined;
   if (profile?.logo_url) {
     try {
-      logoBase64 = await fetchAsBase64(profile.logo_url);
+      const { data: logoSigned } = await admin.storage
+        .from("profile-logos")
+        .createSignedUrl(profile.logo_url, 60);
+      if (logoSigned?.signedUrl) {
+        logoBase64 = await fetchAsBase64(logoSigned.signedUrl);
+      }
     } catch (err) {
       console.error("Failed to fetch user logo:", err);
     }

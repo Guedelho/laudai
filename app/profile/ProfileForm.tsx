@@ -75,7 +75,6 @@ export default function ProfileForm({
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Erro ao enviar logo");
       setLogoUrl(json.logo_url);
-      router.refresh();
     } catch (err) {
       setLogoError(err instanceof Error ? err.message : "Erro ao enviar logo");
     } finally {
@@ -155,7 +154,7 @@ export default function ProfileForm({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png"
+            accept="image/*"
             className="hidden"
             onChange={handleLogoChange}
           />
