@@ -33,6 +33,7 @@ export default function NewLaudoPage() {
   const [rawInput, setRawInput] = useState("");
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generatingStatus, setGeneratingStatus] = useState("Gerando laudo...");
   const [error, setError] = useState("");
@@ -66,6 +67,7 @@ export default function NewLaudoPage() {
       ]);
       if (petsRes.ok) setPets((await petsRes.json()).pets ?? []);
       if (clinicsRes.ok) setClinics((await clinicsRes.json()).clinics ?? []);
+      setLoadingData(false);
     }
     loadData();
   }, []);
@@ -329,12 +331,16 @@ export default function NewLaudoPage() {
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Selecionar clínica cadastrada</label>
-              <select value={selectedClinicId} onChange={(e) => handleClinicSelect(e.target.value)} className={inputCls}>
-                <option value="">— Nova clínica —</option>
-                {clinics.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+              {loadingData ? (
+                <div className="h-9 bg-gray-100 rounded-lg animate-pulse" />
+              ) : (
+                <select value={selectedClinicId} onChange={(e) => handleClinicSelect(e.target.value)} className={inputCls}>
+                  <option value="">— Nova clínica —</option>
+                  {clinics.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -386,14 +392,18 @@ export default function NewLaudoPage() {
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Selecionar paciente cadastrado</label>
-              <select value={selectedPetId} onChange={(e) => handlePetSelect(e.target.value)} className={inputCls}>
-                <option value="">— Novo paciente —</option>
-                {pets.map((pet) => (
-                  <option key={pet.id} value={pet.id}>
-                    {pet.name} ({pet.species}) · {pet.owner_name}
-                  </option>
-                ))}
-              </select>
+              {loadingData ? (
+                <div className="h-9 bg-gray-100 rounded-lg animate-pulse" />
+              ) : (
+                <select value={selectedPetId} onChange={(e) => handlePetSelect(e.target.value)} className={inputCls}>
+                  <option value="">— Novo paciente —</option>
+                  {pets.map((pet) => (
+                    <option key={pet.id} value={pet.id}>
+                      {pet.name} ({pet.species}) · {pet.owner_name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
