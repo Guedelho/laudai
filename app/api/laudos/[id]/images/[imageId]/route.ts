@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getUserId } from "@/lib/gemini";
 import { createAdmin } from "@/lib/supabase/admin";
 
@@ -32,5 +33,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Erro ao excluir imagem." }, { status: 500 });
   }
 
+  revalidateTag(`laudo-${id}`, "default");
   return NextResponse.json({ ok: true });
 }

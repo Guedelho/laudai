@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getUserId } from "@/lib/gemini";
 import { createAdmin } from "@/lib/supabase/admin";
 import sharp from "sharp";
@@ -147,6 +148,7 @@ export async function POST(
       })
     );
 
+    revalidateTag(`laudo-${id}`, "default");
     return NextResponse.json({ images: results });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erro ao processar imagens.";

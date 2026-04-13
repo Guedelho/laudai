@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/gemini";
 import { createAdmin } from "@/lib/supabase/admin";
+import sharp from "sharp";
 
 const BUCKET = "profile-logos";
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
-const ALLOWED_TYPES = ["image/jpeg", "image/png"];
+const ALLOWED_FORMATS = new Set(["jpeg", "png"]);
 
 export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
@@ -14,17 +15,26 @@ export async function POST(req: NextRequest) {
   const file = formData.get("logo") as File | null;
 
   if (!file) return NextResponse.json({ error: "Arquivo não enviado." }, { status: 400 });
-  if (!ALLOWED_TYPES.includes(file.type)) return NextResponse.json({ error: "Formato inválido. Use JPEG, PNG ou WebP." }, { status: 400 });
   if (file.size > MAX_SIZE) return NextResponse.json({ error: "Arquivo muito grande. Máximo 5 MB." }, { status: 400 });
 
-  const ext = file.type.split("/")[1].replace("jpeg", "jpg");
+  const buf = Buffer.from(await file.arrayBuffer());
+  let format: string | undefined;
+  try {
+    ({ format } = await sharp(buf).metadata());
+  } catch { /* handled below */ }
+  if (!format || !ALLOWED_FORMATS.has(format)) {
+    return NextResponse.json({ error: "Formato inválido. Use JPEG ou PNG." }, { status: 400 });
+  }
+
+  const ext = format === "jpeg" ? "jpg" : format;
+  const mime = format === "jpeg" ? "image/jpeg" : "image/png";
   const storagePath = `${userId}/logo.${ext}`;
 
   const { error: uploadError } = await createAdmin()
     .storage
     .from(BUCKET)
-    .upload(storagePath, await file.arrayBuffer(), {
-      contentType: file.type,
+    .upload(storagePath, buf, {
+      contentType: mime,
       upsert: true,
     });
 
