@@ -34,11 +34,20 @@ export default function ProfileForm({
   const crmvState = initialCrmvState;
   const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
   const [signatureFont, setSignatureFont] = useState(initialSignatureFont);
+  const logoRefreshRef = useRef(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState("");
+
+  // When router.refresh() completes after logo upload, sync the new signed URL from the server
+  useEffect(() => {
+    if (logoRefreshRef.current) {
+      setLogoUrl(initialLogoUrl);
+      logoRefreshRef.current = false;
+    }
+  }, [initialLogoUrl]);
 
   useEffect(() => {
     const id = "google-signature-fonts";
@@ -74,7 +83,10 @@ export default function ProfileForm({
 
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Erro ao enviar logo");
-      setLogoUrl(json.logo_url);
+      // Show immediately from the returned signed URL; also refresh server state for a fresh URL
+      if (json.logo_url) setLogoUrl(json.logo_url);
+      logoRefreshRef.current = true;
+      router.refresh();
     } catch (err) {
       setLogoError(err instanceof Error ? err.message : "Erro ao enviar logo");
     } finally {
