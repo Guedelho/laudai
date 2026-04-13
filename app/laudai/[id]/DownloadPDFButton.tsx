@@ -1,33 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 export default function DownloadPDFButton({ laudoId }: { laudoId: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handlePrint() {
+  function handlePrint() {
     setLoading(true);
     setError("");
-    try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      const res = await fetch(`/api/laudos/${laudoId}/pdf`, {
-        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
-      });
-
-      if (!res.ok) throw new Error("Erro ao gerar PDF");
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao gerar PDF");
-    } finally {
-      setLoading(false);
-    }
+    window.location.href = `/api/laudos/${laudoId}/pdf`;
   }
 
   return (
