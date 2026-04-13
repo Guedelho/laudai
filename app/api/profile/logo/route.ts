@@ -20,15 +20,13 @@ export async function GET(req: NextRequest) {
 
   if (!profile?.logo_url) return new NextResponse(null, { status: 404 });
 
-  const { data: blob, error } = await admin.storage.from(BUCKET).download(profile.logo_url);
-  if (error || !blob) return new NextResponse(null, { status: 404 });
+  const { data, error } = await admin.storage
+    .from(BUCKET)
+    .createSignedUrl(profile.logo_url, 300);
 
-  const buf = Buffer.from(await blob.arrayBuffer());
-  const contentType = blob.type || "image/jpeg";
+  if (error || !data?.signedUrl) return new NextResponse(null, { status: 404 });
 
-  return new NextResponse(buf, {
-    headers: { "Content-Type": contentType, "Cache-Control": "no-store" },
-  });
+  return NextResponse.redirect(data.signedUrl);
 }
 
 export async function POST(req: NextRequest) {
