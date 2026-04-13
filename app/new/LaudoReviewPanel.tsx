@@ -114,16 +114,12 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
   async function handlePrint() {
     setPdfLoading(true);
     setError("");
-    // Open tab synchronously to preserve user gesture — browsers block window.open after await
-    const win = window.open("", "_blank");
     try {
       await saveToDb(editedParsed, editedFields);
-      // Navigate directly to the API URL — cookies handle auth, no blob needed
-      if (win) win.location.href = `/api/laudos/${laudoId}/pdf`;
+      // Navigate current tab to PDF — no popup needed, back button returns to laudo
+      window.location.href = `/api/laudos/${laudoId}/pdf`;
     } catch (err) {
-      win?.close();
       setError(err instanceof Error ? err.message : "Erro ao gerar PDF.");
-    } finally {
       setPdfLoading(false);
     }
   }
