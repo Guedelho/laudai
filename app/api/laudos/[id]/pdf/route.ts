@@ -136,7 +136,7 @@ export async function GET(
 
   const responseHeaders: Record<string, string> = {
     "Content-Type": "application/pdf",
-    "Content-Disposition": `attachment; filename="${filename}"`,
+    "Content-Disposition": `inline; filename="${filename}"`,
     "Cache-Control": "no-store",
   };
   if (imageFailures > 0) responseHeaders["X-Image-Failures"] = String(imageFailures);

@@ -118,12 +118,8 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
     const win = window.open("", "_blank");
     try {
       await saveToDb(editedParsed, editedFields);
-      const authHeader = await getAuthHeader();
-      const res = await fetch(`/api/laudos/${laudoId}/pdf`, { headers: authHeader });
-      if (!res.ok) throw new Error("Erro ao gerar PDF.");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      if (win) win.location.href = url;
+      // Navigate directly to the API URL — cookies handle auth, no blob needed
+      if (win) win.location.href = `/api/laudos/${laudoId}/pdf`;
     } catch (err) {
       win?.close();
       setError(err instanceof Error ? err.message : "Erro ao gerar PDF.");
