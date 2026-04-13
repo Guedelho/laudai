@@ -7,6 +7,30 @@ const BUCKET = "profile-logos";
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_FORMATS = new Set(["jpeg", "png"]);
 
+export async function GET(req: NextRequest) {
+  const userId = await getUserId(req);
+  if (!userId) return new NextResponse(null, { status: 401 });
+
+  const admin = createAdmin();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("logo_url")
+    .eq("id", userId)
+    .single();
+
+  if (!profile?.logo_url) return new NextResponse(null, { status: 404 });
+
+  const { data: blob, error } = await admin.storage.from(BUCKET).download(profile.logo_url);
+  if (error || !blob) return new NextResponse(null, { status: 404 });
+
+  const buf = Buffer.from(await blob.arrayBuffer());
+  const contentType = blob.type || "image/jpeg";
+
+  return new NextResponse(buf, {
+    headers: { "Content-Type": contentType, "Cache-Control": "no-store" },
+  });
+}
+
 export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -51,7 +75,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao salvar logo no perfil." }, { status: 500 });
   }
 
-  // Return a signed URL for immediate client display
-  const { data: signed } = await admin.storage.from(BUCKET).createSignedUrl(storagePath, 7200);
-  return NextResponse.json({ logo_url: signed?.signedUrl ?? "" });
+  return NextResponse.json({ ok: true });
 }

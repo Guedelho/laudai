@@ -15,7 +15,7 @@ export default function ProfileForm({
   initialFullName,
   initialCrmv,
   initialCpf,
-  initialLogoUrl,
+  hasLogo,
   initialSignatureFont,
   initialCrmvState,
   initialEmail,
@@ -23,7 +23,7 @@ export default function ProfileForm({
   initialFullName: string;
   initialCrmv: string;
   initialCpf: string;
-  initialLogoUrl: string;
+  hasLogo: boolean;
   initialSignatureFont: string;
   initialCrmvState: string;
   initialEmail: string;
@@ -32,22 +32,13 @@ export default function ProfileForm({
   const [cpf, setCpf] = useState(initialCpf);
   const crmv = initialCrmv;
   const crmvState = initialCrmvState;
-  const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
+  const [logoVersion, setLogoVersion] = useState(() => hasLogo ? Date.now() : 0);
   const [signatureFont, setSignatureFont] = useState(initialSignatureFont);
-  const logoRefreshRef = useRef(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState("");
-
-  // When router.refresh() completes after logo upload, sync the new signed URL from the server
-  useEffect(() => {
-    if (logoRefreshRef.current) {
-      setLogoUrl(initialLogoUrl);
-      logoRefreshRef.current = false;
-    }
-  }, [initialLogoUrl]);
 
   useEffect(() => {
     const id = "google-signature-fonts";
@@ -83,10 +74,8 @@ export default function ProfileForm({
 
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Erro ao enviar logo");
-      // Show immediately from the returned signed URL; also refresh server state for a fresh URL
-      if (json.logo_url) setLogoUrl(json.logo_url);
-      logoRefreshRef.current = true;
-      router.refresh();
+      // Increment version to cache-bust the proxy URL
+      setLogoVersion(Date.now());
     } catch (err) {
       setLogoError(err instanceof Error ? err.message : "Erro ao enviar logo");
     } finally {
@@ -143,13 +132,15 @@ export default function ProfileForm({
     }
   }
 
+  const logoSrc = logoVersion ? `/api/profile/logo?v=${logoVersion}` : null;
+
   return (
     <div className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Logo do laudo</label>
         <div className="flex flex-col gap-3">
-          {logoUrl ? (
-            <img src={logoUrl} alt="Logo" className="max-h-48 w-full object-contain rounded border border-gray-200 bg-gray-50 p-2" />
+          {logoSrc ? (
+            <img src={logoSrc} alt="Logo" className="max-h-48 w-full object-contain rounded border border-gray-200 bg-gray-50 p-2" />
           ) : (
             <div className="h-48 w-full rounded border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-sm text-gray-400">
               Sem logo
@@ -161,7 +152,7 @@ export default function ProfileForm({
             disabled={logoUploading}
             className="text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50 text-left"
           >
-            {logoUploading ? "Enviando..." : logoUrl ? "Alterar" : "Enviar logo"}
+            {logoUploading ? "Enviando..." : logoSrc ? "Alterar" : "Enviar logo"}
           </button>
           <input
             ref={fileInputRef}
