@@ -210,7 +210,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
   // A4 dimensions in points: 595.28 x 841.89
   const PAGE_W = 595.28;
   const LOGO_W = 180;
-  const LOGO_H = 200;
+  const LOGO_H = 150;
 
   const row = (label: string, value: string) => ({
     text: [{ text: label, bold: true }, value],
