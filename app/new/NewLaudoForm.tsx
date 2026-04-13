@@ -34,6 +34,7 @@ export default function NewLaudoPage() {
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generatingStatus, setGeneratingStatus] = useState("Gerando laudo...");
   const [error, setError] = useState("");
 
   // Images (selected before submit)
@@ -179,6 +180,7 @@ export default function NewLaudoPage() {
     if (!ownerName.trim()) { setError("Nome do responsável é obrigatório."); return; }
     if (!rawInput.trim()) { setError("Achados do exame são obrigatórios."); return; }
     setGenerating(true);
+    setGeneratingStatus("Gerando laudo...");
 
     try {
       const headers = await getAuthHeaders();
@@ -228,10 +230,37 @@ export default function NewLaudoPage() {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Erro ao gerar laudo.");
+      }
 
-      const laudoId = data.laudo.id;
+      // Consume SSE stream
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let laudoPayload: { id: string; generated_content: string; created_at: string } | null = null;
+
+      outer: while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() ?? "";
+        for (const part of parts) {
+          const line = part.trim();
+          if (!line.startsWith("data: ")) continue;
+          const event = JSON.parse(line.slice(6));
+          if (event.status === "generating") setGeneratingStatus("Gerando laudo...");
+          else if (event.status === "reviewing") setGeneratingStatus("Revisando laudo...");
+          else if (event.status === "saving") setGeneratingStatus("Salvando...");
+          else if (event.status === "error") throw new Error(event.message || "Erro ao gerar laudo.");
+          else if (event.status === "done") { laudoPayload = event.laudo; break outer; }
+        }
+      }
+
+      if (!laudoPayload) throw new Error("Erro ao gerar laudo. Tente novamente.");
+      const laudoId = laudoPayload.id;
 
       // Upload images if any
       if (selectedFiles.length > 0) {
@@ -249,8 +278,8 @@ export default function NewLaudoPage() {
 
       // Switch to review phase
       setReviewLaudoId(laudoId);
-      setReviewParsed(parseLaudoContent(data.laudo.generated_content));
-      setReviewCreatedAt(data.laudo.created_at);
+      setReviewParsed(parseLaudoContent(laudoPayload.generated_content));
+      setReviewCreatedAt(laudoPayload.created_at);
       setPhase("review");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar laudo.");
@@ -486,7 +515,7 @@ export default function NewLaudoPage() {
             disabled={generating}
             className="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
           >
-            {generating ? "Gerando laudo..." : "Gerar Laudo"}
+            {generating ? generatingStatus : "Gerar Laudo"}
           </button>
         </form>
       </main>

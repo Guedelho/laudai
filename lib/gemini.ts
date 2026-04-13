@@ -17,10 +17,11 @@ interface GenerateParams {
   ownerName: string;
   veterinarian: string;
   crmv: string;
+  onStatus?: (status: "generating" | "reviewing") => void;
 }
 
 export async function generateLaudo(params: GenerateParams): Promise<string> {
-  const { specialty, rawInput, patientName, species, breed, age, ownerName, veterinarian, crmv } = params;
+  const { specialty, rawInput, patientName, species, breed, age, ownerName, veterinarian, crmv, onStatus } = params;
 
   const today = new Date().toLocaleDateString("pt-BR");
   const systemPrompt = TEMPLATES[specialty]
@@ -44,11 +45,13 @@ export async function generateLaudo(params: GenerateParams): Promise<string> {
     ? `Alterações encontradas no exame:\n\n${rawInput}\n\nGere o laudo completo. Mantenha o texto padrão para todas as seções não mencionadas. Para as seções mencionadas, aplique as alterações informadas. Se houver medidas específicas, substitua os valores de referência (x cm, 0,00) pelos valores reais informados.`
     : `Nenhuma alteração encontrada. Gere o laudo completo utilizando apenas os textos padrão para todas as seções.`;
 
+  onStatus?.("generating");
   const draft = (await model.generateContent({ contents: [{ role: "user", parts: [{ text: userMessage }] }], generationConfig })).response.text();
 
   let verified = draft;
 
   if (rawInput.trim()) {
+    onStatus?.("reviewing");
     const defaults = DEFAULTS[specialty] ?? "";
 
     // Verification agent: strip hallucinated findings not in the original input

@@ -94,49 +94,62 @@ export async function POST(
   if (!files.length) return NextResponse.json({ error: "No images provided" }, { status: 400 });
   if (files.length > MAX_FILES) return NextResponse.json({ error: `Máximo de ${MAX_FILES} imagens por vez` }, { status: 400 });
 
-  const results = [];
-  for (const file of files) {
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: `Arquivo muito grande (máx 20MB): ${file.name}` }, { status: 400 });
-    }
+  // Phase 1: validate + detect formats in parallel
+  const fileData = await Promise.all(
+    files.map(async (file) => {
+      if (file.size > MAX_FILE_SIZE) {
+        return { validationError: `Arquivo muito grande (máx 20MB): ${file.name}` } as const;
+      }
+      const buf = Buffer.from(await file.arrayBuffer());
+      const detected = await detectImageFormat(buf);
+      if (!detected) {
+        return { validationError: `Formato não suportado: ${file.name}. Use JPEG, PNG ou WebP.` } as const;
+      }
+      return { buf, mime: detected.mime, ext: detected.ext, name: file.name };
+    })
+  );
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buf = Buffer.from(arrayBuffer);
-    const detected = await detectImageFormat(buf);
-    if (!detected) {
-      return NextResponse.json({ error: `Formato não suportado: ${file.name}. Use JPEG, PNG ou WebP.` }, { status: 400 });
-    }
-    const { mime, ext } = detected;
-
-    const imageId = crypto.randomUUID();
-    const storagePath = `${userId}/${id}/${imageId}.${ext}`;
-
-    const { error: uploadError } = await admin.storage
-      .from(BUCKET)
-      .upload(storagePath, buf, { contentType: mime });
-
-    if (uploadError) {
-      console.error("Image upload error:", uploadError);
-      return NextResponse.json({ error: "Erro ao enviar imagem." }, { status: 500 });
-    }
-
-    const { data: record, error: dbError } = await admin
-      .from("laudo_images")
-      .insert({ laudo_id: id, user_id: userId, storage_path: storagePath, file_name: file.name })
-      .select()
-      .single();
-
-    if (dbError) {
-      console.error("Image DB insert error:", dbError);
-      await admin.storage.from(BUCKET).remove([storagePath]);
-      return NextResponse.json({ error: "Erro ao registrar imagem." }, { status: 500 });
-    }
-
-    results.push({
-      ...record,
-      url: await getSignedUrl(admin, storagePath),
-    });
+  const invalid = fileData.find((d) => "validationError" in d);
+  if (invalid && "validationError" in invalid) {
+    return NextResponse.json({ error: invalid.validationError }, { status: 400 });
   }
 
-  return NextResponse.json({ images: results });
+  // Phase 2: upload + insert in parallel
+  const validFiles = fileData as Array<{ buf: Buffer; mime: string; ext: string; name: string }>;
+  try {
+    const results = await Promise.all(
+      validFiles.map(async ({ buf, mime, ext, name }) => {
+        const imageId = crypto.randomUUID();
+        const storagePath = `${userId}/${id}/${imageId}.${ext}`;
+
+        const { error: uploadError } = await admin.storage
+          .from(BUCKET)
+          .upload(storagePath, buf, { contentType: mime });
+
+        if (uploadError) {
+          console.error("Image upload error:", uploadError);
+          throw new Error("Erro ao enviar imagem.");
+        }
+
+        const { data: record, error: dbError } = await admin
+          .from("laudo_images")
+          .insert({ laudo_id: id, user_id: userId, storage_path: storagePath, file_name: name })
+          .select()
+          .single();
+
+        if (dbError) {
+          console.error("Image DB insert error:", dbError);
+          await admin.storage.from(BUCKET).remove([storagePath]);
+          throw new Error("Erro ao registrar imagem.");
+        }
+
+        return { ...record, url: await getSignedUrl(admin, storagePath) };
+      })
+    );
+
+    return NextResponse.json({ images: results });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Erro ao processar imagens.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
