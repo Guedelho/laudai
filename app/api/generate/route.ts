@@ -43,31 +43,35 @@ export async function POST(req: NextRequest) {
   if (!rawInput?.trim()) return NextResponse.json({ error: "Achados do exame são obrigatórios." }, { status: 400 });
 
   return sseStream(async (send) => {
-    // Create pet if not linking to an existing one
-    let resolvedPetId = petId ?? null;
-    if (!petId) {
-      const { data: newPet } = await supabase
-        .from("pets")
-        .insert({ user_id: userId, name: patientName.trim(), species, breed: breed || null, age: age || null, sex: sex || null, neutered: neutered ?? null, owner_name: ownerName.trim() })
-        .select()
-        .single();
-      if (newPet) resolvedPetId = newPet.id;
-    }
+    // Run pet insert and Gemini generation in parallel
+    const petPromise = !petId
+      ? supabase
+          .from("pets")
+          .insert({ user_id: userId, name: patientName.trim(), species, breed: breed || null, age: age || null, sex: sex || null, neutered: neutered ?? null, owner_name: ownerName.trim() })
+          .select("id")
+          .single()
+      : null;
 
     let generatedContent: string;
+    let resolvedPetId: string | null = petId ?? null;
     try {
-      generatedContent = await generateLaudo({
-        specialty,
-        rawInput,
-        patientName,
-        species,
-        breed,
-        age,
-        ownerName,
-        veterinarian: profile.full_name,
-        crmv: profile.crmv,
-        onStatus: (status) => send({ status }),
-      });
+      const [content, petResult] = await Promise.all([
+        generateLaudo({
+          specialty,
+          rawInput,
+          patientName,
+          species,
+          breed,
+          age,
+          ownerName,
+          veterinarian: profile.full_name,
+          crmv: profile.crmv,
+          onStatus: (status) => send({ status }),
+        }),
+        petPromise,
+      ]);
+      generatedContent = content;
+      if (petResult?.data?.id) resolvedPetId = petResult.data.id;
     } catch (err) {
       console.error("Gemini generation error:", err);
       send({ status: "error", message: "Erro ao gerar laudo. Tente novamente." });

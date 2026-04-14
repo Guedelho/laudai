@@ -5,6 +5,23 @@ import { Specialty } from "@/types";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
+const generationConfig = { responseMimeType: "application/json" } as Record<string, unknown>;
+
+// Cache model instances per system prompt to avoid re-creation on every call
+const modelCache = new Map<string, ReturnType<typeof genAI.getGenerativeModel>>();
+
+function getModel(systemInstruction: string) {
+  let model = modelCache.get(systemInstruction);
+  if (!model) {
+    model = genAI.getGenerativeModel(
+      { model: "gemini-3-flash-preview", systemInstruction },
+      { apiVersion: "v1beta" },
+    );
+    modelCache.set(systemInstruction, model);
+  }
+  return model;
+}
+
 interface GenerateParams {
   specialty: Specialty;
   rawInput: string;
@@ -33,11 +50,7 @@ export async function generateLaudo(params: GenerateParams): Promise<string> {
     .replace(/{veterinario}/g, veterinarian)
     .replace(/{crmv}/g, crmv);
 
-  const model = genAI.getGenerativeModel(
-    { model: "gemini-3-flash-preview", systemInstruction: systemPrompt },
-    { apiVersion: "v1beta" }
-  );
-  const generationConfig = { responseMimeType: "application/json" } as Record<string, unknown>;
+  const model = getModel(systemPrompt);
 
   const userMessage = rawInput.trim()
     ? `Alterações encontradas no exame:\n\n${rawInput}\n\nGere o laudo completo. Mantenha o texto padrão para todas as seções não mencionadas. Para as seções mencionadas, aplique as alterações informadas. Se houver medidas específicas, substitua os valores de referência (x cm, 0,00) pelos valores reais informados.`
@@ -54,10 +67,7 @@ export async function generateLaudo(params: GenerateParams): Promise<string> {
 
     // Verification agent: strip hallucinated findings not in the original input
     try {
-      const verifier = genAI.getGenerativeModel(
-        {
-          model: "gemini-3-flash-preview",
-          systemInstruction:
+      const verifier = getModel(
             "Retorne APENAS um objeto JSON válido. Nunca use markdown, asteriscos, blocos de código ou qualquer formatação.\n\n" +
             "Você é um veterinário ultrassonografista sênior revisando um laudo gerado por IA.\n\n" +
             "TEXTO PADRÃO DE REFERÊNCIA (achados normais para cada seção):\n" +
@@ -70,8 +80,6 @@ export async function generateLaudo(params: GenerateParams): Promise<string> {
             "   Restaure o padrão SOMENTE quando tiver certeza clínica de que a mudança não tem relação com o achado relatado. Em caso de dúvida, mantenha o que foi gerado.\n" +
             "3. Mantenha intactos: impressão diagnóstica e recomendações. NÃO inclua cabeçalho nem assinatura.\n" +
             "Retorne APENAS o objeto JSON corrigido, sem explicações ou comentários.",
-        },
-        { apiVersion: "v1beta" }
       );
       verified = (
         await verifier.generateContent({
