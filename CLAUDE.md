@@ -12,6 +12,21 @@
 - **Database**: Supabase Postgres with RLS on every table (`user_id = auth.uid()`). Always use the admin client (`SUPABASE_SERVICE_ROLE_KEY`) in API routes — never the anon client.
 - **Auth**: Supabase Auth via cookies (SSR). `proxy.ts` (middleware) syncs session to request context. API routes accept both cookie session and `Authorization: Bearer <token>`.
 
+## Page structure (follow this pattern for all new pages)
+
+Every page.tsx must follow this structure — no exceptions:
+
+```
+auth check → admin client → data fetch → <AppHeader /> → <ChildComponent />
+```
+
+1. **Auth**: `createClient()` → `getUser()` → `redirect("/login")` if not authenticated.
+2. **Data**: Use `createAdmin()` for all server-side queries (never the anon client).
+3. **Layout**: Return `<div className="min-h-screen bg-gray-50">` → `<AppHeader />` → `<main>` → child component.
+4. **No inline JSX**: Page files must be thin — auth, fetch, pass props to a child component. All rendering logic goes in the child component, never in page.tsx.
+5. **Loading**: Every page directory must have a `loading.tsx` using `<LoadingSkeleton />`.
+6. **Auth on API routes**: Use `getUserId()` from `@/lib/auth` (not from `@/lib/gemini`).
+
 ## Rules
 
 - Do not add inline comments unless the logic is genuinely non-obvious.
