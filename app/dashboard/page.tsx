@@ -14,8 +14,7 @@ export default async function DashboardPage() {
     .from("laudos")
     .select("id, patient_name, owner_name, specialty, created_at, updated_at")
     .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(20);
+    .order("created_at", { ascending: false });
 
   return (
     <div className="min-h-screen bg-gray-50">
