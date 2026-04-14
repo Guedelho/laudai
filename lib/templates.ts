@@ -215,5 +215,5 @@ export const REPORT_TITLES: Record<Specialty, string> = {
 };
 
 export const SPECIALTY_ABBR: Record<Specialty, string> = {
-  ultrasound_abdominal: "us",
+  ultrasound_abdominal: "US",
 };
