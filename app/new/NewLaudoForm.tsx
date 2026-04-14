@@ -315,13 +315,8 @@ export default function NewLaudoPage() {
   const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <h1 className="text-lg font-bold text-gray-900">Novo Laudo</h1>
-      </header>
-
-      <main className="max-w-2xl mx-auto px-6 py-8">
-        <form onSubmit={handleGenerate} className="space-y-6">
+    <main className="max-w-2xl mx-auto px-6 py-8">
+      <form onSubmit={handleGenerate} className="space-y-6">
 
           {/* Clinic / Vet */}
           <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
@@ -532,6 +527,5 @@ export default function NewLaudoPage() {
           )}
         </form>
       </main>
-    </div>
   );
 }

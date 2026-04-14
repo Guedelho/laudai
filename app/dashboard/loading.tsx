@@ -1,5 +1,5 @@
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 
 export default function Loading() {
-  return <LoadingSkeleton rows={4} />;
+  return <LoadingSkeleton rows={5} />;
 }

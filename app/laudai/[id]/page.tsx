@@ -6,6 +6,7 @@ import Link from "next/link";
 import { SPECIALTY_LABELS } from "@/lib/templates";
 import { Laudo } from "@/types";
 import { parseLaudoContent } from "@/lib/parseLaudo";
+import AppHeader from "@/components/AppHeader";
 import DownloadPDFButton from "./DownloadPDFButton";
 import ImageManager from "./ImageManager";
 import LaudoContent from "./LaudoContent";
@@ -42,31 +43,29 @@ export default async function LaudoPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) redirect("/login");
 
   const { laudo, images } = await getLaudoData(id, user.id);
-
   if (!laudo) notFound();
 
   const l = laudo as Laudo;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="print:hidden bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <div>
-          <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700">
-            ← Voltar
-          </Link>
-          <h1 className="text-lg font-bold text-gray-900 mt-1">{l.patient_name}</h1>
-          <p className="text-sm text-gray-500">{SPECIALTY_LABELS[l.specialty]}</p>
-        </div>
-        <div className="flex gap-2">
-          <DownloadPDFButton laudoId={l.id} />
-        </div>
-      </header>
+      <AppHeader current={`/laudai/${id}`} />
 
       <main className="max-w-3xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700">
+              ← Voltar
+            </Link>
+            <h1 className="text-lg font-bold text-gray-900 mt-1">{l.patient_name}</h1>
+            <p className="text-sm text-gray-500">{SPECIALTY_LABELS[l.specialty]}</p>
+          </div>
+          <DownloadPDFButton laudoId={l.id} />
+        </div>
+
         <div className="bg-white border border-gray-200 rounded-xl p-8">
           <div className="grid grid-cols-2 gap-x-8 text-sm mb-6 pb-4 border-b border-gray-200">
             <div className="space-y-1">

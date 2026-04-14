@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import AppHeader from "@/components/AppHeader";
 import NewLaudoForm from "./NewLaudoForm";
 
 export default async function NewPage() {
@@ -7,5 +8,10 @@ export default async function NewPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  return <NewLaudoForm />;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <AppHeader />
+      <NewLaudoForm />
+    </div>
+  );
 }

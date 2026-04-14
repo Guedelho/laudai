@@ -1,17 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { SPECIALTY_LABELS } from "@/lib/templates";
 import { Specialty } from "@/types";
-import LogoutButton from "@/components/LogoutButton";
+import AppHeader from "@/components/AppHeader";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) redirect("/login");
 
-  const { data: laudos } = await supabase
+  const admin = createAdmin();
+  const { data: laudos } = await admin
     .from("laudos")
     .select("id, patient_name, owner_name, specialty, created_at, updated_at")
     .eq("user_id", user.id)
@@ -20,27 +21,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <h1 className="text-lg font-bold text-gray-900">Laudai</h1>
-        <div className="flex items-center gap-4">
-          <Link href="/pets" className="text-sm text-gray-600 hover:text-gray-900">
-            Pacientes
-          </Link>
-          <Link href="/clinics" className="text-sm text-gray-600 hover:text-gray-900">
-            Clínicas
-          </Link>
-          <Link href="/profile" className="text-sm text-gray-600 hover:text-gray-900">
-            Perfil
-          </Link>
-          <LogoutButton />
-          <Link
-            href="/new"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
-          >
-            Novo Laudo
-          </Link>
-        </div>
-      </header>
+      <AppHeader current="/dashboard" />
 
       <main className="max-w-3xl mx-auto px-6 py-8">
         <h2 className="text-xl font-semibold text-gray-900 mb-6">Laudos Recentes</h2>

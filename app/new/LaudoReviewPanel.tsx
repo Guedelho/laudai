@@ -163,9 +163,8 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
   const date = new Date(editedFields.createdAt).toLocaleDateString("pt-BR");
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+    <>
+      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-gray-900">{editedFields.patientName || "Laudo"}</h1>
           <p className="text-sm text-gray-500">{SPECIALTY_LABELS["ultrasound_abdominal"]}</p>
@@ -213,7 +212,7 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
             </>
           )}
         </div>
-      </header>
+      </div>
 
       <main className="max-w-3xl mx-auto px-6 py-8">
         {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
@@ -459,6 +458,6 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
           )}
         </div>
       </main>
-    </div>
+    </>
   );
 }
