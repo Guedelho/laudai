@@ -151,7 +151,7 @@ export async function POST(
     revalidateTag(`laudo-${id}`, "default");
     return NextResponse.json({ images: results });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erro ao processar imagens.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Image upload error:", err);
+    return NextResponse.json({ error: "Erro ao processar imagens." }, { status: 500 });
   }
 }

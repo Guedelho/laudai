@@ -1,31 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { createClient } from "@/lib/supabase/server";
-import { createAdmin } from "@/lib/supabase/admin";
+import { getUserId } from "@/lib/auth";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
 export async function POST(req: NextRequest) {
-  // Try Authorization header first, then cookie-based auth
-  let authorized = false;
-
-  const authHeader = req.headers.get("Authorization");
-  if (authHeader?.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    const admin = createAdmin();
-    const { data: { user } } = await admin.auth.getUser(token);
-    authorized = !!user;
-  }
-
-  if (!authorized) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    authorized = !!user;
-  }
-
-  if (!authorized) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const userId = await getUserId(req);
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const formData = await req.formData();
   const audio = formData.get("audio") as File;
@@ -59,5 +40,10 @@ export async function POST(req: NextRequest) {
     "Transcreva o áudio a seguir. Retorne apenas o texto transcrito, sem comentários adicionais. O áudio é em português brasileiro e contém achados de exames veterinários.",
   ]);
 
-  return NextResponse.json({ text: result.response.text() });
+  try {
+    return NextResponse.json({ text: result.response.text() });
+  } catch (err) {
+    console.error("Transcription response error:", err);
+    return NextResponse.json({ error: "Erro ao transcrever áudio." }, { status: 500 });
+  }
 }
