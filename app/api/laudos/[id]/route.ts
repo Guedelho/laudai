@@ -45,3 +45,29 @@ export async function PATCH(
   revalidateTag(`laudo-${id}`, "default");
   return NextResponse.json({ laudo: updated });
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
+  const userId = await getUserId(req);
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const admin = createAdmin();
+
+  const { error } = await admin
+    .from("laudos")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("Laudo delete error:", error);
+    return NextResponse.json({ error: "Erro ao excluir laudo." }, { status: 500 });
+  }
+
+  revalidateTag(`laudo-${id}`, "default");
+  return NextResponse.json({ ok: true });
+}

@@ -13,7 +13,7 @@ function getLaudoData(id: string, userId: string) {
     async () => {
       const admin = createAdmin();
       const [{ data: laudo }, { data: rawImages }] = await Promise.all([
-        admin.from("laudos").select("*").eq("id", id).eq("user_id", userId).single(),
+        admin.from("laudos").select("*").eq("id", id).eq("user_id", userId).is("deleted_at", null).single(),
         admin.from("laudo_images").select("*").eq("laudo_id", id).eq("user_id", userId).order("created_at", { ascending: true }),
       ]);
 

@@ -3,6 +3,7 @@ import { SPECIALTY_LABELS } from "@/lib/templates";
 import { Laudo, LaudoImage } from "@/types";
 import { parseLaudoContent } from "@/lib/parseLaudo";
 import DownloadPDFButton from "./DownloadPDFButton";
+import DeleteLaudoButton from "./DeleteLaudoButton";
 import ImageManager from "./ImageManager";
 import LaudoContent from "./LaudoContent";
 
@@ -17,7 +18,10 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
           <h1 className="text-lg font-bold text-gray-900 mt-1">{laudo.patient_name}</h1>
           <p className="text-sm text-gray-500">{SPECIALTY_LABELS[laudo.specialty]}</p>
         </div>
-        <DownloadPDFButton laudoId={laudo.id} />
+        <div className="flex items-center gap-3">
+          <DeleteLaudoButton laudoId={laudo.id} />
+          <DownloadPDFButton laudoId={laudo.id} />
+        </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-8">
