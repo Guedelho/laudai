@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateLaudo, getUserId, getProfile } from "@/lib/gemini";
+import { generateLaudo } from "@/lib/gemini";
+import { getUserId, getProfile } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { GenerateRequest } from "@/types";
 

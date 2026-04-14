@@ -3,8 +3,6 @@ import { TEMPLATES, DEFAULTS } from "@/lib/templates";
 import { extractJson } from "@/lib/parseLaudo";
 import { Specialty } from "@/types";
 
-export { getUserId, getProfile } from "@/lib/auth";
-
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
 interface GenerateParams {

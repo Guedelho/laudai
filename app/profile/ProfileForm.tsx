@@ -39,6 +39,7 @@ export default function ProfileForm({
   const [saveError, setSaveError] = useState("");
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState("");
+  const fontAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const id = "google-signature-fonts";
@@ -87,6 +88,9 @@ export default function ProfileForm({
   async function handleFontSelect(fontKey: string) {
     const next = signatureFont === fontKey ? "" : fontKey;
     setSignatureFont(next);
+    fontAbortRef.current?.abort();
+    const controller = new AbortController();
+    fontAbortRef.current = controller;
     try {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
@@ -97,9 +101,10 @@ export default function ProfileForm({
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
         body: JSON.stringify({ full_name: fullName, cpf, signature_font: next }),
+        signal: controller.signal,
       });
     } catch {
-      // non-critical, silent fail
+      // non-critical, silent fail (includes aborted requests)
     }
   }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserId, getProfile } from "@/lib/gemini";
+import { getUserId, getProfile } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { parseLaudoContent } from "@/lib/parseLaudo";
 import { generatePdfBuffer, PdfData } from "@/lib/generatePdf";
@@ -53,7 +53,7 @@ export async function GET(
 
   const { data: laudo } = await admin
     .from("laudos")
-    .select("*")
+    .select("patient_name, species, breed, age, sex, neutered, owner_name, clinic_name, responsible_vet, specialty, created_at, generated_content")
     .eq("id", id)
     .eq("user_id", userId)
     .single();

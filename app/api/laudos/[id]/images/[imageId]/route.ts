@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { getUserId } from "@/lib/gemini";
+import { getUserId } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 
 const BUCKET = "laudo-images";

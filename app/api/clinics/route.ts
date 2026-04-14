@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserId } from "@/lib/gemini";
+import { getUserId } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 
 export async function GET(req: NextRequest) {
