@@ -4,9 +4,22 @@ import { getUserId } from "@/lib/auth";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
+const transcribeRateLimit = new Map<string, number[]>();
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const timestamps = (transcribeRateLimit.get(userId) ?? []).filter(t => now - t < 60_000);
+  if (timestamps.length >= 10) return false;
+  timestamps.push(now);
+  transcribeRateLimit.set(userId, timestamps);
+  return true;
+}
+
 export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!checkRateLimit(userId)) return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
 
   const formData = await req.formData();
   const audio = formData.get("audio") as File;

@@ -116,6 +116,7 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
     setError("");
     // Open blank tab synchronously (before async) to avoid popup blocker
     const tab = window.open("about:blank", "_blank");
+    if (tab) tab.document.write('<p style="font-family:sans-serif;padding:2rem;color:#374151">Preparando PDF...</p>');
     try {
       await saveToDb(editedParsed, editedFields);
       if (tab) {

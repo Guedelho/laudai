@@ -7,6 +7,17 @@ import { Specialty } from "@/types";
 import { REPORT_TITLES, SPECIALTY_ABBR } from "@/lib/templates";
 import sharp from "sharp";
 
+const pdfRateLimit = new Map<string, number[]>();
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const timestamps = (pdfRateLimit.get(userId) ?? []).filter(t => now - t < 60_000);
+  if (timestamps.length >= 5) return false;
+  timestamps.push(now);
+  pdfRateLimit.set(userId, timestamps);
+  return true;
+}
+
 const BUCKET = "laudo-images";
 const SUPPORTED_MIME = new Set(["image/jpeg", "image/jpg", "image/png"]);
 
@@ -45,6 +56,8 @@ export async function GET(
   const { id } = await params;
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!checkRateLimit(userId)) return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
 
   const [profile, admin] = [
     await getProfile(userId),

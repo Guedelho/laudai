@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 export default function DeleteLaudoButton({ laudoId }: { laudoId: string }) {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const router = useRouter();
 
   async function handleDelete() {
@@ -23,8 +24,10 @@ export default function DeleteLaudoButton({ laudoId }: { laudoId: string }) {
 
       router.push("/dashboard");
     } catch {
+      console.error("Delete laudo error");
       setDeleting(false);
       setConfirming(false);
+      setDeleteError("Erro ao excluir laudo. Tente novamente.");
     }
   }
 
@@ -40,18 +43,19 @@ export default function DeleteLaudoButton({ laudoId }: { laudoId: string }) {
           {deleting ? "Excluindo..." : "Confirmar"}
         </button>
         <button
-          onClick={() => setConfirming(false)}
+          onClick={() => { setConfirming(false); setDeleteError(""); }}
           className="text-sm text-gray-500 hover:text-gray-700"
         >
           Cancelar
         </button>
+        {deleteError && <span className="text-sm text-red-600">{deleteError}</span>}
       </div>
     );
   }
 
   return (
     <button
-      onClick={() => setConfirming(true)}
+      onClick={() => { setConfirming(true); setDeleteError(""); }}
       className="text-sm text-red-500 hover:text-red-700 print:hidden"
     >
       Excluir

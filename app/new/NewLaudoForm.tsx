@@ -110,8 +110,18 @@ export default function NewLaudoPage() {
       return true;
     });
     if (!valid.length) return;
-    setSelectedFiles((prev) => [...prev, ...valid]);
-    setObjectUrls((prev) => [...prev, ...valid.map((f) => URL.createObjectURL(f))]);
+    const remaining = 30 - selectedFiles.length;
+    if (remaining <= 0) {
+      setError("Limite de 30 imagens atingido.");
+      if (imageInputRef.current) imageInputRef.current.value = "";
+      return;
+    }
+    const capped = valid.slice(0, remaining);
+    if (capped.length < valid.length) {
+      setError(`Limite de 30 imagens. Apenas ${capped.length} adicionada${capped.length !== 1 ? "s" : ""}.`);
+    }
+    setSelectedFiles((prev) => [...prev, ...capped]);
+    setObjectUrls((prev) => [...prev, ...capped.map((f) => URL.createObjectURL(f))]);
     if (imageInputRef.current) imageInputRef.current.value = "";
   }
 
@@ -136,17 +146,25 @@ export default function NewLaudoPage() {
   }
 
   async function startRecording() {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mediaRecorder = new MediaRecorder(stream);
-    mediaRecorderRef.current = mediaRecorder;
-    chunksRef.current = [];
-    mediaRecorder.ondataavailable = (e) => chunksRef.current.push(e.data);
-    mediaRecorder.onstop = async () => {
-      stream.getTracks().forEach((t) => t.stop());
-      await transcribeAudio(new Blob(chunksRef.current, { type: "audio/webm" }));
-    };
-    mediaRecorder.start();
-    setRecording(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+      mediaRecorder.ondataavailable = (e) => chunksRef.current.push(e.data);
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        await transcribeAudio(new Blob(chunksRef.current, { type: "audio/webm" }));
+      };
+      mediaRecorder.start();
+      setRecording(true);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "NotAllowedError") {
+        setError("Permissão para microfone negada. Habilite o microfone nas configurações do navegador.");
+      } else {
+        setError("Não foi possível acessar o microfone.");
+      }
+    }
   }
 
   function stopRecording() {
@@ -470,19 +488,29 @@ export default function NewLaudoPage() {
               onChange={(e) => setRawInput(e.target.value)}
               placeholder="Informe apenas as alterações encontradas... Deixe em branco para gerar laudo normal."
               rows={6}
+              maxLength={5000}
               className={`${inputCls} resize-none`}
               required
             />
+            <p className={`text-xs text-right ${rawInput.length >= 4800 ? "text-amber-500" : "text-gray-400"}`}>
+              {rawInput.length}/5000
+            </p>
           </div>
 
           {/* Images */}
           <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-700">Imagens do exame</p>
+              <p className="text-sm font-semibold text-gray-700">
+                Imagens do exame
+                {selectedFiles.length > 0 && (
+                  <span className="ml-2 text-xs font-normal text-gray-400">{selectedFiles.length}/30</span>
+                )}
+              </p>
               <button
                 type="button"
                 onClick={() => imageInputRef.current?.click()}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                disabled={selectedFiles.length >= 30}
+                className="text-xs text-blue-600 hover:text-blue-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Adicionar imagens
               </button>
