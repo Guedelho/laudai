@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ParsedLaudo, LaudoImage } from "@/types";
@@ -174,6 +175,9 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
     <>
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
         <div>
+          <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700 mb-1 inline-block">
+            ← Laudos
+          </Link>
           <h1 className="text-lg font-bold text-gray-900">{editedFields.patientName || "Laudo"}</h1>
           <p className="text-sm text-gray-500">{SPECIALTY_LABELS["ultrasound_abdominal"]}</p>
         </div>

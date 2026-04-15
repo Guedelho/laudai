@@ -13,7 +13,7 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700">
-            ← Voltar
+            ← Laudos
           </Link>
           <h1 className="text-lg font-bold text-gray-900 mt-1">{laudo.patient_name}</h1>
           <p className="text-sm text-gray-500">{SPECIALTY_LABELS[laudo.specialty]}</p>

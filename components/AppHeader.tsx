@@ -15,8 +15,12 @@ export default function AppHeader({ current }: { current?: string }) {
         Laudai
       </Link>
       <div className="flex items-center gap-4">
-        {NAV_LINKS.filter((l) => l.href !== current).map((l) => (
-          <Link key={l.href} href={l.href} className="text-sm text-gray-600 hover:text-gray-900">
+        {NAV_LINKS.map((l) => (
+          <Link
+            key={l.href}
+            href={l.href}
+            className={`text-sm ${l.href === current ? "font-medium text-gray-900 underline underline-offset-4" : "text-gray-500 hover:text-gray-900"}`}
+          >
             {l.label}
           </Link>
         ))}
