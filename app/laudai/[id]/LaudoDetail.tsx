@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SPECIALTY_LABELS } from "@/lib/templates";
-import { Laudo, LaudoImage } from "@/types";
+import { Laudo, LaudoImage, sexLabel } from "@/types";
 import { parseLaudoContent } from "@/lib/parseLaudo";
 import DownloadPDFButton from "./DownloadPDFButton";
 import DeleteLaudoButton from "./DeleteLaudoButton";
@@ -31,8 +31,8 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
             <div><span className="font-bold">Espécie:</span> {laudo.species}</div>
             {laudo.breed && <div><span className="font-bold">Raça:</span> {laudo.breed}</div>}
             {laudo.age && <div><span className="font-bold">Idade:</span> {laudo.age}</div>}
-            {laudo.sex && <div><span className="font-bold">Sexo:</span> {laudo.sex === "M" ? "Macho" : "Fêmea"}</div>}
-            {laudo.neutered != null && <div><span className="font-bold">Castrado(a):</span> {laudo.neutered ? "Sim" : "Não"}</div>}
+            <div><span className="font-bold">Sexo:</span> {sexLabel(laudo.sex)}</div>
+            <div><span className="font-bold">Castrado(a):</span> {laudo.neutered ? "Sim" : "Não"}</div>
           </div>
           <div className="space-y-1">
             {laudo.clinic_name && <div><span className="font-bold">Clínica:</span> {laudo.clinic_name}</div>}

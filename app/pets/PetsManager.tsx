@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pet } from "@/types";
+import { Pet, SPECIES_OPTIONS, SEX_OPTIONS, sexLabel } from "@/types";
 import { getAuthHeaders } from "@/lib/supabase/client";
 
 export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
@@ -159,9 +159,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                 onChange={(e) => setSpecies(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option>Canina</option>
-                <option>Felina</option>
-                <option>Outro</option>
+                {SPECIES_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
@@ -233,9 +231,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                       onChange={(e) => setEditFields((f) => ({ ...f, species: e.target.value }))}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option>Canina</option>
-                      <option>Felina</option>
-                      <option>Outro</option>
+                      {SPECIES_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </div>
                   <div>
@@ -262,8 +258,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                       onChange={(e) => setEditFields((f) => ({ ...f, sex: e.target.value }))}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="Macho">Macho</option>
-                      <option value="Fêmea">Fêmea</option>
+                      {SEX_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </div>
                 </div>
@@ -300,7 +295,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                   <p className="font-medium text-gray-900">{pet.name}</p>
                   <p className="text-sm text-gray-500">
                     {pet.species}{pet.breed ? ` · ${pet.breed}` : ""}{pet.age ? ` · ${pet.age}` : ""}
-                    {pet.sex ? ` · ${pet.sex}` : ""}{pet.neutered ? " · Castrado(a)" : ""}
+                     · {sexLabel(pet.sex)}{pet.neutered ? " · Castrado(a)" : ""}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">Responsável: {pet.owner_name}</p>
                 </div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ParsedLaudo, LaudoImage, LaudoFields } from "@/types";
+import { ParsedLaudo, LaudoImage, LaudoFields, SPECIES_OPTIONS, SEX_OPTIONS, sexLabel } from "@/types";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import { SPECIALTY_LABELS } from "@/lib/templates";
 
@@ -232,9 +232,7 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Espécie</label>
                     <select value={editedFields.species} onChange={(e) => setEditedFields({ ...editedFields, species: e.target.value })} className={inputCls}>
-                      <option value="Canina">Canina</option>
-                      <option value="Felina">Felina</option>
-                      <option value="Outro">Outro</option>
+                      {SPECIES_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </div>
                   <div>
@@ -248,8 +246,7 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Sexo</label>
                     <select value={editedFields.sex} onChange={(e) => setEditedFields({ ...editedFields, sex: e.target.value })} className={inputCls}>
-                      <option value="M">Macho</option>
-                      <option value="F">Fêmea</option>
+                      {SEX_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </div>
                   <div>
@@ -286,8 +283,8 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
                   <div><span className="font-bold">Espécie:</span> {editedFields.species}</div>
                   {editedFields.breed && <div><span className="font-bold">Raça:</span> {editedFields.breed}</div>}
                   {editedFields.age && <div><span className="font-bold">Idade:</span> {editedFields.age}</div>}
-                  {editedFields.sex && <div><span className="font-bold">Sexo:</span> {editedFields.sex === "M" ? "Macho" : "Fêmea"}</div>}
-                  {editedFields.neutered != null && <div><span className="font-bold">Castrado(a):</span> {editedFields.neutered ? "Sim" : "Não"}</div>}
+                  <div><span className="font-bold">Sexo:</span> {sexLabel(editedFields.sex)}</div>
+                  <div><span className="font-bold">Castrado(a):</span> {editedFields.neutered ? "Sim" : "Não"}</div>
                 </div>
                 <div className="space-y-1">
                   {editedFields.clinicName && <div><span className="font-bold">Clínica:</span> {editedFields.clinicName}</div>}

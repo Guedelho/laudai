@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import ImageLightbox from "@/components/ImageLightbox";
 import Link from "next/link";
-import { Pet, Clinic, ParsedLaudo, SseEvent } from "@/types";
+import { Pet, Clinic, ParsedLaudo, SseEvent, SPECIES_OPTIONS, SEX_OPTIONS } from "@/types";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import { parseLaudoContent } from "@/lib/parseLaudo";
 import LaudoReviewPanel from "./LaudoReviewPanel";
@@ -434,16 +434,13 @@ export default function NewLaudoPage() {
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Espécie</label>
                 <select value={species} onChange={(e) => setSpecies(e.target.value)} className={inputCls}>
-                  <option value="Canina">Canina</option>
-                  <option value="Felina">Felina</option>
-                  <option value="Outro">Outro</option>
+                  {SPECIES_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Sexo</label>
                 <select value={sex} onChange={(e) => setSex(e.target.value)} className={inputCls}>
-                  <option value="M">Macho</option>
-                  <option value="F">Fêmea</option>
+                  {SEX_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
               <div>
