@@ -361,13 +361,19 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
 
       if (signatureImageBase64 && currentPage === pageCount) {
         return {
-          stack: [
+          columns: [
+            { width: "*", text: "" },
             {
-              image: signatureImageBase64,
-              fit: [160, 44],
-              alignment: "center",
-              margin: [50, 4, 50, 2],
+              width: "auto",
+              stack: [
+                {
+                  image: signatureImageBase64,
+                  fit: [200, 70],
+                  margin: [0, 4, 0, 2],
+                },
+              ],
             },
+            { width: "*", text: "" },
           ],
         };
       }
