@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { Laudo } from "@/types";
 import LaudoDetail from "./LaudoDetail";
@@ -35,9 +35,8 @@ function getLaudoData(id: string, userId: string) {
 
 export default async function LaudoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { data: { user } } = await (await createClient()).auth.getUser();
+  if (!user) return null;
 
   const { laudo, images } = await getLaudoData(id, user.id);
   if (!laudo) notFound();

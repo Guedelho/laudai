@@ -1,12 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import ProfileForm from "./ProfileForm";
 
 export default async function ProfilePage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { data: { user } } = await (await createClient()).auth.getUser();
+  if (!user) return null;
 
   const admin = createAdmin();
   const { data: profile } = await admin

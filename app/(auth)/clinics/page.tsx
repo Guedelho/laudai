@@ -1,13 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import ClinicsManager from "./ClinicsManager";
 import { Clinic } from "@/types";
 
 export default async function ClinicsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { data: { user } } = await (await createClient()).auth.getUser();
+  if (!user) return null;
 
   const admin = createAdmin();
   const { data: clinics } = await admin

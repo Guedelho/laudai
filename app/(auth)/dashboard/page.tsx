@@ -1,12 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import LaudoList from "./LaudoList";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { data: { user } } = await (await createClient()).auth.getUser();
+  if (!user) return null;
 
   const admin = createAdmin();
   const { data: laudos } = await admin
