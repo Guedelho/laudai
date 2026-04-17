@@ -34,6 +34,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Campos obrigatórios: nome, espécie, tutor" }, { status: 400 });
   }
 
+  // Find or create pet (case-insensitive dedup on name + owner)
+  const { data: existing } = await supabase
+    .from("pets")
+    .select("*")
+    .eq("user_id", userId)
+    .ilike("name", name.trim())
+    .ilike("owner_name", ownerName.trim())
+    .maybeSingle();
+
+  if (existing) return NextResponse.json({ pet: existing });
+
   const { data: pet, error } = await supabase
     .from("pets")
     .insert({ user_id: userId, name, species, breed: breed || null, age: age || null, owner_name: ownerName })

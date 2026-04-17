@@ -62,13 +62,24 @@ export async function POST(req: NextRequest) {
   if (rawInput.length > 5_000) return NextResponse.json({ error: "Achados do exame muito longos. Máximo 5.000 caracteres." }, { status: 400 });
 
   return sseStream(async (send) => {
-    // Run pet insert and Gemini generation in parallel
+    // Find or create pet (case-insensitive dedup), run in parallel with Gemini
     const petPromise = !petId
       ? supabase
           .from("pets")
-          .insert({ user_id: userId, name: patientName.trim(), species, breed: breed || null, age: age || null, sex: sex || null, neutered: neutered ?? null, owner_name: ownerName.trim() })
           .select("id")
-          .single()
+          .eq("user_id", userId)
+          .ilike("name", patientName.trim())
+          .ilike("owner_name", ownerName.trim())
+          .maybeSingle()
+          .then(({ data: found }) =>
+            found
+              ? { data: found }
+              : supabase
+                  .from("pets")
+                  .insert({ user_id: userId, name: patientName.trim(), species, breed: breed || null, age: age || null, sex: sex || null, neutered: neutered ?? null, owner_name: ownerName.trim() })
+                  .select("id")
+                  .single()
+          )
       : null;
 
     let generatedContent: string;

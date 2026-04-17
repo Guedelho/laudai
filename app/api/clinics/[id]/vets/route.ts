@@ -24,6 +24,16 @@ export async function POST(
     .single();
   if (!clinic) return NextResponse.json({ error: "Clínica não encontrada" }, { status: 404 });
 
+  // Find or create vet (case-insensitive dedup)
+  const { data: existing } = await admin
+    .from("clinic_vets")
+    .select("*")
+    .eq("clinic_id", clinicId)
+    .ilike("name", name.trim())
+    .maybeSingle();
+
+  if (existing) return NextResponse.json({ vet: existing });
+
   const { data: vet, error } = await admin
     .from("clinic_vets")
     .insert({ clinic_id: clinicId, user_id: userId, name: name.trim() })

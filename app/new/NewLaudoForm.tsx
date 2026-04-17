@@ -43,6 +43,7 @@ export default function NewLaudoPage() {
   // Images (selected before submit)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [objectUrls, setObjectUrls] = useState<string[]>([]);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -542,7 +543,8 @@ export default function NewLaudoPage() {
                     <img
                       src={objectUrls[i]}
                       alt={file.name}
-                      className="w-full h-24 object-cover rounded-lg border border-gray-200 bg-black"
+                      onClick={() => setLightboxUrl(objectUrls[i])}
+                      className="w-full h-24 object-cover rounded-lg border border-gray-200 bg-black cursor-pointer"
                     />
                     <button
                       type="button"
@@ -556,6 +558,27 @@ export default function NewLaudoPage() {
               </div>
             ) : (
               <p className="text-sm text-gray-400 italic">Nenhuma imagem selecionada</p>
+            )}
+            {lightboxUrl && (
+              <div
+                className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
+                onClick={() => setLightboxUrl(null)}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={lightboxUrl}
+                  alt=""
+                  className="max-w-full max-h-full object-contain"
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <button
+                  type="button"
+                  onClick={() => setLightboxUrl(null)}
+                  className="absolute top-4 right-4 text-white text-sm bg-black/50 px-3 py-1 rounded-full hover:bg-black/70"
+                >
+                  Fechar ✕
+                </button>
+              </div>
             )}
           </div>
 

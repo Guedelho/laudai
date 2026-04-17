@@ -28,6 +28,17 @@ export async function POST(req: NextRequest) {
   if (!name?.trim()) return NextResponse.json({ error: "Nome da clínica é obrigatório" }, { status: 400 });
 
   const admin = createAdmin();
+
+  // Find or create clinic (case-insensitive dedup)
+  const { data: existing } = await admin
+    .from("clinics")
+    .select("*, clinic_vets(*)")
+    .eq("user_id", userId)
+    .ilike("name", name.trim())
+    .maybeSingle();
+
+  if (existing) return NextResponse.json({ clinic: existing });
+
   const { data: clinic, error } = await admin
     .from("clinics")
     .insert({ user_id: userId, name: name.trim() })
