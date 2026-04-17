@@ -45,9 +45,10 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
     examDate: laudo.exam_date ?? "",
   });
 
-  const displayDate = fields.examDate
+  const createdDate = new Date(laudo.created_at).toLocaleDateString("pt-BR");
+  const examDate = fields.examDate
     ? new Date(fields.examDate + "T12:00:00").toLocaleDateString("pt-BR")
-    : new Date(laudo.created_at).toLocaleDateString("pt-BR");
+    : null;
 
   async function handleSave() {
     setSaving(true);
@@ -150,7 +151,7 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
               {SPECIALTY_LABELS[laudo.specialty]}
             </span>
-            <span className="text-xs text-gray-400">{displayDate}</span>
+            <span className="text-xs text-gray-400">{examDate ?? createdDate}</span>
           </div>
         </div>
         <div className="flex items-center gap-2 mt-1">
@@ -256,7 +257,8 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
             <InfoItem label="Responsável:" value={fields.ownerName} />
             {fields.clinicName && <InfoItem label="Clínica:" value={fields.clinicName} />}
             {fields.responsibleVet && <InfoItem label="Médico:" value={fields.responsibleVet} />}
-            <InfoItem label="Data:" value={displayDate} />
+            {examDate && <InfoItem label="Data do exame:" value={examDate} />}
+            <InfoItem label="Criado em:" value={createdDate} />
           </div>
         </div>
       )}
