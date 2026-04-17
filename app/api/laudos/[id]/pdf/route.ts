@@ -78,7 +78,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const { data: laudo } = await admin
     .from("laudos")
     .select(
-      "patient_name, species, breed, age, sex, neutered, owner_name, clinic_name, responsible_vet, specialty, exam_date, created_at, generated_content, pdf_storage_path",
+      "patient_name, species, breed, age, sex, neutered, owner_name, clinic_name, responsible_vet, specialty, exam_date, created_at, generated_content, edited_content, pdf_storage_path",
     )
     .eq("id", id)
     .eq("user_id", userId)
@@ -175,7 +175,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     reportTitle: REPORT_TITLES[specialty],
     vetName: profile.full_name,
     crmv: profile.crmv,
-    parsedLaudo: parseLaudoContent(laudo.generated_content),
+    parsedLaudo: parseLaudoContent(laudo.edited_content ?? laudo.generated_content),
     imageBase64List,
     logoBase64,
     signatureFont: profile.signature_font,

@@ -128,7 +128,6 @@ export async function POST(req: NextRequest) {
         owner_name: ownerName,
         raw_input: rawInput,
         generated_content: generatedContent,
-        original_generated_content: generatedContent,
         sex,
         neutered,
         clinic_name: clinicName,

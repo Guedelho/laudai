@@ -108,7 +108,7 @@ export interface Laudo {
   responsible_vet: string;
   raw_input: string;
   generated_content: string;
-  original_generated_content?: string;
+  edited_content?: string;
   exam_date: string;
   created_at: string;
   updated_at?: string;

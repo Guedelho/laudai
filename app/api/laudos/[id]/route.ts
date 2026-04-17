@@ -16,7 +16,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { data: updated, error } = await admin
     .from("laudos")
     .update({
-      generated_content: JSON.stringify(generatedContent),
+      edited_content: JSON.stringify(generatedContent),
       ...patientFields,
       pdf_storage_path: null,
     })
