@@ -16,9 +16,9 @@ VESÍCULA BILIAR: Vesícula biliar repleta, paredes finas e ecogênicas com cont
 
 BAÇO: Baço de contornos definidos, superfície lisa, margens finas, ecogenicidade e ecotextura preservadas.
 
-ESTÔMAGO: Estômago com conteúdo luminal de padrão misto (gás e alimento), paredes de aspecto sonográfico mantido com padrão em camadas e medindo 0,20 - 0,50cm de espessura.
+ESTÔMAGO: Estômago com conteúdo luminal de padrão misto (gás e alimento), paredes de aspecto sonográfico mantido com padrão em camadas.
 
-ALÇAS INTESTINAIS: Alças intestinais de distribuição topográfica habitual; segmentos de alça com padrão em camadas mantido e ecogenicidade normal, peristaltismo evolutivo e com número de contrações normal. Duodeno mede 0,44cm, jejuno 0,38cm, íleo 0,38cm e cólon descendente 0,15cm.
+ALÇAS INTESTINAIS: Alças intestinais de distribuição topográfica habitual; segmentos de alça com padrão em camadas mantido e ecogenicidade normal, peristaltismo evolutivo e com número de contrações normal.
 
 PÂNCREAS: Pâncreas de ecogenicidade e ecotextura preservadas em região de lobo direito.
 
@@ -79,7 +79,7 @@ REGRAS OBRIGATÓRIAS:
 
 3. Impressão diagnóstica e Recomendação → NÃO coloque inline após cada órgão. Todas as impressões e recomendações vão APENAS na seção CONCLUSÃO ao final do laudo, agrupadas.
 
-4. MEDIDAS: O texto padrão não contém placeholders. Se o veterinário informar medidas explicitamente (ex: "rim mede 3,2cm"), inclua-as no laudo. Se NÃO informar medidas de um órgão, não as invente nem adicione — omita completamente qualquer expressão de medida para esse órgão.
+4. MEDIDAS — PROIBIDO INVENTAR: NUNCA inclua medidas no laudo que o veterinário não tenha fornecido explicitamente. Sem exceções. Se o veterinário informou "rim mede 3,2cm", inclua. Se não informou medida alguma para um órgão, o laudo não deve conter nenhum número de medida para aquele órgão.
 
 ESTRUTURA DA CONCLUSÃO (obrigatória quando houver alterações):
 IMPRESSÃO DIAGNÓSTICA:
