@@ -7,7 +7,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 - **Next.js 16** (App Router) · **React 19** · **TypeScript**
 - **Tailwind CSS 4**
 - **Supabase** — auth, Postgres, storage
-- **Google Gemini AI** (`gemini-3-flash-preview`) — report generation + audio transcription
+- **Google Gemini AI** — `gemini-3.1-pro` (report draft), `gemini-3-flash` (verification + transcription)
 - **pdfmake** — server-side PDF generation
 
 ## Prerequisites
@@ -33,15 +33,8 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 
 3. **Set up Supabase**
    - Open your project's SQL Editor and run the full contents of `supabase/schema.sql`
-   - Go to **Storage** → **New bucket**, create a bucket named `laudo-images` with **public access disabled**
-   - Add this RLS policy to the bucket so users only access their own files:
-     ```sql
-     -- Allow authenticated users to manage their own files
-     create policy "Users manage their own images"
-       on storage.objects for all
-       using (auth.uid()::text = (storage.foldername(name))[1])
-       with check (auth.uid()::text = (storage.foldername(name))[1]);
-     ```
+   - Go to **Storage** → create two private buckets: `laudo-images` and `profile-logos`
+   - RLS policies are applied via migrations — both buckets scope access to `auth.uid() = first folder in path`
 
 4. **Run the dev server**
    ```bash
@@ -79,10 +72,18 @@ app/
   pets/          # Pet management
   clinics/       # Clinic management
 lib/
-  gemini.ts      # Gemini API calls (generate + verification agent)
+  gemini.ts      # Gemini API calls (draft + verification agent)
   templates.ts   # Specialty templates, defaults, report titles
   generatePdf.ts # pdfmake PDF builder
   parseLaudo.ts  # Parse Gemini JSON output
+  rateLimit.ts   # Shared sliding-window rate limiter
+  db.ts          # find-or-create helpers (clinics, vets, pets)
+  supabase/
+    client.ts    # Browser client + getAuthHeaders()
+    admin.ts     # Service-role client for API routes
+    server.ts    # Server-side client for pages
+types/
+  index.ts       # All shared types (models, API request/response, SSE events)
 supabase/
-  schema.sql     # Full database schema with RLS policies
+  migrations/    # Incremental SQL migrations
 ```
