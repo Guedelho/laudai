@@ -4,10 +4,7 @@ import { getUserId } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { UpdateLaudoRequest } from "@/types";
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const userId = await getUserId(req);
@@ -37,10 +34,7 @@ export async function PATCH(
   return NextResponse.json({ laudo: updated });
 }
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const userId = await getUserId(req);

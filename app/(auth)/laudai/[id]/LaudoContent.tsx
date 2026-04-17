@@ -54,14 +54,14 @@ export default function LaudoContent({ parsedLaudo }: { parsedLaudo: ParsedLaudo
         <div className="mt-3">
           <h4 className="font-semibold text-gray-900 text-sm mb-2">OBS:</h4>
           {parsedLaudo.observacoes.map((line, i) => (
-            <p key={i} className="mb-1 text-justify">{line}</p>
+            <p key={i} className="mb-1 text-justify">
+              {line}
+            </p>
           ))}
         </div>
       ) : null}
 
-      {!parsedLaudo.sections.length && parsedLaudo.raw && (
-        <div className="whitespace-pre-wrap">{parsedLaudo.raw}</div>
-      )}
+      {!parsedLaudo.sections.length && parsedLaudo.raw && <div className="whitespace-pre-wrap">{parsedLaudo.raw}</div>}
     </div>
   );
 }

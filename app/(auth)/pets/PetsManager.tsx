@@ -23,7 +23,6 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
-
   const breedSuggestions = [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
 
   function startEdit(pet: Pet) {
@@ -65,7 +64,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
       if (!res.ok) throw new Error(data.error);
 
       setPets((prev) =>
-        prev.map((p) => (p.id === editingId ? data.pet : p)).sort((a, b) => a.name.localeCompare(b.name))
+        prev.map((p) => (p.id === editingId ? data.pet : p)).sort((a, b) => a.name.localeCompare(b.name)),
       );
       setEditingId(null);
     } catch (err) {
@@ -162,7 +161,11 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                 onChange={(e) => setSpecies(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {SPECIES_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {SPECIES_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -235,7 +238,11 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                       onChange={(e) => setEditFields((f) => ({ ...f, species: e.target.value }))}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      {SPECIES_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      {SPECIES_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -263,7 +270,11 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                       onChange={(e) => setEditFields((f) => ({ ...f, sex: e.target.value }))}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      {SEX_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      {SEX_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -299,16 +310,15 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                 <div>
                   <p className="font-medium text-gray-900">{pet.name}</p>
                   <p className="text-sm text-gray-500">
-                    {pet.species}{pet.breed ? ` · ${pet.breed}` : ""}{pet.age ? ` · ${pet.age}` : ""}
-                     · {sexLabel(pet.sex)}{pet.neutered ? " · Castrado(a)" : ""}
+                    {pet.species}
+                    {pet.breed ? ` · ${pet.breed}` : ""}
+                    {pet.age ? ` · ${pet.age}` : ""}· {sexLabel(pet.sex)}
+                    {pet.neutered ? " · Castrado(a)" : ""}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">Responsável: {pet.owner_name}</p>
                 </div>
                 <div className="flex gap-3 shrink-0 mt-0.5">
-                  <button
-                    onClick={() => startEdit(pet)}
-                    className="text-xs text-blue-500 hover:text-blue-700"
-                  >
+                  <button onClick={() => startEdit(pet)} className="text-xs text-blue-500 hover:text-blue-700">
                     Editar
                   </button>
                   <button

@@ -12,7 +12,7 @@ function getBucket(name: string): Map<string, number[]> {
 export function checkRateLimit(name: string, userId: string, maxPerMinute: number): boolean {
   const bucket = getBucket(name);
   const now = Date.now();
-  const timestamps = (bucket.get(userId) ?? []).filter(t => now - t < 60_000);
+  const timestamps = (bucket.get(userId) ?? []).filter((t) => now - t < 60_000);
   bucket.set(userId, timestamps);
   return timestamps.length < maxPerMinute;
 }
@@ -20,7 +20,7 @@ export function checkRateLimit(name: string, userId: string, maxPerMinute: numbe
 export function recordRateLimit(name: string, userId: string): void {
   const bucket = getBucket(name);
   const now = Date.now();
-  const timestamps = (bucket.get(userId) ?? []).filter(t => now - t < 60_000);
+  const timestamps = (bucket.get(userId) ?? []).filter((t) => now - t < 60_000);
   timestamps.push(now);
   bucket.set(userId, timestamps);
 }

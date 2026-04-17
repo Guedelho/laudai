@@ -12,17 +12,11 @@ export async function GET(req: NextRequest) {
   if (!userId) return new NextResponse(null, { status: 401 });
 
   const admin = createAdmin();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("signature_image_url")
-    .eq("id", userId)
-    .single();
+  const { data: profile } = await admin.from("profiles").select("signature_image_url").eq("id", userId).single();
 
   if (!profile?.signature_image_url) return new NextResponse(null, { status: 404 });
 
-  const { data, error } = await admin.storage
-    .from(BUCKET)
-    .createSignedUrl(profile.signature_image_url, 300);
+  const { data, error } = await admin.storage.from(BUCKET).createSignedUrl(profile.signature_image_url, 300);
 
   if (error || !data?.signedUrl) return new NextResponse(null, { status: 404 });
 
@@ -43,7 +37,9 @@ export async function POST(req: NextRequest) {
   let format: string | undefined;
   try {
     ({ format } = await sharp(buf).metadata());
-  } catch { /* handled below */ }
+  } catch {
+    /* handled below */
+  }
   if (!format || !ALLOWED_FORMATS.has(format)) {
     return NextResponse.json({ error: "Formato inválido. Use JPEG ou PNG." }, { status: 400 });
   }
@@ -80,10 +76,7 @@ export async function DELETE(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdmin();
-  const { error } = await admin
-    .from("profiles")
-    .update({ signature_image_url: null })
-    .eq("id", userId);
+  const { error } = await admin.from("profiles").update({ signature_image_url: null }).eq("id", userId);
 
   if (error) {
     console.error("Signature remove error:", error);

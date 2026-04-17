@@ -41,10 +41,7 @@ export default function ImageLightbox({
   }, [images.length, onClose]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/90 flex flex-col"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col" onClick={onClose}>
       <div className="flex justify-end p-4">
         <button
           type="button"
@@ -73,12 +70,12 @@ export default function ImageLightbox({
             ›
           </button>
         )}
-        <div
-          ref={scrollRef}
-          className="w-full h-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory flex"
-        >
+        <div ref={scrollRef} className="w-full h-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory flex">
           {images.map((img) => (
-            <div key={img.key} className="snap-center shrink-0 w-screen h-full flex items-center justify-center px-6 pb-6">
+            <div
+              key={img.key}
+              className="snap-center shrink-0 w-screen h-full flex items-center justify-center px-6 pb-6"
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={img.src} alt={img.alt ?? ""} className="max-w-full max-h-full object-contain" />
             </div>

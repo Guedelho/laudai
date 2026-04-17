@@ -21,8 +21,10 @@ function InfoItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
-const textareaCls = "w-full border border-blue-200 rounded px-2 py-1 text-sm text-gray-800 resize-none focus:outline-none focus:ring-1 focus:ring-blue-400";
+const inputCls =
+  "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
+const textareaCls =
+  "w-full border border-blue-200 rounded px-2 py-1 text-sm text-gray-800 resize-none focus:outline-none focus:ring-1 focus:ring-blue-400";
 
 export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: LaudoImage[] }) {
   const router = useRouter();
@@ -46,9 +48,7 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
   });
 
   const createdDate = new Date(laudo.created_at).toLocaleDateString("pt-BR");
-  const examDate = fields.examDate
-    ? new Date(fields.examDate + "T12:00:00").toLocaleDateString("pt-BR")
-    : null;
+  const examDate = fields.examDate ? new Date(fields.examDate + "T12:00:00").toLocaleDateString("pt-BR") : null;
 
   async function handleSave() {
     setSaving(true);
@@ -129,11 +129,28 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
         <h4 className="font-semibold text-gray-900 text-sm mb-2">{title}</h4>
         {items.map((line, i) => (
           <div key={i} className="mb-2 flex gap-1 items-start">
-            <textarea value={line} onChange={(e) => updateList(listKey, i, e.target.value)} rows={2} className={`${textareaCls} flex-1`} />
-            <button type="button" onClick={() => removeFromList(listKey, i)} className="text-red-400 hover:text-red-600 text-lg leading-none mt-1">×</button>
+            <textarea
+              value={line}
+              onChange={(e) => updateList(listKey, i, e.target.value)}
+              rows={2}
+              className={`${textareaCls} flex-1`}
+            />
+            <button
+              type="button"
+              onClick={() => removeFromList(listKey, i)}
+              className="text-red-400 hover:text-red-600 text-lg leading-none mt-1"
+            >
+              ×
+            </button>
           </div>
         ))}
-        <button type="button" onClick={() => addToList(listKey)} className="text-xs text-blue-600 hover:text-blue-700 mt-1">+ Adicionar linha</button>
+        <button
+          type="button"
+          onClick={() => addToList(listKey)}
+          className="text-xs text-blue-600 hover:text-blue-700 mt-1"
+        >
+          + Adicionar linha
+        </button>
       </div>
     );
   }
@@ -157,17 +174,28 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
         <div className="flex items-center gap-2 mt-1">
           {isEditing ? (
             <>
-              <button onClick={cancelEdit} disabled={saving} className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 rounded-lg border border-gray-300">
+              <button
+                onClick={cancelEdit}
+                disabled={saving}
+                className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 rounded-lg border border-gray-300"
+              >
                 Cancelar
               </button>
-              <button onClick={handleSave} disabled={saving} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              >
                 {saving ? "Salvando..." : "Salvar"}
               </button>
             </>
           ) : (
             <>
               <DeleteLaudoButton laudoId={laudo.id} />
-              <button onClick={() => setIsEditing(true)} className="text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg border border-gray-300">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg border border-gray-300"
+              >
                 Editar
               </button>
               <DownloadPDFButton laudoId={laudo.id} />
@@ -191,31 +219,63 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Paciente</h3>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Nome</label>
-              <input value={fields.patientName} onChange={(e) => setFields({ ...fields, patientName: e.target.value })} className={inputCls} />
+              <input
+                value={fields.patientName}
+                onChange={(e) => setFields({ ...fields, patientName: e.target.value })}
+                className={inputCls}
+              />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Espécie</label>
-              <select value={fields.species} onChange={(e) => setFields({ ...fields, species: e.target.value })} className={inputCls}>
-                {SPECIES_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              <select
+                value={fields.species}
+                onChange={(e) => setFields({ ...fields, species: e.target.value })}
+                className={inputCls}
+              >
+                {SPECIES_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Raça</label>
-              <input value={fields.breed} onChange={(e) => setFields({ ...fields, breed: e.target.value })} className={inputCls} />
+              <input
+                value={fields.breed}
+                onChange={(e) => setFields({ ...fields, breed: e.target.value })}
+                className={inputCls}
+              />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Idade</label>
-              <input value={fields.age} onChange={(e) => setFields({ ...fields, age: e.target.value })} className={inputCls} />
+              <input
+                value={fields.age}
+                onChange={(e) => setFields({ ...fields, age: e.target.value })}
+                className={inputCls}
+              />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Sexo</label>
-              <select value={fields.sex} onChange={(e) => setFields({ ...fields, sex: e.target.value })} className={inputCls}>
-                {SEX_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              <select
+                value={fields.sex}
+                onChange={(e) => setFields({ ...fields, sex: e.target.value })}
+                className={inputCls}
+              >
+                {SEX_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Castrado(a)</label>
-              <select value={fields.neutered ? "true" : "false"} onChange={(e) => setFields({ ...fields, neutered: e.target.value === "true" })} className={inputCls}>
+              <select
+                value={fields.neutered ? "true" : "false"}
+                onChange={(e) => setFields({ ...fields, neutered: e.target.value === "true" })}
+                className={inputCls}
+              >
                 <option value="false">Não</option>
                 <option value="true">Sim</option>
               </select>
@@ -225,19 +285,36 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Atendimento</h3>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Responsável</label>
-              <input value={fields.ownerName} onChange={(e) => setFields({ ...fields, ownerName: e.target.value })} className={inputCls} />
+              <input
+                value={fields.ownerName}
+                onChange={(e) => setFields({ ...fields, ownerName: e.target.value })}
+                className={inputCls}
+              />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Clínica</label>
-              <input value={fields.clinicName} onChange={(e) => setFields({ ...fields, clinicName: e.target.value })} className={inputCls} />
+              <input
+                value={fields.clinicName}
+                onChange={(e) => setFields({ ...fields, clinicName: e.target.value })}
+                className={inputCls}
+              />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Médico Responsável</label>
-              <input value={fields.responsibleVet} onChange={(e) => setFields({ ...fields, responsibleVet: e.target.value })} className={inputCls} />
+              <input
+                value={fields.responsibleVet}
+                onChange={(e) => setFields({ ...fields, responsibleVet: e.target.value })}
+                className={inputCls}
+              />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Data do exame</label>
-              <input type="date" value={fields.examDate} onChange={(e) => setFields({ ...fields, examDate: e.target.value })} className={inputCls} />
+              <input
+                type="date"
+                value={fields.examDate}
+                onChange={(e) => setFields({ ...fields, examDate: e.target.value })}
+                className={inputCls}
+              />
             </div>
           </div>
         </div>
@@ -275,7 +352,12 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
               {editedParsed.sections.map((section, i) => (
                 <div key={i}>
                   <span className="font-semibold text-gray-900">{section.label}:</span>
-                  <textarea value={section.content} onChange={(e) => updateSection(i, e.target.value)} rows={3} className={`${textareaCls} mt-1 block`} />
+                  <textarea
+                    value={section.content}
+                    onChange={(e) => updateSection(i, e.target.value)}
+                    rows={3}
+                    className={`${textareaCls} mt-1 block`}
+                  />
                 </div>
               ))}
 
@@ -286,7 +368,12 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
               )}
 
               {editedParsed.conclusion && !editedParsed.impressao?.length && (
-                <textarea value={editedParsed.conclusion} onChange={(e) => setEditedParsed({ ...editedParsed, conclusion: e.target.value })} rows={3} className={textareaCls} />
+                <textarea
+                  value={editedParsed.conclusion}
+                  onChange={(e) => setEditedParsed({ ...editedParsed, conclusion: e.target.value })}
+                  rows={3}
+                  className={textareaCls}
+                />
               )}
 
               <EditableList listKey="impressao" title="IMPRESSÃO DIAGNÓSTICA:" />

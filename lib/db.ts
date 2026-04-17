@@ -43,7 +43,7 @@ export async function findOrCreatePet(
   userId: string,
   name: string,
   ownerName: string,
-  fields?: { species?: string; breed?: string | null; age?: string | null; sex: string; neutered: boolean }
+  fields?: { species?: string; breed?: string | null; age?: string | null; sex: string; neutered: boolean },
 ) {
   const { data: existing } = await admin
     .from("pets")

@@ -40,40 +40,46 @@ async function fetchAsBase64(url: string, maxWidth?: number, maxHeight?: number)
   return `data:${finalMime};base64,${buf.toString("base64")}`;
 }
 
-function buildFilename(laudo: { patient_name: string; owner_name: string; specialty: string; exam_date?: string; created_at: string }) {
-  const dateSource = laudo.exam_date
-    ? new Date(laudo.exam_date + "T12:00:00")
-    : new Date(laudo.created_at);
+function buildFilename(laudo: {
+  patient_name: string;
+  owner_name: string;
+  specialty: string;
+  exam_date?: string;
+  created_at: string;
+}) {
+  const dateSource = laudo.exam_date ? new Date(laudo.exam_date + "T12:00:00") : new Date(laudo.created_at);
   const dateShort = [
     String(dateSource.getDate()).padStart(2, "0"),
     String(dateSource.getMonth() + 1).padStart(2, "0"),
     String(dateSource.getFullYear()).slice(2),
   ].join(".");
-  return [
-    "Laudo",
-    SPECIALTY_ABBR[laudo.specialty as Specialty],
-    slugify(laudo.patient_name),
-    slugify(laudo.owner_name),
-    dateShort,
-  ].join(".") + ".pdf";
+  return (
+    [
+      "Laudo",
+      SPECIALTY_ABBR[laudo.specialty as Specialty],
+      slugify(laudo.patient_name),
+      slugify(laudo.owner_name),
+      dateShort,
+    ].join(".") + ".pdf"
+  );
 }
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!checkRateLimit("pdf", userId, 5)) return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
+  if (!checkRateLimit("pdf", userId, 5))
+    return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
   recordRateLimit("pdf", userId);
 
   const admin = createAdmin();
 
   const { data: laudo } = await admin
     .from("laudos")
-    .select("patient_name, species, breed, age, sex, neutered, owner_name, clinic_name, responsible_vet, specialty, exam_date, created_at, generated_content, pdf_storage_path")
+    .select(
+      "patient_name, species, breed, age, sex, neutered, owner_name, clinic_name, responsible_vet, specialty, exam_date, created_at, generated_content, pdf_storage_path",
+    )
     .eq("id", id)
     .eq("user_id", userId)
     .single();
@@ -114,9 +120,7 @@ export async function GET(
     .order("created_at", { ascending: true });
 
   const specialty = laudo.specialty as Specialty;
-  const dateSource = laudo.exam_date
-    ? new Date(laudo.exam_date + "T12:00:00")
-    : new Date(laudo.created_at);
+  const dateSource = laudo.exam_date ? new Date(laudo.exam_date + "T12:00:00") : new Date(laudo.created_at);
   const date = dateSource.toLocaleDateString("pt-BR");
 
   const imageResults = await Promise.all(
@@ -129,7 +133,7 @@ export async function GET(
         console.error("Failed to load laudo image:", img.storage_path, err);
         return null;
       }
-    })
+    }),
   );
 
   const imageBase64List = imageResults.filter((b): b is string => b !== null);
@@ -147,7 +151,9 @@ export async function GET(
   let signatureImageBase64: string | undefined;
   if (profile?.signature_image_url) {
     try {
-      const { data: sigSigned } = await admin.storage.from("profile-logos").createSignedUrl(profile.signature_image_url, 60);
+      const { data: sigSigned } = await admin.storage
+        .from("profile-logos")
+        .createSignedUrl(profile.signature_image_url, 60);
       if (sigSigned?.signedUrl) signatureImageBase64 = await fetchAsBase64(sigSigned.signedUrl);
     } catch (err) {
       console.error("Failed to fetch signature image:", err);

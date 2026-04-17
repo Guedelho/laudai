@@ -9,7 +9,8 @@ export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!checkRateLimit("transcribe", userId, 10)) return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
+  if (!checkRateLimit("transcribe", userId, 10))
+    return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
   recordRateLimit("transcribe", userId);
 
   const formData = await req.formData();

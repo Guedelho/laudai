@@ -3,7 +3,9 @@ import { createAdmin } from "@/lib/supabase/admin";
 import LaudoList from "./LaudoList";
 
 export default async function DashboardPage() {
-  const { data: { user } } = await (await createClient()).auth.getUser();
+  const {
+    data: { user },
+  } = await (await createClient()).auth.getUser();
   if (!user) return null;
 
   const admin = createAdmin();

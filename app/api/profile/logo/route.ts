@@ -12,17 +12,11 @@ export async function GET(req: NextRequest) {
   if (!userId) return new NextResponse(null, { status: 401 });
 
   const admin = createAdmin();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("logo_url")
-    .eq("id", userId)
-    .single();
+  const { data: profile } = await admin.from("profiles").select("logo_url").eq("id", userId).single();
 
   if (!profile?.logo_url) return new NextResponse(null, { status: 404 });
 
-  const { data, error } = await admin.storage
-    .from(BUCKET)
-    .createSignedUrl(profile.logo_url, 300);
+  const { data, error } = await admin.storage.from(BUCKET).createSignedUrl(profile.logo_url, 300);
 
   if (error || !data?.signedUrl) return new NextResponse(null, { status: 404 });
 
@@ -43,7 +37,9 @@ export async function POST(req: NextRequest) {
   let format: string | undefined;
   try {
     ({ format } = await sharp(buf).metadata());
-  } catch { /* handled below */ }
+  } catch {
+    /* handled below */
+  }
   if (!format || !ALLOWED_FORMATS.has(format)) {
     return NextResponse.json({ error: "Formato inválido. Use JPEG ou PNG." }, { status: 400 });
   }
@@ -63,10 +59,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Store the storage path (not a public URL) — bucket is private
-  const { error: updateError } = await admin
-    .from("profiles")
-    .update({ logo_url: storagePath })
-    .eq("id", userId);
+  const { error: updateError } = await admin.from("profiles").update({ logo_url: storagePath }).eq("id", userId);
 
   if (updateError) {
     console.error("Profile logo_url update error:", updateError);

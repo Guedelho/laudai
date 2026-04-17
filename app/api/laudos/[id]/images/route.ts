@@ -37,10 +37,7 @@ async function getSignedUrl(admin: ReturnType<typeof createAdmin>, storagePath: 
   return data.signedUrl;
 }
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -63,16 +60,13 @@ export async function GET(
     (images ?? []).map(async (img) => ({
       ...img,
       url: await getSignedUrl(admin, img.storage_path),
-    }))
+    })),
   );
 
   return NextResponse.json({ images: withUrls.filter((img) => img.url !== null) });
 }
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -81,19 +75,15 @@ export async function POST(
   await ensureBucket(admin);
 
   // Verify laudo belongs to user
-  const { data: laudo } = await admin
-    .from("laudos")
-    .select("id")
-    .eq("id", id)
-    .eq("user_id", userId)
-    .single();
+  const { data: laudo } = await admin.from("laudos").select("id").eq("id", id).eq("user_id", userId).single();
   if (!laudo) return NextResponse.json({ error: "Laudo not found" }, { status: 404 });
 
   const formData = await req.formData();
   const files = formData.getAll("images") as File[];
 
   if (!files.length) return NextResponse.json({ error: "No images provided" }, { status: 400 });
-  if (files.length > MAX_FILES) return NextResponse.json({ error: `Máximo de ${MAX_FILES} imagens por vez` }, { status: 400 });
+  if (files.length > MAX_FILES)
+    return NextResponse.json({ error: `Máximo de ${MAX_FILES} imagens por vez` }, { status: 400 });
 
   // Phase 1: validate + detect formats in parallel
   const fileData = await Promise.all(
@@ -107,7 +97,7 @@ export async function POST(
         return { validationError: `Formato não suportado: ${file.name}. Use JPEG, PNG ou WebP.` } as const;
       }
       return { buf, mime: detected.mime, ext: detected.ext, name: file.name };
-    })
+    }),
   );
 
   const invalid = fileData.find((d) => "validationError" in d);
@@ -123,9 +113,7 @@ export async function POST(
         const imageId = crypto.randomUUID();
         const storagePath = `${userId}/${id}/${imageId}.${ext}`;
 
-        const { error: uploadError } = await admin.storage
-          .from(BUCKET)
-          .upload(storagePath, buf, { contentType: mime });
+        const { error: uploadError } = await admin.storage.from(BUCKET).upload(storagePath, buf, { contentType: mime });
 
         if (uploadError) {
           console.error("Image upload error:", uploadError);
@@ -145,7 +133,7 @@ export async function POST(
         }
 
         return { ...record, url: await getSignedUrl(admin, storagePath) };
-      })
+      }),
     );
 
     revalidateTag(`laudo-${id}`, "default");

@@ -21,7 +21,7 @@ export default function LaudoList({ laudos }: { laudos: LaudoSummary[] }) {
     ? laudos.filter(
         (l) =>
           l.patient_name.toLowerCase().includes(query.toLowerCase()) ||
-          l.owner_name.toLowerCase().includes(query.toLowerCase())
+          l.owner_name.toLowerCase().includes(query.toLowerCase()),
       )
     : laudos;
 
@@ -65,10 +65,7 @@ export default function LaudoList({ laudos }: { laudos: LaudoSummary[] }) {
                   )}
                 </p>
               </div>
-              <Link
-                href={`/laudai/${laudo.id}`}
-                className="text-sm text-blue-600 hover:underline"
-              >
+              <Link href={`/laudai/${laudo.id}`} className="text-sm text-blue-600 hover:underline">
                 Ver laudo
               </Link>
             </div>

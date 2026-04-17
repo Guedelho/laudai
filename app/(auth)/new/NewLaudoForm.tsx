@@ -52,7 +52,9 @@ export default function NewLaudoPage() {
   // Revoke all remaining URLs only on unmount, not on every change.
   // removeFile() already revokes individual URLs when they're removed.
   useEffect(() => {
-    return () => { objectUrlsRef.current.forEach(URL.revokeObjectURL); };
+    return () => {
+      objectUrlsRef.current.forEach(URL.revokeObjectURL);
+    };
   }, []);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -74,7 +76,13 @@ export default function NewLaudoPage() {
   function handlePetSelect(petId: string) {
     setSelectedPetId(petId);
     if (!petId) {
-      setPatientName(""); setSpecies("Canina"); setBreed(""); setAge(""); setSex("M"); setNeutered(false); setOwnerName("");
+      setPatientName("");
+      setSpecies("Canina");
+      setBreed("");
+      setAge("");
+      setSex("M");
+      setNeutered(false);
+      setOwnerName("");
       return;
     }
     const pet = pets.find((p) => p.id === petId);
@@ -183,9 +191,18 @@ export default function NewLaudoPage() {
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!patientName.trim()) { setError("Nome do paciente é obrigatório."); return; }
-    if (!ownerName.trim()) { setError("Nome do responsável é obrigatório."); return; }
-    if (!rawInput.trim()) { setError("Achados do exame são obrigatórios."); return; }
+    if (!patientName.trim()) {
+      setError("Nome do paciente é obrigatório.");
+      return;
+    }
+    if (!ownerName.trim()) {
+      setError("Nome do responsável é obrigatório.");
+      return;
+    }
+    if (!rawInput.trim()) {
+      setError("Achados do exame são obrigatórios.");
+      return;
+    }
     setGenerating(true);
     setGeneratingStatus("Gerando laudo...");
 
@@ -215,11 +232,9 @@ export default function NewLaudoPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          setClinics((prev) => prev.map((c) =>
-            c.id === selectedClinicId
-              ? { ...c, clinic_vets: [...c.clinic_vets, data.vet] }
-              : c
-          ));
+          setClinics((prev) =>
+            prev.map((c) => (c.id === selectedClinicId ? { ...c, clinic_vets: [...c.clinic_vets, data.vet] } : c)),
+          );
           resolvedVetName = data.vet.name;
         }
       }
@@ -228,10 +243,16 @@ export default function NewLaudoPage() {
         method: "POST",
         headers,
         body: JSON.stringify({
-          specialty, rawInput, patientName, species, breed, age,
+          specialty,
+          rawInput,
+          patientName,
+          species,
+          breed,
+          age,
           sex,
           neutered,
-          ownerName, clinicName: resolvedClinicName || undefined,
+          ownerName,
+          clinicName: resolvedClinicName || undefined,
           responsibleVet: resolvedVetName || undefined,
           examDate: examDate || undefined,
           petId: selectedPetId || undefined,
@@ -240,7 +261,11 @@ export default function NewLaudoPage() {
 
       if (!res.ok) {
         let data: { error?: string } = {};
-        try { data = await res.json(); } catch { /* ignore */ }
+        try {
+          data = await res.json();
+        } catch {
+          /* ignore */
+        }
         throw new Error(data.error || "Erro ao gerar laudo.");
       }
 
@@ -264,7 +289,10 @@ export default function NewLaudoPage() {
           else if (event.status === "reviewing") setGeneratingStatus("Revisando laudo...");
           else if (event.status === "saving") setGeneratingStatus("Salvando...");
           else if (event.status === "error") throw new Error(event.message || "Erro ao gerar laudo.");
-          else if (event.status === "done") { laudoPayload = event.laudo; break outer; }
+          else if (event.status === "done") {
+            laudoPayload = event.laudo;
+            break outer;
+          }
         }
       }
 
@@ -275,10 +303,18 @@ export default function NewLaudoPage() {
       if (selectedFiles.length > 0) {
         const formData = new FormData();
         selectedFiles.forEach((f) => formData.append("images", f));
-        const imgRes = await fetch(`/api/laudos/${laudoId}/images`, { method: "POST", headers: await getAuthHeaders(), body: formData });
+        const imgRes = await fetch(`/api/laudos/${laudoId}/images`, {
+          method: "POST",
+          headers: await getAuthHeaders(),
+          body: formData,
+        });
         if (!imgRes.ok) {
           let imgData: { error?: string } = {};
-          try { imgData = await imgRes.json(); } catch { /* ignore */ }
+          try {
+            imgData = await imgRes.json();
+          } catch {
+            /* ignore */
+          }
           throw new Error(imgData.error || "Erro ao enviar imagens.");
         }
       }
@@ -291,7 +327,8 @@ export default function NewLaudoPage() {
     }
   }
 
-  const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const inputCls =
+    "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
   return (
     <main className="max-w-2xl mx-auto px-6 py-8">
@@ -299,215 +336,231 @@ export default function NewLaudoPage() {
         ← Laudos
       </Link>
       <form onSubmit={handleGenerate} className="space-y-6">
-
-          {/* Clinic / Vet */}
-          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-700">Clínica e Responsável</p>
-              <a href="/clinics" className="text-xs text-blue-600 hover:underline">Gerenciar clínicas</a>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Clínica</label>
-                <Typeahead
-                  value={newClinicName}
-                  onChange={(v) => {
-                    setNewClinicName(v);
-                    const match = clinics.find((c) => c.name.toLowerCase() === v.toLowerCase());
-                    setSelectedClinicId(match?.id ?? "");
-                    setSelectedVetId("");
-                    setNewVetName("");
-                  }}
-                  suggestions={clinics.map((c) => c.name)}
-                  placeholder="Nome da clínica"
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Médico Responsável</label>
-                <Typeahead
-                  value={newVetName}
-                  onChange={(v) => {
-                    setNewVetName(v);
-                    const match = vets.find((vet) => vet.name.toLowerCase() === v.toLowerCase());
-                    setSelectedVetId(match?.id ?? "");
-                  }}
-                  suggestions={vets.map((v) => v.name)}
-                  placeholder="Nome do responsável"
-                  className={inputCls}
-                />
-              </div>
-            </div>
+        {/* Clinic / Vet */}
+        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-gray-700">Clínica e Responsável</p>
+            <a href="/clinics" className="text-xs text-blue-600 hover:underline">
+              Gerenciar clínicas
+            </a>
           </div>
-
-          {/* Patient */}
-          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-700">Paciente</p>
-              <a href="/pets" className="text-xs text-blue-600 hover:underline">Gerenciar pacientes</a>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Paciente</label>
-                <Typeahead
-                  value={patientName}
-                  onChange={(v) => {
-                    setPatientName(v);
-                    const match = pets.find((p) => p.name.toLowerCase() === v.toLowerCase());
-                    if (match) handlePetSelect(match.id);
-                    else setSelectedPetId("");
-                  }}
-                  suggestions={pets.map((p) => p.name)}
-                  placeholder="Nome do paciente"
-                  className={inputCls}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Nome do responsável</label>
-                <input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className={inputCls} required />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Espécie</label>
-                <select value={species} onChange={(e) => setSpecies(e.target.value)} className={inputCls}>
-                  {SPECIES_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Sexo</label>
-                <select value={sex} onChange={(e) => setSex(e.target.value)} className={inputCls}>
-                  {SEX_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Castrado(a)</label>
-                <select
-                  value={neutered ? "true" : "false"}
-                  onChange={(e) => setNeutered(e.target.value === "true")}
-                  className={inputCls}
-                >
-                  <option value="false">Não</option>
-                  <option value="true">Sim</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Raça</label>
-                <Typeahead value={breed} onChange={setBreed} suggestions={breedSuggestions} className={inputCls} />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Idade</label>
-                <input value={age} onChange={(e) => setAge(e.target.value)} placeholder="ex: 3 anos" className={inputCls} />
-              </div>
-            </div>
-          </div>
-
-          {/* Exam date */}
-          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Data do exame</label>
-            <input
-              type="date"
-              value={examDate}
-              onChange={(e) => setExamDate(e.target.value)}
-              className={inputCls}
-            />
-          </div>
-
-          {/* Findings */}
-          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-            <p className="text-sm font-semibold text-gray-700">Achados do Exame</p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={recording ? stopRecording : startRecording}
-                disabled={transcribing}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                  recording
-                    ? "bg-red-500 text-white border-red-500 hover:bg-red-600"
-                    : "bg-white text-gray-700 border-gray-300 hover:border-blue-400"
-                }`}
-              >
-                {recording ? "Parar gravação" : transcribing ? "Transcrevendo..." : "Gravar voz"}
-              </button>
-            </div>
-            <textarea
-              value={rawInput}
-              onChange={(e) => setRawInput(e.target.value)}
-              placeholder="Informe apenas as alterações encontradas... Deixe em branco para gerar laudo normal."
-              rows={6}
-              maxLength={2000}
-              className={`${inputCls} resize-none`}
-              required
-            />
-            <p className={`text-xs text-right ${rawInput.length >= 1800 ? "text-amber-500" : "text-gray-400"}`}>
-              {rawInput.length}/2000
-            </p>
-          </div>
-
-          {/* Images */}
-          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-700">
-                Imagens do exame
-                {selectedFiles.length > 0 && (
-                  <span className="ml-2 text-xs font-normal text-gray-400">{selectedFiles.length}/30</span>
-                )}
-              </p>
-              <button
-                type="button"
-                onClick={() => imageInputRef.current?.click()}
-                disabled={selectedFiles.length >= 30}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Adicionar imagens
-              </button>
-              <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileSelect} />
-            </div>
-            {selectedFiles.length > 0 ? (
-              <div className="grid grid-cols-3 gap-2">
-                {selectedFiles.map((file, i) => (
-                  <div key={objectUrls[i]} className="relative group">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={objectUrls[i]}
-                      alt={file.name}
-                      onClick={() => setLightboxIndex(i)}
-                      className="w-full aspect-[4/3] object-cover rounded-lg border border-gray-200 bg-black cursor-pointer"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeFile(i)}
-                      className="absolute top-1 right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-400 italic">Nenhuma imagem selecionada</p>
-            )}
-            {lightboxIndex !== null && (
-              <ImageLightbox
-                images={objectUrls.map((url) => ({ key: url, src: url }))}
-                selectedIndex={lightboxIndex}
-                onClose={() => setLightboxIndex(null)}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Clínica</label>
+              <Typeahead
+                value={newClinicName}
+                onChange={(v) => {
+                  setNewClinicName(v);
+                  const match = clinics.find((c) => c.name.toLowerCase() === v.toLowerCase());
+                  setSelectedClinicId(match?.id ?? "");
+                  setSelectedVetId("");
+                  setNewVetName("");
+                }}
+                suggestions={clinics.map((c) => c.name)}
+                placeholder="Nome da clínica"
+                className={inputCls}
               />
-            )}
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Médico Responsável</label>
+              <Typeahead
+                value={newVetName}
+                onChange={(v) => {
+                  setNewVetName(v);
+                  const match = vets.find((vet) => vet.name.toLowerCase() === v.toLowerCase());
+                  setSelectedVetId(match?.id ?? "");
+                }}
+                suggestions={vets.map((v) => v.name)}
+                placeholder="Nome do responsável"
+                className={inputCls}
+              />
+            </div>
           </div>
+        </div>
 
-          {error && <p className="text-sm text-red-500">{error}</p>}
+        {/* Patient */}
+        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-gray-700">Paciente</p>
+            <a href="/pets" className="text-xs text-blue-600 hover:underline">
+              Gerenciar pacientes
+            </a>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Paciente</label>
+              <Typeahead
+                value={patientName}
+                onChange={(v) => {
+                  setPatientName(v);
+                  const match = pets.find((p) => p.name.toLowerCase() === v.toLowerCase());
+                  if (match) handlePetSelect(match.id);
+                  else setSelectedPetId("");
+                }}
+                suggestions={pets.map((p) => p.name)}
+                placeholder="Nome do paciente"
+                className={inputCls}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Nome do responsável</label>
+              <input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className={inputCls} required />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Espécie</label>
+              <select value={species} onChange={(e) => setSpecies(e.target.value)} className={inputCls}>
+                {SPECIES_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Sexo</label>
+              <select value={sex} onChange={(e) => setSex(e.target.value)} className={inputCls}>
+                {SEX_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Castrado(a)</label>
+              <select
+                value={neutered ? "true" : "false"}
+                onChange={(e) => setNeutered(e.target.value === "true")}
+                className={inputCls}
+              >
+                <option value="false">Não</option>
+                <option value="true">Sim</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Raça</label>
+              <Typeahead value={breed} onChange={setBreed} suggestions={breedSuggestions} className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Idade</label>
+              <input
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                placeholder="ex: 3 anos"
+                className={inputCls}
+              />
+            </div>
+          </div>
+        </div>
 
-          <button
-            type="submit"
-            disabled={generating}
-            className="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
-          >
-            {generating ? "Aguarde..." : "Gerar Laudo"}
-          </button>
-          {generating && (
-            <p className="text-center text-sm text-gray-500 animate-pulse">{generatingStatus}</p>
+        {/* Exam date */}
+        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+          <label className="block text-sm font-semibold text-gray-700">Data do exame</label>
+          <input type="date" value={examDate} onChange={(e) => setExamDate(e.target.value)} className={inputCls} />
+        </div>
+
+        {/* Findings */}
+        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+          <p className="text-sm font-semibold text-gray-700">Achados do Exame</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={recording ? stopRecording : startRecording}
+              disabled={transcribing}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                recording
+                  ? "bg-red-500 text-white border-red-500 hover:bg-red-600"
+                  : "bg-white text-gray-700 border-gray-300 hover:border-blue-400"
+              }`}
+            >
+              {recording ? "Parar gravação" : transcribing ? "Transcrevendo..." : "Gravar voz"}
+            </button>
+          </div>
+          <textarea
+            value={rawInput}
+            onChange={(e) => setRawInput(e.target.value)}
+            placeholder="Informe apenas as alterações encontradas... Deixe em branco para gerar laudo normal."
+            rows={6}
+            maxLength={2000}
+            className={`${inputCls} resize-none`}
+            required
+          />
+          <p className={`text-xs text-right ${rawInput.length >= 1800 ? "text-amber-500" : "text-gray-400"}`}>
+            {rawInput.length}/2000
+          </p>
+        </div>
+
+        {/* Images */}
+        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-gray-700">
+              Imagens do exame
+              {selectedFiles.length > 0 && (
+                <span className="ml-2 text-xs font-normal text-gray-400">{selectedFiles.length}/30</span>
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={() => imageInputRef.current?.click()}
+              disabled={selectedFiles.length >= 30}
+              className="text-xs text-blue-600 hover:text-blue-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Adicionar imagens
+            </button>
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+          </div>
+          {selectedFiles.length > 0 ? (
+            <div className="grid grid-cols-3 gap-2">
+              {selectedFiles.map((file, i) => (
+                <div key={objectUrls[i]} className="relative group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={objectUrls[i]}
+                    alt={file.name}
+                    onClick={() => setLightboxIndex(i)}
+                    className="w-full aspect-[4/3] object-cover rounded-lg border border-gray-200 bg-black cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeFile(i)}
+                    className="absolute top-1 right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 italic">Nenhuma imagem selecionada</p>
           )}
-        </form>
-      </main>
+          {lightboxIndex !== null && (
+            <ImageLightbox
+              images={objectUrls.map((url) => ({ key: url, src: url }))}
+              selectedIndex={lightboxIndex}
+              onClose={() => setLightboxIndex(null)}
+            />
+          )}
+        </div>
+
+        {error && <p className="text-sm text-red-500">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={generating}
+          className="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
+        >
+          {generating ? "Aguarde..." : "Gerar Laudo"}
+        </button>
+        {generating && <p className="text-center text-sm text-gray-500 animate-pulse">{generatingStatus}</p>}
+      </form>
+    </main>
   );
 }

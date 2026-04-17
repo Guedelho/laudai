@@ -4,10 +4,7 @@ import { createAdmin } from "@/lib/supabase/admin";
 
 const BUCKET = "laudo-images";
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string; imageId: string }> }
-) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string; imageId: string }> }) {
   const { id, imageId } = await params;
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

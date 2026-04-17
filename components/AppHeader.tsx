@@ -20,10 +20,7 @@ export default function AppHeader() {
         Laudai
       </Link>
       <div className="flex items-center gap-4">
-        <Link
-          href="/new"
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
-        >
+        <Link href="/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
           Novo Laudo
         </Link>
         {NAV_LINKS.map((l) => (

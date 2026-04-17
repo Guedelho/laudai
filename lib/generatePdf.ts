@@ -8,10 +8,11 @@ const FONT_URLS: Record<string, string> = {
 };
 
 const SIGNATURE_FONT_URLS: Record<string, string> = {
-  "sacramento":      "https://raw.githubusercontent.com/google/fonts/main/ofl/sacramento/Sacramento-Regular.ttf",
-  "pinyon-script":   "https://raw.githubusercontent.com/google/fonts/main/ofl/pinyonscript/PinyonScript-Regular.ttf",
-  "alex-brush":      "https://raw.githubusercontent.com/google/fonts/main/ofl/alexbrush/AlexBrush-Regular.ttf",
-  "homemade-apple":  "https://raw.githubusercontent.com/google/fonts/main/apache/homemadeapple/HomemadeApple-Regular.ttf",
+  sacramento: "https://raw.githubusercontent.com/google/fonts/main/ofl/sacramento/Sacramento-Regular.ttf",
+  "pinyon-script": "https://raw.githubusercontent.com/google/fonts/main/ofl/pinyonscript/PinyonScript-Regular.ttf",
+  "alex-brush": "https://raw.githubusercontent.com/google/fonts/main/ofl/alexbrush/AlexBrush-Regular.ttf",
+  "homemade-apple":
+    "https://raw.githubusercontent.com/google/fonts/main/apache/homemadeapple/HomemadeApple-Regular.ttf",
 };
 
 const fontCache = new Map<string, Buffer>();
@@ -54,10 +55,7 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
 
   for (const section of parsedLaudo.sections) {
     items.push({
-      text: [
-        { text: section.label + ": ", bold: true, font: "Roboto" },
-        { text: section.content },
-      ],
+      text: [{ text: section.label + ": ", bold: true, font: "Roboto" }, { text: section.content }],
       margin: [0, 2, 0, 5],
       alignment: "justify",
       fontSize: 12,
@@ -154,7 +152,27 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
 }
 
 export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
-  const { patientName, species, breed, age, sex, neutered, ownerName, clinicName, responsibleVet, date, reportTitle, vetName, crmv, parsedLaudo, imageBase64List, logoBase64, signatureFont, signatureImageBase64, crmvState } = data;
+  const {
+    patientName,
+    species,
+    breed,
+    age,
+    sex,
+    neutered,
+    ownerName,
+    clinicName,
+    responsibleVet,
+    date,
+    reportTitle,
+    vetName,
+    crmv,
+    parsedLaudo,
+    imageBase64List,
+    logoBase64,
+    signatureFont,
+    signatureImageBase64,
+    crmvState,
+  } = data;
   const crmvLabel = crmvState ? `CRMV-${crmvState} ${crmv}` : `CRMV ${crmv}`;
 
   // Fetch fonts from CDN (cached after first call)
@@ -245,23 +263,29 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
     pageMargins: [50, 36, 50, (signatureFont && SIGNATURE_FONT_URLS[signatureFont]) || signatureImageBase64 ? 130 : 48],
 
     // Centered watermark on every page
-    ...(logoBase64 ? {
-      background: () => ({
-        image: logoBase64,
-        width: 280,
-        opacity: 0.15,
-        absolutePosition: { x: (PAGE_W - 280) / 2, y: (841.89 - 280) / 2 },
-      }),
-    } : {}),
+    ...(logoBase64
+      ? {
+          background: () => ({
+            image: logoBase64,
+            width: 280,
+            opacity: 0.15,
+            absolutePosition: { x: (PAGE_W - 280) / 2, y: (841.89 - 280) / 2 },
+          }),
+        }
+      : {}),
 
     content: [
       // Logo as first content item — only on page 1, naturally
-      ...(logoBase64 ? [{
-        image: logoBase64,
-        fit: [PAGE_W - 100, LOGO_H],
-        alignment: "center",
-        margin: [0, 0, 0, 20],
-      }] : []),
+      ...(logoBase64
+        ? [
+            {
+              image: logoBase64,
+              fit: [PAGE_W - 100, LOGO_H],
+              alignment: "center",
+              margin: [0, 0, 0, 20],
+            },
+          ]
+        : []),
       {
         columns: [
           { stack: leftCol, width: "*" },
@@ -278,9 +302,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
         margin: [0, 0, 0, 12],
       },
       ...buildBodyFromParsed(parsedLaudo),
-      ...(imageContent.length > 0
-        ? [{ text: "", pageBreak: "before" }, ...imageContent]
-        : []),
+      ...(imageContent.length > 0 ? [{ text: "", pageBreak: "before" }, ...imageContent] : []),
     ],
 
     footer: (currentPage: number, pageCount: number) => {

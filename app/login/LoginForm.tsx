@@ -63,7 +63,6 @@ export default function LoginPage() {
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
-
       </div>
     </div>
   );

@@ -6,7 +6,15 @@ import { LaudoImage } from "@/types";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import ImageLightbox from "@/components/ImageLightbox";
 
-export default function ImageManager({ initialImages, laudoId, editable = false }: { initialImages: LaudoImage[]; laudoId: string; editable?: boolean }) {
+export default function ImageManager({
+  initialImages,
+  laudoId,
+  editable = false,
+}: {
+  initialImages: LaudoImage[];
+  laudoId: string;
+  editable?: boolean;
+}) {
   const [images, setImages] = useState<LaudoImage[]>(initialImages);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -41,7 +49,11 @@ export default function ImageManager({ initialImages, laudoId, editable = false 
       const res = await fetch(`/api/laudos/${laudoId}/images/${imageId}`, { method: "DELETE", headers });
       if (!res.ok) {
         let data: { error?: string } = {};
-        try { data = await res.json(); } catch { /* ignore */ }
+        try {
+          data = await res.json();
+        } catch {
+          /* ignore */
+        }
         throw new Error(data.error || "Erro ao remover imagem.");
       }
       setImages((prev) => prev.filter((img) => img.id !== imageId));
@@ -63,9 +75,7 @@ export default function ImageManager({ initialImages, laudoId, editable = false 
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-semibold text-gray-700">
             Imagens do exame
-            {images.length > 0 && (
-              <span className="ml-2 text-xs font-normal text-gray-400">{images.length}/30</span>
-            )}
+            {images.length > 0 && <span className="ml-2 text-xs font-normal text-gray-400">{images.length}/30</span>}
           </p>
           {editable && (
             <>

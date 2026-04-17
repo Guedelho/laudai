@@ -21,9 +21,9 @@ function validateCpf(value: string): boolean {
 }
 
 const SIGNATURE_FONTS = [
-  { key: "sacramento",     label: "Sacramento",     css: "'Sacramento', cursive" },
-  { key: "pinyon-script",  label: "Pinyon Script",  css: "'Pinyon Script', cursive" },
-  { key: "alex-brush",     label: "Alex Brush",     css: "'Alex Brush', cursive" },
+  { key: "sacramento", label: "Sacramento", css: "'Sacramento', cursive" },
+  { key: "pinyon-script", label: "Pinyon Script", css: "'Pinyon Script', cursive" },
+  { key: "alex-brush", label: "Alex Brush", css: "'Alex Brush', cursive" },
   { key: "homemade-apple", label: "Homemade Apple", css: "'Homemade Apple', cursive" },
 ];
 
@@ -50,8 +50,8 @@ export default function ProfileForm({
   const [cpf, setCpf] = useState(initialCpf);
   const crmv = initialCrmv;
   const crmvState = initialCrmvState;
-  const [logoVersion, setLogoVersion] = useState(() => hasLogo ? Date.now() : 0);
-  const [sigVersion, setSigVersion] = useState(() => hasSignatureImage ? Date.now() : 0);
+  const [logoVersion, setLogoVersion] = useState(() => (hasLogo ? Date.now() : 0));
+  const [sigVersion, setSigVersion] = useState(() => (hasSignatureImage ? Date.now() : 0));
   const [signatureFont, setSignatureFont] = useState(initialSignatureFont);
   const [cpfError, setCpfError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -69,7 +69,8 @@ export default function ProfileForm({
       const link = document.createElement("link");
       link.id = id;
       link.rel = "stylesheet";
-      link.href = "https://fonts.googleapis.com/css2?family=Sacramento&family=Pinyon+Script&family=Alex+Brush&family=Homemade+Apple&display=swap";
+      link.href =
+        "https://fonts.googleapis.com/css2?family=Sacramento&family=Pinyon+Script&family=Alex+Brush&family=Homemade+Apple&display=swap";
       document.head.appendChild(link);
     }
   }, []);
@@ -229,7 +230,11 @@ export default function ProfileForm({
         <div className="flex flex-col gap-3">
           {logoSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoSrc} alt="Logo" className="max-h-48 w-full object-contain rounded border border-gray-200 bg-gray-50 p-2" />
+            <img
+              src={logoSrc}
+              alt="Logo"
+              className="max-h-48 w-full object-contain rounded border border-gray-200 bg-gray-50 p-2"
+            />
           ) : (
             <div className="h-48 w-full rounded border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-sm text-gray-400">
               Sem logo
@@ -243,13 +248,7 @@ export default function ProfileForm({
           >
             {logoUploading ? "Enviando..." : logoSrc ? "Alterar" : "Enviar logo"}
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleLogoChange}
-          />
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
         </div>
         {logoError && <p className="mt-1 text-xs text-red-600">{logoError}</p>}
         <p className="mt-1 text-xs text-gray-400">JPEG ou PNG · máx. 5 MB</p>
@@ -286,7 +285,9 @@ export default function ProfileForm({
           <label className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
           {initialCpf ? (
             <>
-              <p className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-gray-50">{cpf}</p>
+              <p className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-gray-50">
+                {cpf}
+              </p>
               <p className="mt-1 text-xs text-gray-400">Não é possível alterar o CPF após o primeiro cadastro.</p>
             </>
           ) : (
@@ -311,7 +312,11 @@ export default function ProfileForm({
             <p className="text-xs font-medium text-gray-600">Imagem da assinatura</p>
             {sigSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={sigSrc} alt="Assinatura" className="max-h-20 object-contain rounded bg-white border border-gray-200 p-1" />
+              <img
+                src={sigSrc}
+                alt="Assinatura"
+                className="max-h-20 object-contain rounded bg-white border border-gray-200 p-1"
+              />
             ) : (
               <p className="text-xs text-gray-400 italic">Sem imagem</p>
             )}
@@ -342,7 +347,9 @@ export default function ProfileForm({
               onChange={handleSignatureImageChange}
             />
             {sigError && <p className="text-xs text-red-600">{sigError}</p>}
-            <p className="text-xs text-gray-400">JPEG ou PNG · máx. 5 MB · selecionar imagem remove a fonte escolhida</p>
+            <p className="text-xs text-gray-400">
+              JPEG ou PNG · máx. 5 MB · selecionar imagem remove a fonte escolhida
+            </p>
           </div>
 
           {/* Font selector */}
@@ -359,13 +366,11 @@ export default function ProfileForm({
                 }`}
               >
                 <p className="text-xs text-gray-400 mb-1">{f.label}</p>
-                <div style={{ fontFamily: f.css, fontSize: 26, lineHeight: 1.8 }}>
-                  {fullName || "Seu Nome"}
-                </div>
+                <div style={{ fontFamily: f.css, fontSize: 26, lineHeight: 1.8 }}>{fullName || "Seu Nome"}</div>
               </button>
             ))}
           </div>
-          {(signatureFont && !sigSrc) && (
+          {signatureFont && !sigSrc && (
             <button
               type="button"
               onClick={() => handleFontSelect(signatureFont)}

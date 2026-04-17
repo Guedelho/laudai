@@ -36,7 +36,20 @@ interface GenerateParams extends PatientFields {
 }
 
 export async function generateLaudo(params: GenerateParams): Promise<string> {
-  const { specialty, rawInput, patientName, species, breed, age, sex, neutered, ownerName, veterinarian, crmv, onStatus } = params;
+  const {
+    specialty,
+    rawInput,
+    patientName,
+    species,
+    breed,
+    age,
+    sex,
+    neutered,
+    ownerName,
+    veterinarian,
+    crmv,
+    onStatus,
+  } = params;
 
   const resolvedDefaults = buildDefaults(sex, neutered);
 
@@ -59,7 +72,9 @@ export async function generateLaudo(params: GenerateParams): Promise<string> {
     : `Nenhuma alteração encontrada. Gere o laudo completo utilizando apenas os textos padrão para todas as seções.`;
 
   onStatus?.("generating");
-  const draft = (await model.generateContent({ contents: [{ role: "user", parts: [{ text: userMessage }] }], generationConfig })).response.text();
+  const draft = (
+    await model.generateContent({ contents: [{ role: "user", parts: [{ text: userMessage }] }], generationConfig })
+  ).response.text();
 
   let verified = draft;
 
@@ -68,23 +83,33 @@ export async function generateLaudo(params: GenerateParams): Promise<string> {
 
     // Verification agent: strip hallucinated findings not in the original input
     try {
-      const verifier = getModel(VERIFIER_MODEL,
-            "Retorne APENAS um objeto JSON válido. Nunca use markdown, asteriscos, blocos de código ou qualquer formatação.\n\n" +
-            "Você é um veterinário ultrassonografista sênior revisando um laudo gerado por IA.\n\n" +
-            "TEXTO PADRÃO DE REFERÊNCIA (achados normais para cada seção):\n" +
-            resolvedDefaults +
-            "\n\nSUAS REGRAS:\n" +
-            "1. Seções que correspondem ao texto padrão acima → copie-as EXATAMENTE como estão no laudo, sem nenhuma alteração.\n" +
-            "2. Seções alteradas → para cada campo que difere do padrão, avalie como veterinário se a mudança é:\n" +
-            "   a) Clinicamente decorrente do achado informado (ex: fígado aumentado de tamanho → margens abauladas é consequência clínica esperada; congestão hepática → vasos de calibre aumentados) → MANTENHA a mudança.\n" +
-            "   b) Completamente não relacionada ao achado informado e não esperada clinicamente → RESTAURE o campo do texto padrão.\n" +
-            "   Restaure o padrão SOMENTE quando tiver certeza clínica de que a mudança não tem relação com o achado relatado. Em caso de dúvida, mantenha o que foi gerado.\n" +
-            "3. Mantenha intactos: impressão diagnóstica e recomendações. NÃO inclua cabeçalho nem assinatura.\n" +
-            "Retorne APENAS o objeto JSON corrigido, sem explicações ou comentários.",
+      const verifier = getModel(
+        VERIFIER_MODEL,
+        "Retorne APENAS um objeto JSON válido. Nunca use markdown, asteriscos, blocos de código ou qualquer formatação.\n\n" +
+          "Você é um veterinário ultrassonografista sênior revisando um laudo gerado por IA.\n\n" +
+          "TEXTO PADRÃO DE REFERÊNCIA (achados normais para cada seção):\n" +
+          resolvedDefaults +
+          "\n\nSUAS REGRAS:\n" +
+          "1. Seções que correspondem ao texto padrão acima → copie-as EXATAMENTE como estão no laudo, sem nenhuma alteração.\n" +
+          "2. Seções alteradas → para cada campo que difere do padrão, avalie como veterinário se a mudança é:\n" +
+          "   a) Clinicamente decorrente do achado informado (ex: fígado aumentado de tamanho → margens abauladas é consequência clínica esperada; congestão hepática → vasos de calibre aumentados) → MANTENHA a mudança.\n" +
+          "   b) Completamente não relacionada ao achado informado e não esperada clinicamente → RESTAURE o campo do texto padrão.\n" +
+          "   Restaure o padrão SOMENTE quando tiver certeza clínica de que a mudança não tem relação com o achado relatado. Em caso de dúvida, mantenha o que foi gerado.\n" +
+          "3. Mantenha intactos: impressão diagnóstica e recomendações. NÃO inclua cabeçalho nem assinatura.\n" +
+          "Retorne APENAS o objeto JSON corrigido, sem explicações ou comentários.",
       );
       verified = (
         await verifier.generateContent({
-          contents: [{ role: "user", parts: [{ text: `INPUT ORIGINAL DO VETERINÁRIO:\n${rawInput}\n\nLAUDO GERADO (JSON):\n${draft}\n\nRetorne o objeto JSON corrigido.` }] }],
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: `INPUT ORIGINAL DO VETERINÁRIO:\n${rawInput}\n\nLAUDO GERADO (JSON):\n${draft}\n\nRetorne o objeto JSON corrigido.`,
+                },
+              ],
+            },
+          ],
           generationConfig,
         })
       ).response.text();

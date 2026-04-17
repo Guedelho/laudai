@@ -4,7 +4,9 @@ import ClinicsManager from "./ClinicsManager";
 import { Clinic } from "@/types";
 
 export default async function ClinicsPage() {
-  const { data: { user } } = await (await createClient()).auth.getUser();
+  const {
+    data: { user },
+  } = await (await createClient()).auth.getUser();
   if (!user) return null;
 
   const admin = createAdmin();

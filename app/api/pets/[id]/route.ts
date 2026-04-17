@@ -3,10 +3,7 @@ import { getUserId } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { PetRequest } from "@/types";
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -40,21 +37,14 @@ export async function PATCH(
   return NextResponse.json({ pet });
 }
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdmin();
 
-  const { error } = await admin
-    .from("pets")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", userId);
+  const { error } = await admin.from("pets").delete().eq("id", id).eq("user_id", userId);
 
   if (error) {
     console.error("Pet delete error:", error);

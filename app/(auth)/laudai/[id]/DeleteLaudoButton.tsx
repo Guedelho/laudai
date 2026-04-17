@@ -37,7 +37,10 @@ export default function DeleteLaudoButton({ laudoId }: { laudoId: string }) {
           {deleting ? "Excluindo..." : "Confirmar"}
         </button>
         <button
-          onClick={() => { setConfirming(false); setDeleteError(""); }}
+          onClick={() => {
+            setConfirming(false);
+            setDeleteError("");
+          }}
           className="text-sm text-gray-500 hover:text-gray-700"
         >
           Cancelar
@@ -49,7 +52,10 @@ export default function DeleteLaudoButton({ laudoId }: { laudoId: string }) {
 
   return (
     <button
-      onClick={() => { setConfirming(true); setDeleteError(""); }}
+      onClick={() => {
+        setConfirming(true);
+        setDeleteError("");
+      }}
       className="text-sm text-red-500 hover:text-red-700 print:hidden"
     >
       Excluir

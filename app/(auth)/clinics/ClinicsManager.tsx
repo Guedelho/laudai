@@ -22,7 +22,6 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
   const [addingVet, setAddingVet] = useState(false);
   const [removingVetId, setRemovingVetId] = useState<string | null>(null);
 
-
   function startEdit(clinic: Clinic) {
     setEditingId(clinic.id);
     setEditName(clinic.name);
@@ -48,7 +47,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
       setClinics((prev) =>
         prev
           .map((c) => (c.id === editingId ? { ...c, name: data.clinic.name } : c))
-          .sort((a, b) => a.name.localeCompare(b.name))
+          .sort((a, b) => a.name.localeCompare(b.name)),
       );
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Erro ao salvar clínica.");
@@ -73,9 +72,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
       if (!res.ok) throw new Error(data.error);
 
       setClinics((prev) =>
-        prev.map((c) =>
-          c.id === editingId ? { ...c, clinic_vets: [...c.clinic_vets, data.vet] } : c
-        )
+        prev.map((c) => (c.id === editingId ? { ...c, clinic_vets: [...c.clinic_vets, data.vet] } : c)),
       );
       setNewVetName("");
     } catch (err) {
@@ -90,18 +87,17 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     setEditError("");
 
     try {
-      const res = await fetch(`/api/clinics/${clinicId}/vets/${vetId}`, { method: "DELETE", headers: await getAuthHeaders() });
+      const res = await fetch(`/api/clinics/${clinicId}/vets/${vetId}`, {
+        method: "DELETE",
+        headers: await getAuthHeaders(),
+      });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error);
       }
 
       setClinics((prev) =>
-        prev.map((c) =>
-          c.id === clinicId
-            ? { ...c, clinic_vets: c.clinic_vets.filter((v) => v.id !== vetId) }
-            : c
-        )
+        prev.map((c) => (c.id === clinicId ? { ...c, clinic_vets: c.clinic_vets.filter((v) => v.id !== vetId) } : c)),
       );
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Erro ao remover médico.");
@@ -268,10 +264,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
 
                 {editError && <p className="text-sm text-red-500">{editError}</p>}
 
-                <button
-                  onClick={() => setEditingId(null)}
-                  className="text-sm text-gray-500 hover:text-gray-700"
-                >
+                <button onClick={() => setEditingId(null)} className="text-sm text-gray-500 hover:text-gray-700">
                   Fechar
                 </button>
               </div>
@@ -280,16 +273,11 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
                 <div>
                   <p className="font-medium text-gray-900">{clinic.name}</p>
                   {clinic.clinic_vets?.length > 0 && (
-                    <p className="text-sm text-gray-500 mt-0.5">
-                      {clinic.clinic_vets.map((v) => v.name).join(", ")}
-                    </p>
+                    <p className="text-sm text-gray-500 mt-0.5">{clinic.clinic_vets.map((v) => v.name).join(", ")}</p>
                   )}
                 </div>
                 <div className="flex gap-3 shrink-0 mt-0.5">
-                  <button
-                    onClick={() => startEdit(clinic)}
-                    className="text-xs text-blue-500 hover:text-blue-700"
-                  >
+                  <button onClick={() => startEdit(clinic)} className="text-xs text-blue-500 hover:text-blue-700">
                     Editar
                   </button>
                   <button

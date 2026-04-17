@@ -3,15 +3,13 @@ import { createAdmin } from "@/lib/supabase/admin";
 import ProfileForm from "./ProfileForm";
 
 export default async function ProfilePage() {
-  const { data: { user } } = await (await createClient()).auth.getUser();
+  const {
+    data: { user },
+  } = await (await createClient()).auth.getUser();
   if (!user) return null;
 
   const admin = createAdmin();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const { data: profile } = await admin.from("profiles").select("*").eq("id", user.id).single();
 
   return (
     <main className="flex items-start justify-center px-4 py-10">

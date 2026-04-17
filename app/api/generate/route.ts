@@ -24,7 +24,7 @@ function sseStream(handler: (send: (data: object) => void) => Promise<void>): Ne
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      "Connection": "keep-alive",
+      Connection: "keep-alive",
     },
   });
 }
@@ -36,16 +36,32 @@ export async function POST(req: NextRequest) {
   const profile = await getProfile(userId);
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado. Complete seu cadastro." }, { status: 400 });
 
-  if (!checkRateLimit("generate", userId, 5)) return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
+  if (!checkRateLimit("generate", userId, 5))
+    return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
 
   const supabase = createAdmin();
   const body: GenerateRequest = await req.json();
-  const { specialty, rawInput, patientName, species, breed, age, sex, neutered, ownerName, clinicName, responsibleVet, petId, examDate } = body;
+  const {
+    specialty,
+    rawInput,
+    patientName,
+    species,
+    breed,
+    age,
+    sex,
+    neutered,
+    ownerName,
+    clinicName,
+    responsibleVet,
+    petId,
+    examDate,
+  } = body;
 
   if (!patientName.trim()) return NextResponse.json({ error: "Nome do paciente é obrigatório." }, { status: 400 });
   if (!ownerName.trim()) return NextResponse.json({ error: "Nome do tutor é obrigatório." }, { status: 400 });
   if (!rawInput.trim()) return NextResponse.json({ error: "Achados do exame são obrigatórios." }, { status: 400 });
-  if (rawInput.length > 2_000) return NextResponse.json({ error: "Achados do exame muito longos. Máximo 2.000 caracteres." }, { status: 400 });
+  if (rawInput.length > 2_000)
+    return NextResponse.json({ error: "Achados do exame muito longos. Máximo 2.000 caracteres." }, { status: 400 });
 
   return sseStream(async (send) => {
     // Find or create pet (deduped), run in parallel with Gemini

@@ -23,7 +23,10 @@ export function parseLaudoContent(content: string): ParsedLaudo {
   }
 
   function stripMd(s: string): string {
-    return s.replace(/\*\*(.+?)\*\*/g, "$1").replace(/^\s*[-*]\s+/, "").trim();
+    return s
+      .replace(/\*\*(.+?)\*\*/g, "$1")
+      .replace(/^\s*[-*]\s+/, "")
+      .trim();
   }
 
   const lines = content.split("\n");
@@ -39,27 +42,54 @@ export function parseLaudoContent(content: string): ParsedLaudo {
   for (const line of lines) {
     const t = stripMd(line.trim());
     if (!t) {
-      if (lastSection) { sections.push(lastSection); lastSection = null; }
+      if (lastSection) {
+        sections.push(lastSection);
+        lastSection = null;
+      }
       continue;
     }
 
     if (/^(ULTRASSONOGRAFI|RELATÓRIO|Data:|Paciente:|Tutor:|Responsável:|Médico Vet|CRMV:|---)/i.test(t)) continue;
 
     if (/^CONCLUS[ÃA]O\s*:?\s*$/i.test(t)) {
-      if (lastSection) { sections.push(lastSection); lastSection = null; }
-      inConclusion = true; inImpressao = false; inRecomendacoes = false; continue;
+      if (lastSection) {
+        sections.push(lastSection);
+        lastSection = null;
+      }
+      inConclusion = true;
+      inImpressao = false;
+      inRecomendacoes = false;
+      continue;
     }
     if (/^IMPRESS[ÃA]O\s+DIAGN[ÓO]STICA\s*:?\s*$/i.test(t)) {
-      if (lastSection) { sections.push(lastSection); lastSection = null; }
-      inImpressao = true; inRecomendacoes = false; inConclusion = false; continue;
+      if (lastSection) {
+        sections.push(lastSection);
+        lastSection = null;
+      }
+      inImpressao = true;
+      inRecomendacoes = false;
+      inConclusion = false;
+      continue;
     }
     if (/^RECOMENDA[ÇC][ÕO]ES\s*:?\s*$/i.test(t)) {
-      if (lastSection) { sections.push(lastSection); lastSection = null; }
-      inRecomendacoes = true; inImpressao = false; inConclusion = false; continue;
+      if (lastSection) {
+        sections.push(lastSection);
+        lastSection = null;
+      }
+      inRecomendacoes = true;
+      inImpressao = false;
+      inConclusion = false;
+      continue;
     }
 
-    if (inImpressao) { impressao.push(t); continue; }
-    if (inRecomendacoes) { recomendacoes.push(t); continue; }
+    if (inImpressao) {
+      impressao.push(t);
+      continue;
+    }
+    if (inRecomendacoes) {
+      recomendacoes.push(t);
+      continue;
+    }
     if (inConclusion) {
       conclusion = conclusion ? conclusion + " " + t : t;
       continue;
