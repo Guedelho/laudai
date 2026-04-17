@@ -36,6 +36,7 @@ export interface PdfData extends PatientFields {
   date: string;
   reportTitle: string;
   vetName: string;
+  signatureText: string;
   crmv: string;
   crmvState?: string;
   parsedLaudo: ParsedLaudo;
@@ -165,6 +166,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
     date,
     reportTitle,
     vetName,
+    signatureText,
     crmv,
     parsedLaudo,
     imageBase64List,
@@ -325,7 +327,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
         return {
           stack: [
             {
-              text: vetName,
+              text: signatureText,
               font: "SignatureFont",
               fontSize: 28,
               lineHeight: 1.4,

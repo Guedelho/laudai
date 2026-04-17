@@ -174,6 +174,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     date,
     reportTitle: REPORT_TITLES[specialty],
     vetName: profile.full_name,
+    signatureText: profile.signature || profile.full_name,
     crmv: profile.crmv,
     parsedLaudo: parseLaudoContent(laudo.edited_content),
     imageBase64List,

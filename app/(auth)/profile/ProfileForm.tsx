@@ -33,6 +33,7 @@ export default function ProfileForm({
   initialCpf,
   hasLogo,
   initialSignatureFont,
+  initialSignature,
   initialCrmvState,
   initialEmail,
   hasSignatureImage,
@@ -42,6 +43,7 @@ export default function ProfileForm({
   initialCpf: string;
   hasLogo: boolean;
   initialSignatureFont: string;
+  initialSignature: string;
   initialCrmvState: string;
   initialEmail: string;
   hasSignatureImage: boolean;
@@ -53,6 +55,7 @@ export default function ProfileForm({
   const [logoVersion, setLogoVersion] = useState(() => (hasLogo ? Date.now() : 0));
   const [sigVersion, setSigVersion] = useState(() => (hasSignatureImage ? Date.now() : 0));
   const [signatureFont, setSignatureFont] = useState(initialSignatureFont);
+  const [signature, setSignature] = useState(initialSignature);
   const [cpfError, setCpfError] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -161,7 +164,7 @@ export default function ProfileForm({
           "Content-Type": "application/json",
           ...(await getAuthHeaders()),
         },
-        body: JSON.stringify({ full_name: fullName, cpf, signature_font: next, signature_image_url: null }),
+        body: JSON.stringify({ full_name: fullName, cpf, signature_font: next, signature, signature_image_url: null }),
         signal: controller.signal,
       });
       if (res.ok && next !== "") {
@@ -205,7 +208,14 @@ export default function ProfileForm({
           "Content-Type": "application/json",
           ...(await getAuthHeaders()),
         },
-        body: JSON.stringify({ full_name: fullName, crmv, cpf, crmv_state: crmvState, signature_font: signatureFont }),
+        body: JSON.stringify({
+          full_name: fullName,
+          crmv,
+          cpf,
+          crmv_state: crmvState,
+          signature_font: signatureFont,
+          signature,
+        }),
       });
 
       if (!res.ok) throw new Error("Erro ao salvar");
@@ -305,6 +315,17 @@ export default function ProfileForm({
             Escolha uma fonte manuscrita ou envie uma imagem da sua assinatura.
           </p>
 
+          <div className="mb-3">
+            <label className="block text-xs text-gray-500 mb-1">Texto da assinatura</label>
+            <input
+              type="text"
+              value={signature}
+              onChange={(e) => setSignature(e.target.value)}
+              placeholder={fullName || "Seu Nome"}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
           <div className="flex flex-col gap-2">
             {/* Font options */}
             {SIGNATURE_FONTS.map((f) => (
@@ -319,7 +340,7 @@ export default function ProfileForm({
                 }`}
               >
                 <p className="text-xs text-gray-400 mb-1">{f.label}</p>
-                <div style={{ fontFamily: f.css, fontSize: 26, lineHeight: 1.8 }}>{fullName || "Seu Nome"}</div>
+                <div style={{ fontFamily: f.css, fontSize: 26, lineHeight: 1.8 }}>{signature || fullName}</div>
               </button>
             ))}
 

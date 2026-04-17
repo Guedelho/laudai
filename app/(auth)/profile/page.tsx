@@ -21,6 +21,7 @@ export default async function ProfilePage() {
           initialCpf={profile?.cpf ?? ""}
           hasLogo={!!profile?.logo_url}
           initialSignatureFont={profile?.signature_font ?? ""}
+          initialSignature={profile?.signature ?? ""}
           initialCrmvState={profile?.crmv_state ?? ""}
           initialEmail={user.email ?? ""}
           hasSignatureImage={!!profile?.signature_image_url}

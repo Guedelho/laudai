@@ -17,11 +17,11 @@ export async function PUT(req: NextRequest) {
 
   const admin = createAdmin();
   const body: UpdateProfileRequest = await req.json();
-  const { full_name, signature_font, signature_image_url } = body;
+  const { full_name, signature_font, signature_image_url, signature } = body;
 
   const { data: existing } = await admin.from("profiles").select("id").eq("id", userId).maybeSingle();
 
-  const upsertData: Record<string, unknown> = { id: userId, full_name, signature_font };
+  const upsertData: Record<string, unknown> = { id: userId, full_name, signature_font, signature };
   if (!existing) {
     upsertData.cpf = body.cpf;
     upsertData.crmv = body.crmv;
