@@ -4,33 +4,33 @@ export const SPECIALTY_LABELS: Record<Specialty, string> = {
   ultrasound_abdominal: "Ultrassonografia Abdominal",
 };
 
-const DEFAULTS_BASE_ABDOMINAL = `BEXIGA: Bexiga de repleção líquida adequada, formato habitual, paredes finas e ecogênicas, margens internas lisas e conteúdo anecogênico e homogêneo normal.
+const DEFAULTS_BASE_ABDOMINAL = `BEXIGA: Bexiga de repleção líquida adequada, formato habitual, paredes normoespessas, conteúdo anecogênico e homogêneo.
 
-RIM ESQUERDO: Rim de formato mantido, contornos regulares e localizado em topografia habitual, relação/junção corticomedular preservada e ecotextura sem evidências de alterações sonográficas.
+RIM ESQUERDO: Rim com formato anatômico preservado e localizado em topografia habitual, contornos regulares, relação/junção corticomedular preservada e ecotextura sem evidências de alterações sonográficas.
 
-RIM DIREITO: Rim de formato mantido, contornos regulares e localizado em topografia habitual, relação/junção corticomedular preservada e ecotextura sem evidências de alterações sonográficas.
+RIM DIREITO: Rim com formato anatômico preservado e localizado em topografia habitual, contornos regulares, relação/junção corticomedular preservada e ecotextura sem evidências de alterações sonográficas.
 
-FÍGADO: Fígado de dimensões dentro dos limites do gradil costal, superfície regular, margens finas, parênquima de ecogenicidade preservada e ecotextura dentro dos limites da normalidade. Arquitetura vascular portal e intra-hepática preservadas quanto ao calibre e trajeto dos vasos.
+FÍGADO: Fígado de dimensões dentro dos limites do gradil costal, superfície regular, margens finas, parênquima de ecogenicidade preservada e ecotextura predominantemente homogênea. Arquitetura vascular portal e intra-hepática preservadas quanto ao calibre e trajeto dos vasos.
 
 VESÍCULA BILIAR: Vesícula biliar com repleção preservada, paredes finas e ecogênicas com conteúdo anecogênico e homogêneo.
 
 BAÇO: Baço de contornos definidos, superfície regular, margens finas, ecogenicidade e ecotextura preservadas.
 
-ESTÔMAGO: Estômago com conteúdo luminal de padrão misto (gás e alimento), paredes de aspecto sonográfico mantido com padrão em camadas.
+ESTÔMAGO: Estômago com conteúdo luminal de padrão misto (gás e alimento), peristaltismo evolutivo, com paredes apresentando padrão em camadas preservado.
 
 ALÇAS INTESTINAIS: Alças intestinais de distribuição topográfica habitual; segmentos de alça com padrão em camadas mantido e ecogenicidade normal, peristaltismo evolutivo e com número de contrações normal.
 
-PÂNCREAS: Pâncreas de ecogenicidade e ecotextura preservadas em região de lobo direito.
+PÂNCREAS: Pâncreas normoecogênico, com ecotextura preservada em região de lobo direito.
 
 ADRENAIS: Adrenais de formato mantido, bordas regulares, distinção córticomedular e ecogenicidade preservadas.`;
 
-const DEFAULTS_MALE_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual, de contornos regulares, formato preservado, ecogênica e homogênea.
+const DEFAULTS_MALE_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual, de contornos regulares, hiperecogênica e homogênea.
 
-TESTÍCULO DIREITO: Localizado em bolsa escrotal, hipoecogênico, homogêneo, com presença de linha central hiperecogênica (mediastino testicular), sem evidências de alterações sonográficas.
+TESTÍCULO DIREITO: Localizado em bolsa escrotal, hipoecogênico, homogêneo, mediastino testicular preservado, sem evidências de alterações sonográficas.
 
-TESTÍCULO ESQUERDO: Localizado em bolsa escrotal, hipoecogênico, homogêneo, com presença de linha central hiperecogênica (mediastino testicular), sem evidências de alterações sonográficas.`;
+TESTÍCULO ESQUERDO: Localizado em bolsa escrotal, hipoecogênico, homogêneo, mediastino testicular preservado, sem evidências de alterações sonográficas.`;
 
-const DEFAULTS_MALE_NEUTERED_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual, de contornos regulares, formato preservado, ecogênica e homogênea.
+const DEFAULTS_MALE_NEUTERED_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual, de contornos regulares, hiperecogênica e homogênea.
 
 TESTÍCULO DIREITO: Não visualizado, com histórico de castração.
 
@@ -38,7 +38,7 @@ TESTÍCULO ESQUERDO: Não visualizado, com histórico de castração.`;
 
 const DEFAULTS_FEMALE_ABDOMINAL = `ÚTERO: Útero de dimensões, contornos e ecotextura preservados, sem evidências de alterações sonográficas.
 
-OVÁRIOS: Ovários de contornos definidos, dimensões e ecotextura preservadas, sem evidências de alterações sonográficas.`;
+OVÁRIOS: Ovários em topografia habitual, ovalados, hipoecogênicos e homogêneos, sem evidências de alterações sonográficas.`;
 
 const DEFAULTS_FEMALE_NEUTERED_ABDOMINAL = `ÚTERO: Não visualizado, com histórico de castração.
 
