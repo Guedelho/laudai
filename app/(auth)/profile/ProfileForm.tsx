@@ -300,38 +300,12 @@ export default function ProfileForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Assinatura no laudo</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Assinatura no laudo</label>
+          <p className="text-xs text-gray-400 mb-3">
+            Escolha uma fonte manuscrita ou envie uma imagem da sua assinatura.
+          </p>
 
           <div className="flex flex-col gap-2">
-            {/* Uploaded image option */}
-            <button
-              type="button"
-              onClick={() => (sigSrc ? handleRemoveSignatureImage() : sigInputRef.current?.click())}
-              disabled={sigUploading}
-              className={`rounded-lg border px-3 py-4 text-left transition-colors ${
-                sigSrc ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white hover:border-gray-300"
-              }`}
-            >
-              <p className="text-xs text-gray-400 mb-1">Imagem</p>
-              {sigSrc ? (
-                <div className="flex items-center justify-between">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={sigSrc} alt="Assinatura" className="max-h-16 object-contain" />
-                  <span className="text-xs text-gray-400">Alterar</span>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-400">{sigUploading ? "Enviando..." : "Enviar imagem da assinatura"}</p>
-              )}
-            </button>
-            <input
-              ref={sigInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleSignatureImageChange}
-            />
-            {sigError && <p className="text-xs text-red-600">{sigError}</p>}
-
             {/* Font options */}
             {SIGNATURE_FONTS.map((f) => (
               <button
@@ -348,6 +322,37 @@ export default function ProfileForm({
                 <div style={{ fontFamily: f.css, fontSize: 26, lineHeight: 1.8 }}>{fullName || "Seu Nome"}</div>
               </button>
             ))}
+
+            {/* Uploaded image option */}
+            <button
+              type="button"
+              onClick={() => sigInputRef.current?.click()}
+              disabled={sigUploading}
+              className={`rounded-lg border px-3 py-4 text-left transition-colors ${
+                sigSrc ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white hover:border-gray-300"
+              }`}
+            >
+              <p className="text-xs text-gray-400 mb-1">Imagem personalizada</p>
+              {sigSrc ? (
+                <div className="flex items-center justify-between">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={sigSrc} alt="Assinatura" className="max-h-16 object-contain" />
+                  <span className="text-xs text-gray-400">Alterar</span>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">
+                  {sigUploading ? "Enviando..." : "Enviar foto ou scan da assinatura"}
+                </p>
+              )}
+            </button>
+            <input
+              ref={sigInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleSignatureImageChange}
+            />
+            {sigError && <p className="text-xs text-red-600">{sigError}</p>}
           </div>
           {(signatureFont || sigSrc) && (
             <button
