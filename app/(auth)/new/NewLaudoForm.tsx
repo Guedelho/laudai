@@ -318,9 +318,7 @@ export default function NewLaudoPage() {
           throw new Error("Resposta incompleta do servidor.");
         } catch (err) {
           if (attempt === maxAttempts) throw err;
-          setGeneratingStatus(`Tentativa ${attempt} falhou. Tentando novamente...`);
           await new Promise((r) => setTimeout(r, 1000 * attempt));
-          setGeneratingStatus("Gerando laudo...");
         }
       }
 
