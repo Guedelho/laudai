@@ -284,12 +284,7 @@ export default function ProfileForm({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
           {initialCpf ? (
-            <>
-              <p className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-gray-50">
-                {cpf}
-              </p>
-              <p className="mt-1 text-xs text-gray-400">Não é possível alterar o CPF após o primeiro cadastro.</p>
-            </>
+            <p className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 bg-gray-50">{cpf}</p>
           ) : (
             <>
               <input
