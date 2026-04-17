@@ -303,17 +303,19 @@ export default function ProfileForm({
           <label className="block text-sm font-medium text-gray-700 mb-2">Assinatura no laudo</label>
 
           {/* Signature image upload */}
-          <div className="mb-3 p-3 rounded-lg border border-gray-200 bg-gray-50 space-y-2">
+          <div className="mb-3 space-y-2">
             <p className="text-xs font-medium text-gray-600">Imagem da assinatura</p>
             {sigSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={sigSrc}
                 alt="Assinatura"
-                className="max-h-20 object-contain rounded bg-white border border-gray-200 p-1"
+                className="max-h-48 w-full object-contain rounded border border-gray-200 bg-gray-50 p-2"
               />
             ) : (
-              <p className="text-xs text-gray-400 italic">Sem imagem</p>
+              <div className="h-48 w-full rounded border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-sm text-gray-400">
+                Sem imagem
+              </div>
             )}
             <div className="flex items-center gap-3">
               <button
