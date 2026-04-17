@@ -37,7 +37,6 @@ export default function NewLaudoPage() {
   const [rawInput, setRawInput] = useState("");
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
-  const [loadingData, setLoadingData] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generatingStatus, setGeneratingStatus] = useState("Gerando laudo...");
   const [error, setError] = useState("");
@@ -75,7 +74,6 @@ export default function NewLaudoPage() {
       ]);
       if (petsRes.ok) setPets((await petsRes.json()).pets ?? []);
       if (clinicsRes.ok) setClinics((await clinicsRes.json()).clinics ?? []);
-      setLoadingData(false);
     }
     loadData();
   }, []);
@@ -83,7 +81,7 @@ export default function NewLaudoPage() {
   function handlePetSelect(petId: string) {
     setSelectedPetId(petId);
     if (!petId) {
-      setPatientName(""); setSpecies("Canina"); setBreed(""); setAge(""); setSex(""); setOwnerName("");
+      setPatientName(""); setSpecies("Canina"); setBreed(""); setAge(""); setSex("M"); setNeutered(false); setOwnerName("");
       return;
     }
     const pet = pets.find((p) => p.id === petId);
@@ -96,13 +94,6 @@ export default function NewLaudoPage() {
       setNeutered(pet.neutered);
       setOwnerName(pet.owner_name);
     }
-  }
-
-  function handleClinicSelect(clinicId: string) {
-    setSelectedClinicId(clinicId);
-    setSelectedVetId("");
-    setNewVetName("");
-    setNewClinicName("");
   }
 
   const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -349,57 +340,36 @@ export default function NewLaudoPage() {
               <p className="text-sm font-semibold text-gray-700">Clínica e Responsável</p>
               <a href="/clinics" className="text-xs text-blue-600 hover:underline">Gerenciar clínicas</a>
             </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Selecionar clínica cadastrada</label>
-              {loadingData ? (
-                <div className="h-9 bg-gray-100 rounded-lg animate-pulse" />
-              ) : (
-                <select value={selectedClinicId} onChange={(e) => handleClinicSelect(e.target.value)} className={inputCls}>
-                  <option value="">— Nova clínica —</option>
-                  {clinics.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              )}
-            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Nome da clínica</label>
-                <input
-                  value={selectedClinicId && selectedClinicId !== "new" ? selectedClinic?.name ?? "" : newClinicName}
-                  onChange={(e) => setNewClinicName(e.target.value)}
-                  disabled={!!selectedClinicId && selectedClinicId !== "new"}
+                <label className="block text-xs text-gray-500 mb-1">Clínica</label>
+                <Typeahead
+                  value={newClinicName}
+                  onChange={(v) => {
+                    setNewClinicName(v);
+                    const match = clinics.find((c) => c.name.toLowerCase() === v.toLowerCase());
+                    setSelectedClinicId(match?.id ?? "");
+                    setSelectedVetId("");
+                    setNewVetName("");
+                  }}
+                  suggestions={clinics.map((c) => c.name)}
                   placeholder="Nome da clínica"
                   className={inputCls}
                 />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Médico Responsável</label>
-                {selectedClinicId && selectedClinicId !== "new" && vets.length > 0 ? (
-                  <>
-                    <select value={selectedVetId} onChange={(e) => setSelectedVetId(e.target.value)} className={inputCls}>
-                      <option value="">— Novo responsável —</option>
-                      {vets.map((v) => (
-                        <option key={v.id} value={v.id}>{v.name}</option>
-                      ))}
-                    </select>
-                    {selectedVetId === "" && (
-                      <input
-                        value={newVetName}
-                        onChange={(e) => setNewVetName(e.target.value)}
-                        placeholder="Nome do responsável"
-                        className={`${inputCls} mt-2`}
-                      />
-                    )}
-                  </>
-                ) : (
-                  <input
-                    value={newVetName}
-                    onChange={(e) => setNewVetName(e.target.value)}
-                    placeholder="Nome do responsável"
-                    className={inputCls}
-                  />
-                )}
+                <Typeahead
+                  value={newVetName}
+                  onChange={(v) => {
+                    setNewVetName(v);
+                    const match = vets.find((vet) => vet.name.toLowerCase() === v.toLowerCase());
+                    setSelectedVetId(match?.id ?? "");
+                  }}
+                  suggestions={vets.map((v) => v.name)}
+                  placeholder="Nome do responsável"
+                  className={inputCls}
+                />
               </div>
             </div>
           </div>
@@ -410,25 +380,22 @@ export default function NewLaudoPage() {
               <p className="text-sm font-semibold text-gray-700">Paciente</p>
               <a href="/pets" className="text-xs text-blue-600 hover:underline">Gerenciar pacientes</a>
             </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Selecionar paciente cadastrado</label>
-              {loadingData ? (
-                <div className="h-9 bg-gray-100 rounded-lg animate-pulse" />
-              ) : (
-                <select value={selectedPetId} onChange={(e) => handlePetSelect(e.target.value)} className={inputCls}>
-                  <option value="">— Novo paciente —</option>
-                  {pets.map((pet) => (
-                    <option key={pet.id} value={pet.id}>
-                      {pet.name} ({pet.species}) · {pet.owner_name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Paciente</label>
-                <input value={patientName} onChange={(e) => setPatientName(e.target.value)} className={inputCls} required />
+                <Typeahead
+                  value={patientName}
+                  onChange={(v) => {
+                    setPatientName(v);
+                    const match = pets.find((p) => p.name.toLowerCase() === v.toLowerCase());
+                    if (match) handlePetSelect(match.id);
+                    else setSelectedPetId("");
+                  }}
+                  suggestions={pets.map((p) => p.name)}
+                  placeholder="Nome do paciente"
+                  className={inputCls}
+                  required
+                />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Nome do responsável</label>
