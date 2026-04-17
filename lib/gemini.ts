@@ -12,7 +12,7 @@ const generationConfig = {
   topK: 1,
 } as Record<string, unknown>;
 
-const DRAFT_MODEL = "gemini-3.1-pro";
+const DRAFT_MODEL = "gemini-2.5-pro-preview-05-06";
 const VERIFIER_MODEL = "gemini-3-flash";
 
 const modelCache = new Map<string, ReturnType<typeof genAI.getGenerativeModel>>();
