@@ -364,27 +364,16 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
           stack: [
             {
               image: signatureImageBase64,
-              width: 160,
+              fit: [160, 44],
               alignment: "center",
               margin: [50, 4, 50, 0],
-            },
-            {
-              canvas: [{ type: "line", x1: 198, y1: 0, x2: 397, y2: 0, lineWidth: 0.5, lineColor: "#9ca3af" }],
-              margin: [0, 2, 0, 2],
-            },
-            {
-              text: `Dr(a). ${vetName}`,
-              fontSize: 9,
-              alignment: "center",
-              color: "#6b7280",
-              margin: [50, 2, 50, 0],
             },
             {
               text: "Médico(a) Veterinário(a)",
               fontSize: 9,
               alignment: "center",
               color: "#6b7280",
-              margin: [50, 0, 50, 0],
+              margin: [50, 4, 50, 0],
             },
             {
               text: crmvLabel,
