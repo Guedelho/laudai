@@ -89,8 +89,8 @@ export default function NewLaudoPage() {
     if (pet) {
       setPatientName(pet.name);
       setSpecies(pet.species);
-      setBreed(pet.breed ?? "");
-      setAge(pet.age ?? "");
+      setBreed(pet.breed);
+      setAge(pet.age);
       setSex(pet.sex);
       setNeutered(pet.neutered);
       setOwnerName(pet.owner_name);
@@ -199,6 +199,22 @@ export default function NewLaudoPage() {
       setError("Nome do responsável é obrigatório.");
       return;
     }
+    if (!breed.trim()) {
+      setError("Raça é obrigatória.");
+      return;
+    }
+    if (!age.trim()) {
+      setError("Idade é obrigatória.");
+      return;
+    }
+    if (!clinicName.trim()) {
+      setError("Nome da clínica é obrigatório.");
+      return;
+    }
+    if (!responsibleVet.trim()) {
+      setError("Nome do médico responsável é obrigatório.");
+      return;
+    }
     if (!rawInput.trim()) {
       setError("Achados do exame são obrigatórios.");
       return;
@@ -252,9 +268,9 @@ export default function NewLaudoPage() {
           sex,
           neutered,
           ownerName,
-          clinicName: resolvedClinicName || undefined,
-          responsibleVet: resolvedVetName || undefined,
-          examDate: examDate || undefined,
+          clinicName: resolvedClinicName,
+          responsibleVet: resolvedVetName,
+          examDate,
           petId: selectedPetId || undefined,
         }),
       });

@@ -60,6 +60,12 @@ export async function POST(req: NextRequest) {
 
   if (!patientName.trim()) return NextResponse.json({ error: "Nome do paciente é obrigatório." }, { status: 400 });
   if (!ownerName.trim()) return NextResponse.json({ error: "Nome do tutor é obrigatório." }, { status: 400 });
+  if (!breed.trim()) return NextResponse.json({ error: "Raça é obrigatória." }, { status: 400 });
+  if (!age.trim()) return NextResponse.json({ error: "Idade é obrigatória." }, { status: 400 });
+  if (!clinicName.trim()) return NextResponse.json({ error: "Nome da clínica é obrigatório." }, { status: 400 });
+  if (!responsibleVet.trim())
+    return NextResponse.json({ error: "Nome do médico responsável é obrigatório." }, { status: 400 });
+  if (!examDate.trim()) return NextResponse.json({ error: "Data do exame é obrigatória." }, { status: 400 });
   if (!rawInput.trim()) return NextResponse.json({ error: "Achados do exame são obrigatórios." }, { status: 400 });
   if (rawInput.length > 2_000)
     return NextResponse.json({ error: "Achados do exame muito longos. Máximo 2.000 caracteres." }, { status: 400 });
@@ -70,8 +76,8 @@ export async function POST(req: NextRequest) {
     const petPromise = !petId
       ? findOrCreatePet(supabase, userId, patientName.trim(), ownerName.trim(), {
           species,
-          breed: breed || null,
-          age: age || null,
+          breed,
+          age,
           sex,
           neutered,
         })
@@ -120,9 +126,9 @@ export async function POST(req: NextRequest) {
         generated_content: generatedContent,
         sex,
         neutered,
-        clinic_name: clinicName ?? null,
-        responsible_vet: responsibleVet ?? null,
-        exam_date: examDate ?? null,
+        clinic_name: clinicName,
+        responsible_vet: responsibleVet,
+        exam_date: examDate,
         pet_id: resolvedPetId,
       })
       .select()

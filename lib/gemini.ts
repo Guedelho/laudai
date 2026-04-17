@@ -113,7 +113,7 @@ export async function generateLaudo(params: GenerateParams): Promise<string> {
 
   const model = getModel(DRAFT_MODEL, systemPrompt);
 
-  const userMessage = `Alterações encontradas no exame:\n\n${rawInput}\n\nDados do paciente: ${patientName}, ${species}, ${breed || "raça não informada"}, ${age || "idade não informada"}, ${sex === "M" ? "Macho" : "Fêmea"}, ${neutered ? "castrado(a)" : "não castrado(a)"}, responsável: ${ownerName}.\n\nGere o laudo completo. Mantenha o texto padrão para todas as seções não mencionadas. Para as seções mencionadas, aplique as alterações informadas.`;
+  const userMessage = `Alterações encontradas no exame:\n\n${rawInput}\n\nDados do paciente: ${patientName}, ${species}, ${breed}, ${age}, ${sex === "M" ? "Macho" : "Fêmea"}, ${neutered ? "castrado(a)" : "não castrado(a)"}, responsável: ${ownerName}.\n\nGere o laudo completo. Mantenha o texto padrão para todas as seções não mencionadas. Para as seções mencionadas, aplique as alterações informadas.`;
 
   onStatus?.("generating");
 

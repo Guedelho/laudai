@@ -19,10 +19,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .update({
       name: name.trim(),
       species: species.trim(),
-      breed: breed?.trim() || null,
-      age: age?.trim() || null,
+      breed: breed.trim(),
+      age: age.trim(),
       owner_name: ownerName.trim(),
-      sex: sex || null,
+      sex,
       neutered,
     })
     .eq("id", id)

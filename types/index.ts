@@ -37,17 +37,17 @@ export interface ParsedLaudo {
 export interface PatientFields {
   patientName: string;
   species: string;
-  breed?: string;
-  age?: string;
+  breed: string;
+  age: string;
   sex: string;
   neutered: boolean;
   ownerName: string;
 }
 
 export interface LaudoFields extends PatientFields {
-  clinicName?: string;
-  responsibleVet?: string;
-  examDate?: string;
+  clinicName: string;
+  responsibleVet: string;
+  examDate: string;
 }
 
 // ─── DB row models ───────────────────────────────────────────────────────────
@@ -69,8 +69,8 @@ export interface Pet {
   user_id: string;
   name: string;
   species: string;
-  breed?: string;
-  age?: string;
+  breed: string;
+  age: string;
   sex: string;
   neutered: boolean;
   owner_name: string;
@@ -99,16 +99,16 @@ export interface Laudo {
   specialty: Specialty;
   patient_name: string;
   species: string;
-  breed?: string;
-  age?: string;
+  breed: string;
+  age: string;
   sex: string;
   neutered: boolean;
   owner_name: string;
-  clinic_name?: string;
-  responsible_vet?: string;
+  clinic_name: string;
+  responsible_vet: string;
   raw_input: string;
   generated_content: string;
-  exam_date?: string;
+  exam_date: string;
   created_at: string;
   updated_at?: string;
   pet_id?: string;
@@ -131,8 +131,8 @@ export interface GenerateRequest extends LaudoFields {
 export interface PetRequest {
   name: string;
   species: string;
-  breed?: string;
-  age?: string;
+  breed: string;
+  age: string;
   sex: string;
   neutered: boolean;
   ownerName: string;
@@ -143,14 +143,14 @@ export interface UpdateLaudoRequest {
   patientFields: {
     patient_name: string;
     species: string;
-    breed?: string | null;
-    age?: string | null;
+    breed: string;
+    age: string;
     sex: string;
     neutered: boolean;
     owner_name: string;
-    clinic_name?: string | null;
-    responsible_vet?: string | null;
-    exam_date?: string | null;
+    clinic_name: string;
+    responsible_vet: string;
+    exam_date: string;
   };
 }
 

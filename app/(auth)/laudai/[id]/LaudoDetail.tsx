@@ -37,18 +37,17 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
   const [fields, setFields] = useState({
     patientName: laudo.patient_name,
     species: laudo.species,
-    breed: laudo.breed ?? "",
-    age: laudo.age ?? "",
+    breed: laudo.breed,
+    age: laudo.age,
     sex: laudo.sex,
     neutered: laudo.neutered,
     ownerName: laudo.owner_name,
-    clinicName: laudo.clinic_name ?? "",
-    responsibleVet: laudo.responsible_vet ?? "",
-    examDate: laudo.exam_date ?? "",
+    clinicName: laudo.clinic_name,
+    responsibleVet: laudo.responsible_vet,
+    examDate: laudo.exam_date,
   });
 
-  const createdDate = new Date(laudo.created_at).toLocaleDateString("pt-BR");
-  const examDate = fields.examDate ? new Date(fields.examDate + "T12:00:00").toLocaleDateString("pt-BR") : null;
+  const examDate = new Date(fields.examDate + "T12:00:00").toLocaleDateString("pt-BR");
 
   async function handleSave() {
     setSaving(true);
@@ -62,14 +61,14 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
           patientFields: {
             patient_name: fields.patientName,
             species: fields.species,
-            breed: fields.breed || null,
-            age: fields.age || null,
+            breed: fields.breed,
+            age: fields.age,
             sex: fields.sex,
             neutered: fields.neutered,
             owner_name: fields.ownerName,
-            clinic_name: fields.clinicName || null,
-            responsible_vet: fields.responsibleVet || null,
-            exam_date: fields.examDate || null,
+            clinic_name: fields.clinicName,
+            responsible_vet: fields.responsibleVet,
+            exam_date: fields.examDate,
           },
         }),
       });
@@ -88,14 +87,14 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
     setFields({
       patientName: laudo.patient_name,
       species: laudo.species,
-      breed: laudo.breed ?? "",
-      age: laudo.age ?? "",
+      breed: laudo.breed,
+      age: laudo.age,
       sex: laudo.sex,
       neutered: laudo.neutered,
       ownerName: laudo.owner_name,
-      clinicName: laudo.clinic_name ?? "",
-      responsibleVet: laudo.responsible_vet ?? "",
-      examDate: laudo.exam_date ?? "",
+      clinicName: laudo.clinic_name,
+      responsibleVet: laudo.responsible_vet,
+      examDate: laudo.exam_date,
     });
     setIsEditing(false);
     setError("");
@@ -168,7 +167,7 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
               {SPECIALTY_LABELS[laudo.specialty]}
             </span>
-            <span className="text-xs text-gray-400">{examDate ?? createdDate}</span>
+            <span className="text-xs text-gray-400">{examDate}</span>
           </div>
         </div>
         <div className="flex items-center gap-2 mt-1">
@@ -324,16 +323,16 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Paciente</h3>
             <InfoItem label="Nome:" value={fields.patientName} />
             <InfoItem label="Espécie:" value={fields.species} />
-            {fields.breed && <InfoItem label="Raça:" value={fields.breed} />}
-            {fields.age && <InfoItem label="Idade:" value={fields.age} />}
+            <InfoItem label="Raça:" value={fields.breed} />
+            <InfoItem label="Idade:" value={fields.age} />
             <InfoItem label="Sexo:" value={sexLabel(fields.sex)} />
             <InfoItem label="Castrado(a):" value={fields.neutered ? "Sim" : "Não"} />
           </div>
           <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-2 text-sm">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Atendimento</h3>
             <InfoItem label="Responsável:" value={fields.ownerName} />
-            {fields.clinicName && <InfoItem label="Clínica:" value={fields.clinicName} />}
-            {fields.responsibleVet && <InfoItem label="Médico:" value={fields.responsibleVet} />}
+            <InfoItem label="Clínica:" value={fields.clinicName} />
+            <InfoItem label="Médico:" value={fields.responsibleVet} />
             {examDate && <InfoItem label="Data do exame:" value={examDate} />}
           </div>
         </div>

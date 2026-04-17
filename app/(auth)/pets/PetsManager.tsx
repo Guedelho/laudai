@@ -30,8 +30,8 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
     setEditFields({
       name: pet.name,
       species: pet.species,
-      breed: pet.breed ?? "",
-      age: pet.age ?? "",
+      breed: pet.breed,
+      age: pet.age,
       owner_name: pet.owner_name,
       sex: pet.sex,
       neutered: pet.neutered,
@@ -257,7 +257,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Idade</label>
                     <input
-                      value={editFields.age ?? ""}
+                      value={editFields.age}
                       onChange={(e) => setEditFields((f) => ({ ...f, age: e.target.value }))}
                       placeholder="ex: 3 anos"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"

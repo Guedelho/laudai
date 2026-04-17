@@ -35,8 +35,8 @@ export async function POST(req: NextRequest) {
   try {
     const pet = await findOrCreatePet(admin, userId, name.trim(), ownerName.trim(), {
       species,
-      breed: breed || null,
-      age: age || null,
+      breed,
+      age,
       sex,
       neutered,
     });
