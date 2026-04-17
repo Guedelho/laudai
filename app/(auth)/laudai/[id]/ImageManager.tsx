@@ -6,7 +6,7 @@ import { LaudoImage } from "@/types";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import ImageLightbox from "@/components/ImageLightbox";
 
-export default function ImageManager({ initialImages, laudoId }: { initialImages: LaudoImage[]; laudoId: string }) {
+export default function ImageManager({ initialImages, laudoId, editable = false }: { initialImages: LaudoImage[]; laudoId: string; editable?: boolean }) {
   const [images, setImages] = useState<LaudoImage[]>(initialImages);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -67,15 +67,19 @@ export default function ImageManager({ initialImages, laudoId }: { initialImages
               <span className="ml-2 text-xs font-normal text-gray-400">{images.length}/30</span>
             )}
           </p>
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            disabled={uploading || images.length >= 30}
-            className="text-xs text-blue-600 hover:text-blue-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {uploading ? "Enviando..." : "Adicionar imagens"}
-          </button>
-          <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleAdd} />
+          {editable && (
+            <>
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                disabled={uploading || images.length >= 30}
+                className="text-xs text-blue-600 hover:text-blue-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {uploading ? "Enviando..." : "Adicionar imagens"}
+              </button>
+              <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleAdd} />
+            </>
+          )}
         </div>
 
         {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
@@ -98,13 +102,15 @@ export default function ImageManager({ initialImages, laudoId }: { initialImages
                     className="w-full rounded-lg border border-gray-200 object-contain bg-black hover:opacity-90 transition-opacity"
                   />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(img.id)}
-                  className="absolute top-1 right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                >
-                  ×
-                </button>
+                {editable && (
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(img.id)}
+                    className="absolute top-1 right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             ))}
           </div>
