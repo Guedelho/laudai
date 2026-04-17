@@ -253,63 +253,74 @@ export default function NewLaudoPage() {
         }
       }
 
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          specialty,
-          rawInput,
-          patientName,
-          species,
-          breed,
-          age,
-          sex,
-          neutered,
-          ownerName,
-          clinicName: resolvedClinicName,
-          responsibleVet: resolvedVetName,
-          examDate,
-          petId: selectedPetId || undefined,
-        }),
+      const generateBody = JSON.stringify({
+        specialty,
+        rawInput,
+        patientName,
+        species,
+        breed,
+        age,
+        sex,
+        neutered,
+        ownerName,
+        clinicName: resolvedClinicName,
+        responsibleVet: resolvedVetName,
+        examDate,
+        petId: selectedPetId || undefined,
       });
 
-      if (!res.ok) {
-        let data: ApiResponse = {};
-        try {
-          data = await res.json();
-        } catch {
-          /* ignore */
-        }
-        throw new Error(data.error || "Erro ao gerar laudo.");
-      }
-
-      // Consume SSE stream
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
       let laudoId: string | null = null;
+      const maxAttempts = 3;
 
-      outer: while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split("\n\n");
-        buffer = parts.pop() ?? "";
-        for (const part of parts) {
-          const line = part.trim();
-          if (!line.startsWith("data: ")) continue;
-          const event: SseEvent = JSON.parse(line.slice(6));
-          if (event.status === "generating") setGeneratingStatus("Gerando laudo...");
-          else if (event.status === "retrying") setGeneratingStatus("Tentando novamente...");
-          else if (event.status === "reviewing") setGeneratingStatus("Revisando laudo...");
-          else if (event.status === "saving") setGeneratingStatus("Salvando...");
-          else if (event.status === "chunk") {
-            /* streaming preview — text arriving */
-          } else if (event.status === "error") throw new Error(event.message || "Erro ao gerar laudo.");
-          else if (event.status === "done") {
-            laudoId = event.laudo.id;
-            break outer;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          const res = await fetch("/api/generate", { method: "POST", headers, body: generateBody });
+
+          if (!res.ok) {
+            let data: ApiResponse = {};
+            try {
+              data = await res.json();
+            } catch {
+              /* ignore */
+            }
+            throw new Error(data.error || "Erro ao gerar laudo.");
           }
+
+          const reader = res.body!.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+
+          outer: while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split("\n\n");
+            buffer = parts.pop() ?? "";
+            for (const part of parts) {
+              const line = part.trim();
+              if (!line.startsWith("data: ")) continue;
+              const event: SseEvent = JSON.parse(line.slice(6));
+              if (event.status === "generating") setGeneratingStatus("Gerando laudo...");
+              else if (event.status === "retrying") setGeneratingStatus("Tentando novamente...");
+              else if (event.status === "reviewing") setGeneratingStatus("Revisando laudo...");
+              else if (event.status === "saving") setGeneratingStatus("Salvando...");
+              else if (event.status === "chunk") {
+                /* streaming preview */
+              } else if (event.status === "error") throw new Error(event.message || "Erro ao gerar laudo.");
+              else if (event.status === "done") {
+                laudoId = event.laudo.id;
+                break outer;
+              }
+            }
+          }
+
+          if (laudoId) break;
+          throw new Error("Resposta incompleta do servidor.");
+        } catch (err) {
+          if (attempt === maxAttempts) throw err;
+          setGeneratingStatus(`Tentativa ${attempt} falhou. Tentando novamente...`);
+          await new Promise((r) => setTimeout(r, 1000 * attempt));
+          setGeneratingStatus("Gerando laudo...");
         }
       }
 
