@@ -163,24 +163,6 @@ PERITONITE:
 Peritonite focal, peritonite difusa`,
 };
 
-export const ORGAN_KEYWORDS: Record<string, string[]> = {
-  liver: ["fígado", "fìgado", "hepat", "hepát", "hepático"],
-  gallbladder: ["vesícula", "biliar", "colang", "colelit", "colelitíase", "mucocele"],
-  spleen: ["baço", "esplên", "esplênico"],
-  pancreas: ["pâncreas", "pancreat"],
-  adrenals: ["adrenal", "adrenais"],
-  stomach: ["estômago", "gástric", "gastrit"],
-  intestines: ["intestin", "alça", "alças", "duoden", "jejun", "íleo", "colit", "intussuscep"],
-  kidneys: ["rim", "rins", "renal", "nefr", "pielo", "hidronef", "ureter", "coletor"],
-  bladder: ["bexiga", "vesic", "cistit", "uretral", "uretra"],
-  uterus: ["útero", "uterin", "endometr", "piometra", "mucometra", "gestac", "feto", "metrite"],
-  ovaries: ["ovário", "ovários", "ovariano"],
-  prostate: ["próstata", "prostát", "prostatic"],
-  testicles: ["testícul", "escrotal", "orquit", "epididim", "criptorquid"],
-  lymphnodes: ["linfon", "linfonodo"],
-  misc: ["hérnia", "hernia", "massa", "formação", "formações", "efusão", "líquido livre", "peritonit"],
-};
-
 export const FRASES_SALVADORAS = `FRASES SALVADORAS (use quando aplicável):
 - Para alterações em órgãos com possível comprometimento funcional: "Sugiro correlação com achados clínicos e demais exames laboratoriais para maiores conclusões."
 - Para lesões pequenas ou formações médias a grandes: "É recomendado acompanhamento ultrassonográfico da lesão, bem como a associação com o exame de punção guiada por agulha fina."

@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { TEMPLATES, buildDefaults, NOMENCLATURE, ORGAN_KEYWORDS, FRASES_SALVADORAS } from "@/lib/templates";
+import { TEMPLATES, buildDefaults, NOMENCLATURE, FRASES_SALVADORAS } from "@/lib/templates";
 import { extractJson } from "@/lib/parseLaudo";
 import { Specialty, PatientFields } from "@/types";
 
@@ -27,25 +27,7 @@ function getModel(modelId: string, systemInstruction: string) {
   return model;
 }
 
-// ─── Keyword-based nomenclature filtering ────────────────────────────────────
-
-function buildNomenclature(rawInput: string): string {
-  const lower = rawInput.toLowerCase();
-  const matched: string[] = [];
-
-  for (const [organ, keywords] of Object.entries(ORGAN_KEYWORDS)) {
-    if (keywords.some((kw) => lower.includes(kw))) {
-      const section = NOMENCLATURE[organ];
-      if (section) matched.push(section);
-    }
-  }
-
-  if (matched.length === 0) return FRASES_SALVADORAS;
-  if (matched.length > 3) {
-    return `REFERÊNCIA DE ACHADOS POR ÓRGÃO:\n\n${Object.values(NOMENCLATURE).join("\n\n")}\n\n${FRASES_SALVADORAS}`;
-  }
-  return `REFERÊNCIA DE ACHADOS POR ÓRGÃO:\n\n${matched.join("\n\n")}\n\n${FRASES_SALVADORAS}`;
-}
+const FULL_NOMENCLATURE = `REFERÊNCIA DE ACHADOS POR ÓRGÃO:\n\n${Object.values(NOMENCLATURE).join("\n\n")}\n\n${FRASES_SALVADORAS}`;
 
 // ─── Post-processing scrubbers ───────────────────────────────────────────────
 
@@ -123,10 +105,9 @@ export async function generateLaudo(params: GenerateParams): Promise<string> {
   const { specialty, rawInput, patientName, species, breed, age, sex, neutered, ownerName, onStatus, onChunk } = params;
 
   const resolvedDefaults = buildDefaults(sex, neutered);
-  const nomenclature = buildNomenclature(rawInput);
 
   const systemPrompt = TEMPLATES[specialty]
-    .replace(/{nomenclature}/g, nomenclature)
+    .replace(/{nomenclature}/g, FULL_NOMENCLATURE)
     .replace(/{defaults}/g, resolvedDefaults)
     .replace(/{especie}/g, species);
 
