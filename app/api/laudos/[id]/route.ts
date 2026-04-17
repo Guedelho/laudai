@@ -14,16 +14,6 @@ export async function PATCH(
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdmin();
-
-  const { data: existing } = await admin
-    .from("laudos")
-    .select("id")
-    .eq("id", id)
-    .eq("user_id", userId)
-    .single();
-
-  if (!existing) return NextResponse.json({ error: "Laudo not found" }, { status: 404 });
-
   const body: { generatedContent: ParsedLaudo; patientFields: Record<string, unknown> } = await req.json();
   const { generatedContent, patientFields } = body;
 
@@ -34,12 +24,13 @@ export async function PATCH(
       ...patientFields,
     })
     .eq("id", id)
+    .eq("user_id", userId)
     .select()
     .single();
 
   if (error) {
     console.error("Laudo update error:", error);
-    return NextResponse.json({ error: "Erro ao salvar laudo." }, { status: 500 });
+    return NextResponse.json({ error: "Laudo not found" }, { status: 404 });
   }
 
   revalidateTag(`laudo-${id}`, "default");

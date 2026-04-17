@@ -25,7 +25,7 @@ function getLaudoData(id: string, userId: string) {
             return { id: img.id, file_name: img.file_name, url: data.signedUrl };
           })
         )
-      ).filter(Boolean) as { id: string; file_name: string; url: string }[];
+      ).filter((img): img is { id: string; file_name: string; url: string } => img !== null);
 
       return { laudo, images };
     },

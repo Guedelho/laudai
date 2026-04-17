@@ -56,9 +56,9 @@ export async function POST(req: NextRequest) {
   const body: GenerateRequest = await req.json();
   const { specialty, rawInput, patientName, species, breed, age, sex, neutered, ownerName, clinicName, responsibleVet, petId, examDate } = body;
 
-  if (!patientName?.trim()) return NextResponse.json({ error: "Nome do paciente é obrigatório." }, { status: 400 });
-  if (!ownerName?.trim()) return NextResponse.json({ error: "Nome do tutor é obrigatório." }, { status: 400 });
-  if (!rawInput?.trim()) return NextResponse.json({ error: "Achados do exame são obrigatórios." }, { status: 400 });
+  if (!patientName.trim()) return NextResponse.json({ error: "Nome do paciente é obrigatório." }, { status: 400 });
+  if (!ownerName.trim()) return NextResponse.json({ error: "Nome do tutor é obrigatório." }, { status: 400 });
+  if (!rawInput.trim()) return NextResponse.json({ error: "Achados do exame são obrigatórios." }, { status: 400 });
   if (rawInput.length > 5_000) return NextResponse.json({ error: "Achados do exame muito longos. Máximo 5.000 caracteres." }, { status: 400 });
 
   return sseStream(async (send) => {
@@ -92,8 +92,8 @@ export async function POST(req: NextRequest) {
           species,
           breed,
           age,
-          sex: sex ?? undefined,
-          neutered: neutered ?? undefined,
+          sex,
+          neutered,
           ownerName,
           veterinarian: profile.full_name,
           crmv: profile.crmv,
