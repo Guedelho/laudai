@@ -43,7 +43,8 @@ export default function NewLaudoPage() {
   // Images (selected before submit)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [objectUrls, setObjectUrls] = useState<string[]>([]);
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const lightboxRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const objectUrlsRef = useRef<string[]>([]);
   objectUrlsRef.current = objectUrls;
@@ -53,6 +54,12 @@ export default function NewLaudoPage() {
   useEffect(() => {
     return () => { objectUrlsRef.current.forEach(URL.revokeObjectURL); };
   }, []);
+
+  useEffect(() => {
+    if (lightboxIndex === null || !lightboxRef.current) return;
+    const child = lightboxRef.current.children[lightboxIndex] as HTMLElement | undefined;
+    child?.scrollIntoView({ behavior: "instant", block: "nearest", inline: "center" });
+  }, [lightboxIndex]);
 
   // Review phase
   const [phase, setPhase] = useState<"form" | "review">("form");
@@ -547,7 +554,7 @@ export default function NewLaudoPage() {
                     <img
                       src={objectUrls[i]}
                       alt={file.name}
-                      onClick={() => setLightboxUrl(objectUrls[i])}
+                      onClick={() => setLightboxIndex(i)}
                       className="h-24 w-32 object-cover rounded-lg border border-gray-200 bg-black cursor-pointer"
                     />
                     <button
@@ -563,25 +570,32 @@ export default function NewLaudoPage() {
             ) : (
               <p className="text-sm text-gray-400 italic">Nenhuma imagem selecionada</p>
             )}
-            {lightboxUrl && (
+            {lightboxIndex !== null && (
               <div
-                className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
-                onClick={() => setLightboxUrl(null)}
+                className="fixed inset-0 z-50 bg-black/90 flex flex-col"
+                onClick={() => setLightboxIndex(null)}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={lightboxUrl}
-                  alt=""
-                  className="max-w-full max-h-full object-contain"
+                <div className="flex justify-end p-4">
+                  <button
+                    type="button"
+                    onClick={() => setLightboxIndex(null)}
+                    className="text-white text-sm bg-black/50 px-3 py-1 rounded-full hover:bg-black/70"
+                  >
+                    Fechar ✕
+                  </button>
+                </div>
+                <div
+                  ref={lightboxRef}
+                  className="flex flex-1 overflow-x-auto snap-x snap-mandatory"
                   onClick={(e) => e.stopPropagation()}
-                />
-                <button
-                  type="button"
-                  onClick={() => setLightboxUrl(null)}
-                  className="absolute top-4 right-4 text-white text-sm bg-black/50 px-3 py-1 rounded-full hover:bg-black/70"
                 >
-                  Fechar ✕
-                </button>
+                  {objectUrls.map((url, i) => (
+                    <div key={i} className="snap-center flex-shrink-0 w-full flex items-center justify-center px-6 pb-6">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="" className="max-w-full max-h-full object-contain" />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

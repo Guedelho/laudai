@@ -1,16 +1,23 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { LaudoImage } from "@/types";
 import { createClient } from "@/lib/supabase/client";
 
 export default function ImageManager({ initialImages, laudoId }: { initialImages: LaudoImage[]; laudoId: string }) {
   const [images, setImages] = useState<LaudoImage[]>(initialImages);
-  const [selected, setSelected] = useState<LaudoImage | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const lightboxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selectedIndex === null || !lightboxRef.current) return;
+    const child = lightboxRef.current.children[selectedIndex] as HTMLElement | undefined;
+    child?.scrollIntoView({ behavior: "instant", block: "nearest", inline: "center" });
+  }, [selectedIndex]);
 
   async function getAuthHeaders(): Promise<Record<string, string>> {
     const supabase = createClient();
@@ -49,7 +56,7 @@ export default function ImageManager({ initialImages, laudoId }: { initialImages
         throw new Error(data.error || "Erro ao remover imagem.");
       }
       setImages((prev) => prev.filter((img) => img.id !== imageId));
-      if (selected?.id === imageId) setSelected(null);
+      setSelectedIndex(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao remover imagem.");
     }
@@ -80,11 +87,11 @@ export default function ImageManager({ initialImages, laudoId }: { initialImages
 
         {images.length > 0 ? (
           <div className="grid grid-cols-2 gap-4">
-            {images.map((img) => (
+            {images.map((img, i) => (
               <div key={img.id} className="relative group">
                 <button
                   type="button"
-                  onClick={() => setSelected(img)}
+                  onClick={() => setSelectedIndex(i)}
                   className="w-full focus:outline-none rounded-lg overflow-hidden"
                 >
                   <Image
@@ -111,26 +118,36 @@ export default function ImageManager({ initialImages, laudoId }: { initialImages
         )}
       </div>
 
-      {selected && (
+      {selectedIndex !== null && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-          onClick={() => setSelected(null)}
+          className="fixed inset-0 z-50 bg-black/90 flex flex-col"
+          onClick={() => setSelectedIndex(null)}
         >
-          <div className="relative max-w-4xl w-full mx-4" onClick={(e) => e.stopPropagation()}>
+          <div className="flex justify-end p-4">
             <button
-              onClick={() => setSelected(null)}
-              className="absolute -top-10 right-0 text-white text-sm hover:text-gray-300"
+              onClick={() => setSelectedIndex(null)}
+              className="text-white text-sm bg-black/50 px-3 py-1 rounded-full hover:bg-black/70"
             >
               Fechar ✕
             </button>
-            <Image
-              src={selected.url}
-              alt={selected.file_name}
-              width={1200}
-              height={900}
-              sizes="100vw"
-              className="w-full max-h-[85vh] object-contain rounded-lg"
-            />
+          </div>
+          <div
+            ref={lightboxRef}
+            className="flex flex-1 overflow-x-auto snap-x snap-mandatory"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {images.map((img, i) => (
+              <div key={i} className="snap-center flex-shrink-0 w-full flex items-center justify-center px-6 pb-6">
+                <Image
+                  src={img.url}
+                  alt={img.file_name}
+                  width={1200}
+                  height={900}
+                  sizes="100vw"
+                  className="max-w-full max-h-full object-contain"
+                />
+              </div>
+            ))}
           </div>
         </div>
       )}
