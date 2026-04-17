@@ -9,7 +9,7 @@ import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
 import sharp from "sharp";
 
 const IMAGES_BUCKET = "laudo-images";
-const PDF_BUCKET = "laudo-images";
+const PDF_BUCKET = "laudo-pdfs";
 const SUPPORTED_MIME = new Set(["image/jpeg", "image/jpg", "image/png"]);
 
 function slugify(s: string) {
