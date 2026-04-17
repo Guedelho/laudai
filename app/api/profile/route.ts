@@ -21,13 +21,14 @@ export async function PUT(req: NextRequest) {
 
   const { data: existing } = await admin.from("profiles").select("id").eq("id", userId).maybeSingle();
 
-  const upsertData: Record<string, unknown> = { id: userId, full_name, signature_font, signature };
-  if (!existing) {
-    upsertData.cpf = body.cpf;
-    upsertData.crmv = body.crmv;
-    upsertData.crmv_state = body.crmv_state;
-  }
-  if ("signature_image_url" in body) upsertData.signature_image_url = signature_image_url;
+  const upsertData = {
+    id: userId,
+    full_name,
+    signature_font,
+    signature,
+    ...(!existing ? { cpf: body.cpf, crmv: body.crmv, crmv_state: body.crmv_state } : {}),
+    ...("signature_image_url" in body ? { signature_image_url } : {}),
+  };
 
   const { data, error } = await admin.from("profiles").upsert(upsertData, { onConflict: "id" }).select().single();
 
