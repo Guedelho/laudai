@@ -15,19 +15,21 @@ export async function PUT(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const admin = createAdmin();
   const body: UpdateProfileRequest = await req.json();
-  const { full_name, cpf, signature_font, signature_image_url, crmv, crmv_state } = body;
+  const { full_name, signature_font, signature_image_url } = body;
 
-  const upsertData: Record<string, unknown> = { id: userId, full_name, cpf, signature_font };
-  if ("crmv" in body) upsertData.crmv = crmv;
-  if ("crmv_state" in body) upsertData.crmv_state = crmv_state;
+  const { data: existing } = await admin.from("profiles").select("id").eq("id", userId).maybeSingle();
+
+  const upsertData: Record<string, unknown> = { id: userId, full_name, signature_font };
+  if (!existing) {
+    upsertData.cpf = body.cpf;
+    upsertData.crmv = body.crmv;
+    upsertData.crmv_state = body.crmv_state;
+  }
   if ("signature_image_url" in body) upsertData.signature_image_url = signature_image_url;
 
-  const { data, error } = await createAdmin()
-    .from("profiles")
-    .upsert(upsertData, { onConflict: "id" })
-    .select()
-    .single();
+  const { data, error } = await admin.from("profiles").upsert(upsertData, { onConflict: "id" }).select().single();
 
   if (error) {
     console.error("Profile save error:", error);
