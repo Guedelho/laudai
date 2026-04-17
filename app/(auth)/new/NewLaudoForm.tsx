@@ -364,6 +364,7 @@ export default function NewLaudoPage() {
                 suggestions={clinics.map((c) => c.name)}
                 placeholder="Nome da clínica"
                 className={inputCls}
+                required
               />
             </div>
             <div>
@@ -378,6 +379,7 @@ export default function NewLaudoPage() {
                 suggestions={vets.map((v) => v.name)}
                 placeholder="Nome do responsável"
                 className={inputCls}
+                required
               />
             </div>
           </div>
@@ -445,7 +447,13 @@ export default function NewLaudoPage() {
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Raça</label>
-              <Typeahead value={breed} onChange={setBreed} suggestions={breedSuggestions} className={inputCls} />
+              <Typeahead
+                value={breed}
+                onChange={setBreed}
+                suggestions={breedSuggestions}
+                className={inputCls}
+                required
+              />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Idade</label>
@@ -454,6 +462,7 @@ export default function NewLaudoPage() {
                 onChange={(e) => setAge(e.target.value)}
                 placeholder="ex: 3 anos"
                 className={inputCls}
+                required
               />
             </div>
           </div>
@@ -462,7 +471,13 @@ export default function NewLaudoPage() {
         {/* Exam date */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
           <label className="block text-sm font-semibold text-gray-700">Data do exame</label>
-          <input type="date" value={examDate} onChange={(e) => setExamDate(e.target.value)} className={inputCls} />
+          <input
+            type="date"
+            value={examDate}
+            onChange={(e) => setExamDate(e.target.value)}
+            className={inputCls}
+            required
+          />
         </div>
 
         {/* Findings */}

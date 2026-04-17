@@ -111,6 +111,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   // Generate PDF
   const profile = await getProfile(userId);
+  if (!profile) return NextResponse.json({ error: "Perfil não encontrado." }, { status: 400 });
 
   const { data: rawImages } = await admin
     .from("laudo_images")
@@ -139,7 +140,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const imageBase64List = imageResults.filter((b): b is string => b !== null);
 
   let logoBase64: string | undefined;
-  if (profile?.logo_url) {
+  if (profile.logo_url) {
     try {
       const { data: logoSigned } = await admin.storage.from("profile-logos").createSignedUrl(profile.logo_url, 60);
       if (logoSigned?.signedUrl) logoBase64 = await fetchAsBase64(logoSigned.signedUrl);
@@ -149,7 +150,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   let signatureImageBase64: string | undefined;
-  if (profile?.signature_image_url) {
+  if (profile.signature_image_url) {
     try {
       const { data: sigSigned } = await admin.storage
         .from("profile-logos")
@@ -172,14 +173,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     responsibleVet: laudo.responsible_vet,
     date,
     reportTitle: REPORT_TITLES[specialty],
-    vetName: profile?.full_name ?? "",
-    crmv: profile?.crmv ?? "",
+    vetName: profile.full_name,
+    crmv: profile.crmv,
     parsedLaudo: parseLaudoContent(laudo.generated_content),
     imageBase64List,
     logoBase64,
-    signatureFont: profile?.signature_font ?? undefined,
+    signatureFont: profile.signature_font,
     signatureImageBase64,
-    crmvState: profile?.crmv_state ?? undefined,
+    crmvState: profile.crmv_state,
   };
 
   const buffer = await generatePdfBuffer(pdfData);

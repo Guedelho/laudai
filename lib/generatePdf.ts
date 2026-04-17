@@ -31,18 +31,18 @@ async function fetchFont(name: string): Promise<Buffer> {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface PdfData extends PatientFields {
-  clinicName?: string;
-  responsibleVet?: string;
+  clinicName: string;
+  responsibleVet: string;
   date: string;
   reportTitle: string;
   vetName: string;
   crmv: string;
+  crmvState?: string;
   parsedLaudo: ParsedLaudo;
   imageBase64List: string[];
   logoBase64?: string;
   signatureFont?: string;
   signatureImageBase64?: string;
-  crmvState?: string;
 }
 
 // ─── pdfmake content builder ─────────────────────────────────────────────────
