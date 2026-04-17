@@ -1,4 +1,4 @@
-import { ParsedLaudo } from "@/types";
+import { ParsedLaudo } from "@/shared";
 
 export function extractJson(text: string): string {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);

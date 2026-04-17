@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import ClinicsManager from "./ClinicsManager";
-import { Clinic } from "@/types";
+import { Clinic } from "@/shared";
 
 export default async function ClinicsPage() {
   const {

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { SPECIALTY_LABELS } from "@/lib/templates";
-import { Specialty } from "@/types";
+import { Specialty } from "@/shared";
 
 interface LaudoSummary {
   id: string;

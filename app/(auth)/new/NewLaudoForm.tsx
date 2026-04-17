@@ -17,7 +17,7 @@ import {
   ClinicResponse,
   VetResponse,
   TranscribeResponse,
-} from "@/types";
+} from "@/shared";
 import { getAuthHeaders } from "@/lib/supabase/client";
 
 export default function NewLaudoPage() {

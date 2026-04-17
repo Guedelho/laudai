@@ -1,4 +1,4 @@
-import { Specialty } from "@/types";
+import { Specialty } from "@/shared";
 
 export const SPECIALTY_LABELS: Record<Specialty, string> = {
   ultrasound_abdominal: "Ultrassonografia Abdominal",

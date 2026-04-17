@@ -1,6 +1,6 @@
 "use client";
 
-import { ParsedLaudo } from "@/types";
+import { ParsedLaudo } from "@/shared";
 
 export default function LaudoContent({ parsedLaudo }: { parsedLaudo: ParsedLaudo }) {
   return (

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateLaudo } from "@/lib/gemini";
 import { getUserId, getProfile } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
-import { GenerateRequest } from "@/types";
+import { GenerateRequest } from "@/shared";
 import { findOrCreatePet } from "@/lib/db";
 import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
 

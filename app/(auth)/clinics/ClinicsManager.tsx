@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Clinic, ClinicVet, ClinicResponse, VetResponse, ApiResponse } from "@/types";
+import { Clinic, ClinicVet, ClinicResponse, VetResponse, ApiResponse } from "@/shared";
 import { getAuthHeaders } from "@/lib/supabase/client";
 
 export default function ClinicsManager({ initialClinics }: { initialClinics: Clinic[] }) {

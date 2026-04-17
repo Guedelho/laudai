@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SPECIALTY_LABELS } from "@/lib/templates";
-import { Laudo, LaudoImage, ParsedLaudo, sexLabel, SPECIES_OPTIONS, SEX_OPTIONS } from "@/types";
+import { Laudo, LaudoImage, ParsedLaudo, sexLabel, SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared";
 import { parseLaudoContent } from "@/lib/parseLaudo";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import DownloadPDFButton from "./DownloadPDFButton";

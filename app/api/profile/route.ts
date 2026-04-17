@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
-import { UpdateProfileRequest } from "@/types";
+import { UpdateProfileRequest } from "@/shared";
 
 export async function GET(req: NextRequest) {
   const userId = await getUserId(req);
