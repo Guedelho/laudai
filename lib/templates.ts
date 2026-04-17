@@ -4,8 +4,7 @@ export const SPECIALTY_LABELS: Record<Specialty, string> = {
   ultrasound_abdominal: "Ultrassonografia Abdominal",
 };
 
-export const DEFAULTS: Record<string, string> = {
-  ultrasound_abdominal: `BEXIGA: Bexiga de repleção líquida adequada, formato habitual, paredes finas e ecogênicas, margens internas lisas e conteúdo anecogênico e homogêneo normal.
+const DEFAULTS_BASE_ABDOMINAL = `BEXIGA: Bexiga de repleção líquida adequada, formato habitual, paredes finas e ecogênicas, margens internas lisas e conteúdo anecogênico e homogêneo normal.
 
 RIM ESQUERDO: Em topografia habitual, contornos definidos e regulares, medindo x cm, relação/junção corticomedular preservada e ecotextura sem evidências de alterações sonográficas.
 
@@ -23,13 +22,29 @@ ALÇAS INTESTINAIS: Alças intestinais de distribuição topográfica habitual; 
 
 PÂNCREAS: Pâncreas de ecogenicidade e ecotextura preservadas, medindo x cm de espessura em região de lobo direito.
 
-ADRENAIS: Adrenais de formato mantido, bordas regulares, distinção córticomedular e ecogenicidade preservadas. Adrenal direita medindo 0,00 x 0,00 x 0,00cm e esquerda com 0,00 x 0,00 x 0,00cm (comprimento x altura cranial x altura caudal).
+ADRENAIS: Adrenais de formato mantido, bordas regulares, distinção córticomedular e ecogenicidade preservadas. Adrenal direita medindo 0,00 x 0,00 x 0,00cm e esquerda com 0,00 x 0,00 x 0,00cm (comprimento x altura cranial x altura caudal).`;
 
-PRÓSTATA: Próstata em topografia habitual e de contornos definidos, superfície lisa, formato preservado, ecogênica e homogênea, medindo 1,24 x 1,40 (comprimento x largura).
+const DEFAULTS_MALE_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual e de contornos definidos, superfície lisa, formato preservado, ecogênica e homogênea, medindo 1,24 x 1,40 (comprimento x largura).
 
 TESTÍCULO DIREITO: Localizado em bolsa escrotal, medindo aproximadamente x cm (normal), hipoecogênico, homogêneo, com presença de linha central hiperecogênica (mediastino testicular), sem evidências de alterações sonográficas.
 
-TESTÍCULO ESQUERDO: Localizado em bolsa escrotal, medindo aproximadamente x cm (normal), hipoecogênico, homogêneo, com presença de linha central hiperecogênica (mediastino testicular), sem evidências de alterações sonográficas.`,
+TESTÍCULO ESQUERDO: Localizado em bolsa escrotal, medindo aproximadamente x cm (normal), hipoecogêneo, homogêneo, com presença de linha central hiperecogênica (mediastino testicular), sem evidências de alterações sonográficas.`;
+
+const DEFAULTS_FEMALE_ABDOMINAL = `ÚTERO: Útero de dimensões, contornos e ecotextura preservados, sem evidências de alterações sonográficas.
+
+OVÁRIOS: Ovários de contornos definidos, dimensões e ecotextura preservadas, sem evidências de alterações sonográficas.`;
+
+export function buildDefaults(specialty: string, sex?: string | null, neutered?: boolean | null): string {
+  if (specialty !== "ultrasound_abdominal") return "";
+  const base = DEFAULTS_BASE_ABDOMINAL;
+  if (!sex) return `${base}\n\n${DEFAULTS_MALE_ABDOMINAL}\n\n${DEFAULTS_FEMALE_ABDOMINAL}`;
+  if (sex === "M" && !neutered) return `${base}\n\n${DEFAULTS_MALE_ABDOMINAL}`;
+  if (sex === "F" && !neutered) return `${base}\n\n${DEFAULTS_FEMALE_ABDOMINAL}`;
+  return base;
+}
+
+export const DEFAULTS: Record<string, string> = {
+  ultrasound_abdominal: buildDefaults("ultrasound_abdominal"),
 };
 
 export const TEMPLATES: Record<Specialty, string> = {

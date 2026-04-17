@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { TEMPLATES, DEFAULTS } from "@/lib/templates";
+import { TEMPLATES, buildDefaults } from "@/lib/templates";
 import { extractJson } from "@/lib/parseLaudo";
 import { Specialty } from "@/types";
 
@@ -29,6 +29,8 @@ interface GenerateParams {
   species: string;
   breed?: string;
   age?: string;
+  sex?: string;
+  neutered?: boolean;
   ownerName: string;
   veterinarian: string;
   crmv: string;
@@ -36,11 +38,13 @@ interface GenerateParams {
 }
 
 export async function generateLaudo(params: GenerateParams): Promise<string> {
-  const { specialty, rawInput, patientName, species, breed, age, ownerName, veterinarian, crmv, onStatus } = params;
+  const { specialty, rawInput, patientName, species, breed, age, sex, neutered, ownerName, veterinarian, crmv, onStatus } = params;
+
+  const resolvedDefaults = buildDefaults(specialty, sex, neutered);
 
   const today = new Date().toLocaleDateString("pt-BR");
   const systemPrompt = TEMPLATES[specialty]
-    .replace(/{defaults}/g, DEFAULTS[specialty] ?? "")
+    .replace(/{defaults}/g, resolvedDefaults)
     .replace(/{data}/g, today)
     .replace(/{paciente}/g, patientName)
     .replace(/{especie}/g, species)
@@ -63,7 +67,6 @@ export async function generateLaudo(params: GenerateParams): Promise<string> {
 
   if (rawInput.trim()) {
     onStatus?.("reviewing");
-    const defaults = DEFAULTS[specialty] ?? "";
 
     // Verification agent: strip hallucinated findings not in the original input
     try {
@@ -71,7 +74,7 @@ export async function generateLaudo(params: GenerateParams): Promise<string> {
             "Retorne APENAS um objeto JSON válido. Nunca use markdown, asteriscos, blocos de código ou qualquer formatação.\n\n" +
             "Você é um veterinário ultrassonografista sênior revisando um laudo gerado por IA.\n\n" +
             "TEXTO PADRÃO DE REFERÊNCIA (achados normais para cada seção):\n" +
-            defaults +
+            resolvedDefaults +
             "\n\nSUAS REGRAS:\n" +
             "1. Seções que correspondem ao texto padrão acima → copie-as EXATAMENTE como estão no laudo, sem nenhuma alteração.\n" +
             "2. Seções alteradas → para cada campo que difere do padrão, avalie como veterinário se a mudança é:\n" +

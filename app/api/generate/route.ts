@@ -82,6 +82,8 @@ export async function POST(req: NextRequest) {
           species,
           breed,
           age,
+          sex: sex ?? undefined,
+          neutered: neutered ?? undefined,
           ownerName,
           veterinarian: profile.full_name,
           crmv: profile.crmv,
