@@ -56,9 +56,11 @@ export default function LaudoList({ laudos }: { laudos: LaudoSummary[] }) {
               className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between"
             >
               <div>
-                <p className="font-medium text-gray-900">{laudo.patient_name}</p>
+                <p className="font-medium text-gray-900">
+                  {laudo.patient_name} · {laudo.owner_name}
+                </p>
                 <p className="text-sm text-gray-500">
-                  {SPECIALTY_LABELS[laudo.specialty]} · {laudo.owner_name} · {laudo.clinic_name}
+                  {SPECIALTY_LABELS[laudo.specialty]} · {laudo.clinic_name}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
                   Criado: {new Date(laudo.created_at).toLocaleDateString("pt-BR")}
