@@ -11,7 +11,7 @@ export default async function DashboardPage() {
   const admin = createAdmin();
   const { data: laudos } = await admin
     .from("laudos")
-    .select("id, patient_name, owner_name, specialty, created_at, exam_date")
+    .select("id, patient_name, owner_name, clinic_name, specialty, created_at, exam_date")
     .eq("user_id", user.id)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });

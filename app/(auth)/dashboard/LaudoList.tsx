@@ -9,6 +9,7 @@ interface LaudoSummary {
   id: string;
   patient_name: string;
   owner_name: string;
+  clinic_name: string;
   specialty: Specialty;
   created_at: string;
   exam_date?: string;
@@ -21,7 +22,8 @@ export default function LaudoList({ laudos }: { laudos: LaudoSummary[] }) {
     ? laudos.filter(
         (l) =>
           l.patient_name.toLowerCase().includes(query.toLowerCase()) ||
-          l.owner_name.toLowerCase().includes(query.toLowerCase()),
+          l.owner_name.toLowerCase().includes(query.toLowerCase()) ||
+          l.clinic_name.toLowerCase().includes(query.toLowerCase()),
       )
     : laudos;
 
@@ -56,7 +58,7 @@ export default function LaudoList({ laudos }: { laudos: LaudoSummary[] }) {
               <div>
                 <p className="font-medium text-gray-900">{laudo.patient_name}</p>
                 <p className="text-sm text-gray-500">
-                  {SPECIALTY_LABELS[laudo.specialty]} · {laudo.owner_name}
+                  {SPECIALTY_LABELS[laudo.specialty]} · {laudo.owner_name} · {laudo.clinic_name}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
                   Criado: {new Date(laudo.created_at).toLocaleDateString("pt-BR")}
