@@ -323,10 +323,10 @@ export default function NewLaudoPage() {
         }
       }
 
+      setGeneratingStatus("Redirecionando...");
       router.push(`/laudai/${laudoId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar laudo.");
-    } finally {
       setGenerating(false);
     }
   }
