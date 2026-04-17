@@ -1,6 +1,4 @@
-import fs from "fs";
-import path from "path";
-import { ParsedLaudo } from "@/types";
+import { ParsedLaudo, PatientFields } from "@/types";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfmake = require("pdfmake");
 
@@ -29,25 +27,9 @@ async function fetchFont(name: string): Promise<Buffer> {
   return buf;
 }
 
-function getLogoBase64(): string | null {
-  try {
-    const buf = fs.readFileSync(path.resolve(process.cwd(), "public/logo.png"));
-    return "data:image/png;base64," + buf.toString("base64");
-  } catch {
-    return null;
-  }
-}
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface PdfData {
-  patientName: string;
-  species: string;
-  breed?: string;
-  age?: string;
-  sex?: string;
-  neutered?: boolean;
-  ownerName: string;
+export interface PdfData extends PatientFields {
   clinicName?: string;
   responsibleVet?: string;
   date: string;
@@ -112,10 +94,11 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
     });
     for (const line of parsedLaudo.impressao) {
       items.push({
-        text: line,
-        alignment: "justify",
-        margin: [0, 0, 0, 4],
-        fontSize: 12,
+        columns: [
+          { text: "•", bold: true, width: 10, fontSize: 12 },
+          { text: line, alignment: "justify", width: "*", fontSize: 12 },
+        ],
+        margin: [14, 0, 0, 3],
       });
     }
   }
@@ -171,7 +154,7 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
 }
 
 export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
-  const { patientName, species, breed, age, sex, neutered, ownerName, clinicName, responsibleVet, date, reportTitle, vetName, crmv, parsedLaudo, imageBase64List, logoBase64: providedLogo, signatureFont, signatureImageBase64, crmvState } = data;
+  const { patientName, species, breed, age, sex, neutered, ownerName, clinicName, responsibleVet, date, reportTitle, vetName, crmv, parsedLaudo, imageBase64List, logoBase64, signatureFont, signatureImageBase64, crmvState } = data;
   const crmvLabel = crmvState ? `CRMV-${crmvState} ${crmv}` : `CRMV ${crmv}`;
 
   // Fetch fonts from CDN (cached after first call)
@@ -206,11 +189,8 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
 
   pdfmake.setFonts(fontDefs);
 
-  const logoBase64 = providedLogo ?? getLogoBase64();
-
   // A4 dimensions in points: 595.28 x 841.89
   const PAGE_W = 595.28;
-  const LOGO_W = 160;
   const LOGO_H = 120;
 
   const row = (label: string, value: string) => ({

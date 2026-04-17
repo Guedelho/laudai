@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getAuthHeaders } from "@/lib/supabase/client";
 
 export default function DeleteLaudoButton({ laudoId }: { laudoId: string }) {
   const [confirming, setConfirming] = useState(false);
@@ -13,13 +13,7 @@ export default function DeleteLaudoButton({ laudoId }: { laudoId: string }) {
   async function handleDelete() {
     setDeleting(true);
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = session?.access_token
-        ? { Authorization: `Bearer ${session.access_token}` }
-        : {};
-
-      const res = await fetch(`/api/laudos/${laudoId}`, { method: "DELETE", headers });
+      const res = await fetch(`/api/laudos/${laudoId}`, { method: "DELETE", headers: await getAuthHeaders() });
       if (!res.ok) throw new Error();
 
       router.push("/dashboard");

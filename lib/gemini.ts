@@ -1,37 +1,35 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { TEMPLATES, buildDefaults } from "@/lib/templates";
 import { extractJson } from "@/lib/parseLaudo";
-import { Specialty } from "@/types";
+import { Specialty, PatientFields } from "@/types";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
-const generationConfig = { responseMimeType: "application/json" } as Record<string, unknown>;
+const generationConfig = {
+  responseMimeType: "application/json",
+  temperature: 0,
+  topP: 0.95,
+  topK: 1,
+} as Record<string, unknown>;
 
-// Cache model instances per system prompt to avoid re-creation on every call
+const DRAFT_MODEL = "gemini-3.1-pro";
+const VERIFIER_MODEL = "gemini-3-flash";
+
 const modelCache = new Map<string, ReturnType<typeof genAI.getGenerativeModel>>();
 
-function getModel(systemInstruction: string) {
-  let model = modelCache.get(systemInstruction);
+function getModel(modelId: string, systemInstruction: string) {
+  const key = `${modelId}::${systemInstruction}`;
+  let model = modelCache.get(key);
   if (!model) {
-    model = genAI.getGenerativeModel(
-      { model: "gemini-3-flash-preview", systemInstruction },
-      { apiVersion: "v1beta" },
-    );
-    modelCache.set(systemInstruction, model);
+    model = genAI.getGenerativeModel({ model: modelId, systemInstruction });
+    modelCache.set(key, model);
   }
   return model;
 }
 
-interface GenerateParams {
+interface GenerateParams extends PatientFields {
   specialty: Specialty;
   rawInput: string;
-  patientName: string;
-  species: string;
-  breed?: string;
-  age?: string;
-  sex?: string;
-  neutered?: boolean;
-  ownerName: string;
   veterinarian: string;
   crmv: string;
   onStatus?: (status: "generating" | "reviewing") => void;
@@ -40,7 +38,7 @@ interface GenerateParams {
 export async function generateLaudo(params: GenerateParams): Promise<string> {
   const { specialty, rawInput, patientName, species, breed, age, sex, neutered, ownerName, veterinarian, crmv, onStatus } = params;
 
-  const resolvedDefaults = buildDefaults(specialty, sex, neutered);
+  const resolvedDefaults = buildDefaults(sex, neutered);
 
   const today = new Date().toLocaleDateString("pt-BR");
   const systemPrompt = TEMPLATES[specialty]
@@ -54,10 +52,10 @@ export async function generateLaudo(params: GenerateParams): Promise<string> {
     .replace(/{veterinario}/g, veterinarian)
     .replace(/{crmv}/g, crmv);
 
-  const model = getModel(systemPrompt);
+  const model = getModel(DRAFT_MODEL, systemPrompt);
 
   const userMessage = rawInput.trim()
-    ? `Alterações encontradas no exame:\n\n${rawInput}\n\nGere o laudo completo. Mantenha o texto padrão para todas as seções não mencionadas. Para as seções mencionadas, aplique as alterações informadas. Se houver medidas específicas, substitua os valores de referência (x cm, 0,00) pelos valores reais informados.`
+    ? `Alterações encontradas no exame:\n\n${rawInput}\n\nGere o laudo completo. Mantenha o texto padrão para todas as seções não mencionadas. Para as seções mencionadas, aplique as alterações informadas.`
     : `Nenhuma alteração encontrada. Gere o laudo completo utilizando apenas os textos padrão para todas as seções.`;
 
   onStatus?.("generating");
@@ -70,7 +68,7 @@ export async function generateLaudo(params: GenerateParams): Promise<string> {
 
     // Verification agent: strip hallucinated findings not in the original input
     try {
-      const verifier = getModel(
+      const verifier = getModel(VERIFIER_MODEL,
             "Retorne APENAS um objeto JSON válido. Nunca use markdown, asteriscos, blocos de código ou qualquer formatação.\n\n" +
             "Você é um veterinário ultrassonografista sênior revisando um laudo gerado por IA.\n\n" +
             "TEXTO PADRÃO DE REFERÊNCIA (achados normais para cada seção):\n" +

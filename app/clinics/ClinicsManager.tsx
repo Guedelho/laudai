@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Clinic, ClinicVet } from "@/types";
-import { createClient } from "@/lib/supabase/client";
+import { getAuthHeaders } from "@/lib/supabase/client";
 
 export default function ClinicsManager({ initialClinics }: { initialClinics: Clinic[] }) {
   const [clinics, setClinics] = useState<Clinic[]>(initialClinics);
@@ -22,13 +22,6 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
   const [addingVet, setAddingVet] = useState(false);
   const [removingVetId, setRemovingVetId] = useState<string | null>(null);
 
-  async function getAuthHeaders(): Promise<Record<string, string>> {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token
-      ? { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` }
-      : { "Content-Type": "application/json" };
-  }
 
   function startEdit(clinic: Clinic) {
     setEditingId(clinic.id);
@@ -44,10 +37,9 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     setEditError("");
 
     try {
-      const headers = await getAuthHeaders();
       const res = await fetch(`/api/clinics/${editingId}`, {
         method: "PATCH",
-        headers,
+        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
         body: JSON.stringify({ name: editName }),
       });
       const data = await res.json();
@@ -72,10 +64,9 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     setEditError("");
 
     try {
-      const headers = await getAuthHeaders();
       const res = await fetch(`/api/clinics/${editingId}/vets`, {
         method: "POST",
-        headers,
+        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
         body: JSON.stringify({ name: newVetName }),
       });
       const data = await res.json();
@@ -99,13 +90,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     setEditError("");
 
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = session?.access_token
-        ? { Authorization: `Bearer ${session.access_token}` }
-        : {};
-
-      const res = await fetch(`/api/clinics/${clinicId}/vets/${vetId}`, { method: "DELETE", headers });
+      const res = await fetch(`/api/clinics/${clinicId}/vets/${vetId}`, { method: "DELETE", headers: await getAuthHeaders() });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error);
@@ -131,10 +116,9 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     setError("");
 
     try {
-      const headers = await getAuthHeaders();
       const res = await fetch("/api/clinics", {
         method: "POST",
-        headers,
+        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
         body: JSON.stringify({ name, vetName }),
       });
 
@@ -156,13 +140,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     setDeletingId(id);
     setDeleteError("");
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = session?.access_token
-        ? { Authorization: `Bearer ${session.access_token}` }
-        : {};
-
-      const res = await fetch(`/api/clinics/${id}`, { method: "DELETE", headers });
+      const res = await fetch(`/api/clinics/${id}`, { method: "DELETE", headers: await getAuthHeaders() });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
+import { PetRequest } from "@/types";
 
 export async function PATCH(
   req: NextRequest,
@@ -10,7 +11,7 @@ export async function PATCH(
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { name, species, breed, age, ownerName, sex, neutered } = await req.json();
+  const { name, species, breed, age, ownerName, sex, neutered }: PetRequest = await req.json();
   if (!name?.trim() || !species?.trim() || !ownerName?.trim()) {
     return NextResponse.json({ error: "Campos obrigatórios: nome, espécie, tutor" }, { status: 400 });
   }
@@ -25,7 +26,7 @@ export async function PATCH(
       age: age?.trim() || null,
       owner_name: ownerName.trim(),
       sex: sex || null,
-      neutered: neutered ?? null,
+      neutered,
     })
     .eq("id", id)
     .eq("user_id", userId)

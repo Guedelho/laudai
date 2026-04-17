@@ -4,22 +4,7 @@ import { getUserId, getProfile } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { GenerateRequest } from "@/types";
 import { findOrCreatePet } from "@/lib/db";
-
-const generateRateLimit = new Map<string, number[]>();
-
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now();
-  const timestamps = (generateRateLimit.get(userId) ?? []).filter(t => now - t < 60_000);
-  if (timestamps.length >= 5) return false;
-  return true;
-}
-
-function recordSuccess(userId: string) {
-  const now = Date.now();
-  const timestamps = (generateRateLimit.get(userId) ?? []).filter(t => now - t < 60_000);
-  timestamps.push(now);
-  generateRateLimit.set(userId, timestamps);
-}
+import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
 
 function sseStream(handler: (send: (data: object) => void) => Promise<void>): NextResponse {
   const encoder = new TextEncoder();
@@ -51,7 +36,7 @@ export async function POST(req: NextRequest) {
   const profile = await getProfile(userId);
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado. Complete seu cadastro." }, { status: 400 });
 
-  if (!checkRateLimit(userId)) return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
+  if (!checkRateLimit("generate", userId, 5)) return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
 
   const supabase = createAdmin();
   const body: GenerateRequest = await req.json();
@@ -69,8 +54,8 @@ export async function POST(req: NextRequest) {
           species,
           breed: breed || null,
           age: age || null,
-          sex: sex || null,
-          neutered: neutered ?? null,
+          sex,
+          neutered,
         })
       : null;
 
@@ -116,8 +101,8 @@ export async function POST(req: NextRequest) {
         owner_name: ownerName,
         raw_input: rawInput,
         generated_content: generatedContent,
-        sex: sex ?? null,
-        neutered: neutered ?? null,
+        sex,
+        neutered,
         clinic_name: clinicName ?? null,
         responsible_vet: responsibleVet ?? null,
         exam_date: examDate ?? null,
@@ -132,7 +117,7 @@ export async function POST(req: NextRequest) {
       return;
     }
 
-    recordSuccess(userId);
+    recordRateLimit("generate", userId);
     send({ status: "done", laudo });
   });
 }

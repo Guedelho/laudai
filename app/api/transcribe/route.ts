@@ -1,25 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getUserId } from "@/lib/auth";
+import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
-
-const transcribeRateLimit = new Map<string, number[]>();
-
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now();
-  const timestamps = (transcribeRateLimit.get(userId) ?? []).filter(t => now - t < 60_000);
-  if (timestamps.length >= 10) return false;
-  timestamps.push(now);
-  transcribeRateLimit.set(userId, timestamps);
-  return true;
-}
 
 export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!checkRateLimit(userId)) return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
+  if (!checkRateLimit("transcribe", userId, 10)) return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
+  recordRateLimit("transcribe", userId);
 
   const formData = await req.formData();
   const audio = formData.get("audio") as File;
@@ -41,7 +32,7 @@ export async function POST(req: NextRequest) {
   const audioBuffer = await audio.arrayBuffer();
   const audioBase64 = Buffer.from(audioBuffer).toString("base64");
 
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-3-flash" });
 
   const result = await model.generateContent([
     {

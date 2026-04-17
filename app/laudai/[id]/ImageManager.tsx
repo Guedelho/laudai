@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { LaudoImage } from "@/types";
-import { createClient } from "@/lib/supabase/client";
+import { getAuthHeaders } from "@/lib/supabase/client";
 
 export default function ImageManager({ initialImages, laudoId }: { initialImages: LaudoImage[]; laudoId: string }) {
   const [images, setImages] = useState<LaudoImage[]>(initialImages);
@@ -18,12 +18,6 @@ export default function ImageManager({ initialImages, laudoId }: { initialImages
     const child = lightboxRef.current.children[selectedIndex] as HTMLElement | undefined;
     child?.scrollIntoView({ behavior: "instant", block: "nearest", inline: "center" });
   }, [selectedIndex]);
-
-  async function getAuthHeaders(): Promise<Record<string, string>> {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
-  }
 
   async function handleAdd(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -57,7 +51,13 @@ export default function ImageManager({ initialImages, laudoId }: { initialImages
         throw new Error(data.error || "Erro ao remover imagem.");
       }
       setImages((prev) => prev.filter((img) => img.id !== imageId));
-      setSelectedIndex(null);
+      setSelectedIndex((prev) => {
+        if (prev === null) return null;
+        const idx = images.findIndex((img) => img.id === imageId);
+        if (idx === prev) return images.length <= 1 ? null : Math.min(prev, images.length - 2);
+        if (idx < prev) return prev - 1;
+        return prev;
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao remover imagem.");
     }
@@ -137,8 +137,8 @@ export default function ImageManager({ initialImages, laudoId }: { initialImages
             className="flex flex-1 overflow-x-auto snap-x snap-mandatory"
             onClick={(e) => e.stopPropagation()}
           >
-            {images.map((img, i) => (
-              <div key={i} className="snap-center flex-shrink-0 w-full flex items-center justify-center px-6 pb-6">
+            {images.map((img) => (
+              <div key={img.id} className="snap-center flex-shrink-0 w-full flex items-center justify-center px-6 pb-6">
                 <Image
                   src={img.url}
                   alt={img.file_name}

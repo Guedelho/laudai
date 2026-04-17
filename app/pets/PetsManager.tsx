@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Pet } from "@/types";
-import { createClient } from "@/lib/supabase/client";
+import { getAuthHeaders } from "@/lib/supabase/client";
 
 export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
   const [pets, setPets] = useState<Pet[]>(initialPets);
@@ -22,13 +22,6 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
-  async function getAuthHeaders(): Promise<Record<string, string>> {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token
-      ? { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` }
-      : { "Content-Type": "application/json" };
-  }
 
   function startEdit(pet: Pet) {
     setEditingId(pet.id);
@@ -51,10 +44,9 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
     setEditError("");
 
     try {
-      const headers = await getAuthHeaders();
       const res = await fetch(`/api/pets/${editingId}`, {
         method: "PATCH",
-        headers,
+        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
         body: JSON.stringify({
           name: editFields.name,
           species: editFields.species,
@@ -84,13 +76,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
     setDeletingId(id);
     setDeleteError("");
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = session?.access_token
-        ? { Authorization: `Bearer ${session.access_token}` }
-        : {};
-
-      const res = await fetch(`/api/pets/${id}`, { method: "DELETE", headers });
+      const res = await fetch(`/api/pets/${id}`, { method: "DELETE", headers: await getAuthHeaders() });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error);
@@ -109,15 +95,9 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
     setError("");
 
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
       const res = await fetch("/api/pets", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {}),
-        },
+        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
         body: JSON.stringify({ name, species, breed, age, ownerName }),
       });
 

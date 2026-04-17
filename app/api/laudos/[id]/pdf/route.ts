@@ -5,18 +5,8 @@ import { parseLaudoContent } from "@/lib/parseLaudo";
 import { generatePdfBuffer, PdfData } from "@/lib/generatePdf";
 import { Specialty } from "@/types";
 import { REPORT_TITLES, SPECIALTY_ABBR } from "@/lib/templates";
+import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
 import sharp from "sharp";
-
-const pdfRateLimit = new Map<string, number[]>();
-
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now();
-  const timestamps = (pdfRateLimit.get(userId) ?? []).filter(t => now - t < 60_000);
-  if (timestamps.length >= 5) return false;
-  timestamps.push(now);
-  pdfRateLimit.set(userId, timestamps);
-  return true;
-}
 
 const BUCKET = "laudo-images";
 const SUPPORTED_MIME = new Set(["image/jpeg", "image/jpg", "image/png"]);
@@ -57,7 +47,8 @@ export async function GET(
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!checkRateLimit(userId)) return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
+  if (!checkRateLimit("pdf", userId, 5)) return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
+  recordRateLimit("pdf", userId);
 
   const [profile, admin] = [
     await getProfile(userId),
@@ -142,8 +133,8 @@ export async function GET(
     breed: laudo.breed,
     age: laudo.age,
     ownerName: laudo.owner_name,
-    sex: laudo.sex ?? undefined,
-    neutered: laudo.neutered ?? undefined,
+    sex: laudo.sex,
+    neutered: laudo.neutered,
     clinicName: laudo.clinic_name ?? undefined,
     responsibleVet: laudo.responsible_vet ?? undefined,
     date,

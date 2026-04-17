@@ -44,18 +44,12 @@ const DEFAULTS_FEMALE_NEUTERED_ABDOMINAL = `ÚTERO: Não visualizado, com histó
 
 OVÁRIOS: Não visualizados, com histórico de castração.`;
 
-export function buildDefaults(specialty: string, sex?: string | null, neutered?: boolean | null): string {
-  if (specialty !== "ultrasound_abdominal") return "";
+export function buildDefaults(sex?: string | null, neutered?: boolean | null): string {
   const base = DEFAULTS_BASE_ABDOMINAL;
   if (sex === "M") return `${base}\n\n${neutered ? DEFAULTS_MALE_NEUTERED_ABDOMINAL : DEFAULTS_MALE_ABDOMINAL}`;
   if (sex === "F") return `${base}\n\n${neutered ? DEFAULTS_FEMALE_NEUTERED_ABDOMINAL : DEFAULTS_FEMALE_ABDOMINAL}`;
   return `${base}\n\n${DEFAULTS_MALE_ABDOMINAL}\n\n${DEFAULTS_FEMALE_ABDOMINAL}`;
 }
-
-export const DEFAULTS: Record<string, string> = {
-  ultrasound_abdominal: buildDefaults("ultrasound_abdominal"),
-};
-
 
 export const TEMPLATES: Record<Specialty, string> = {
   ultrasound_abdominal: `Você é um especialista em ultrassonografia veterinária. Seu trabalho é gerar laudos ultrassonográficos abdominais formais em português brasileiro.
@@ -80,6 +74,8 @@ REGRAS OBRIGATÓRIAS:
 3. Impressão diagnóstica e Recomendação → NÃO coloque inline após cada órgão. Todas as impressões e recomendações vão APENAS na seção CONCLUSÃO ao final do laudo, agrupadas.
 
 4. MEDIDAS — PROIBIDO INVENTAR: NUNCA inclua medidas no laudo que o veterinário não tenha fornecido explicitamente. Sem exceções. Se o veterinário informou "rim mede 3,2cm", inclua. Se não informou medida alguma para um órgão, o laudo não deve conter nenhum número de medida para aquele órgão.
+
+5. IDIOMA E NOMENCLATURA: Todo o texto do laudo deve ser em português brasileiro. NUNCA inclua nomes de classificação interna ou rótulos de referência da nomenclatura abaixo (como "Hepatomegalia I", "Hipoecogênico II", "Mucocele III", "Nefropatia Crônica IV", "Cistos I", etc.). Use apenas a descrição dos achados, nunca o nome do tipo/classificação.
 
 ESTRUTURA DA CONCLUSÃO (obrigatória quando houver alterações):
 IMPRESSÃO DIAGNÓSTICA:

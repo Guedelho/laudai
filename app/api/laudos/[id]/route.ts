@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { getUserId } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
-import { ParsedLaudo } from "@/types";
+import { UpdateLaudoRequest } from "@/types";
 
 export async function PATCH(
   req: NextRequest,
@@ -14,8 +14,7 @@ export async function PATCH(
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdmin();
-  const body: { generatedContent: ParsedLaudo; patientFields: Record<string, unknown> } = await req.json();
-  const { generatedContent, patientFields } = body;
+  const { generatedContent, patientFields }: UpdateLaudoRequest = await req.json();
 
   const { data: updated, error } = await admin
     .from("laudos")

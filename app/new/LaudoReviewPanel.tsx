@@ -4,21 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ParsedLaudo, LaudoImage } from "@/types";
-import { createClient } from "@/lib/supabase/client";
+import { ParsedLaudo, LaudoImage, LaudoFields } from "@/types";
+import { getAuthHeaders } from "@/lib/supabase/client";
 import { SPECIALTY_LABELS } from "@/lib/templates";
 
-interface ReviewFields {
-  patientName: string;
-  species: string;
-  breed: string;
-  age: string;
-  sex: string;
-  neutered: boolean | null;
-  ownerName: string;
-  clinicName: string;
-  responsibleVet: string;
-  examDate: string;
+interface ReviewFields extends Required<LaudoFields> {
   createdAt: string;
 }
 
@@ -43,9 +33,7 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
 
   useEffect(() => {
     async function fetchImages() {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+      const headers = await getAuthHeaders();
       const res = await fetch(`/api/laudos/${laudoId}/images`, { headers });
       if (res.ok) {
         const data = await res.json();
@@ -55,18 +43,10 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
     fetchImages();
   }, [laudoId]);
 
-  async function getAuthHeader(): Promise<Record<string, string>> {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.access_token) return { Authorization: `Bearer ${session.access_token}` };
-    return {};
-  }
-
   async function saveToDb(parsed: ParsedLaudo, fields: ReviewFields) {
-    const authHeader = await getAuthHeader();
     const res = await fetch(`/api/laudos/${laudoId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", ...authHeader },
+      headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
       body: JSON.stringify({
         generatedContent: parsed,
         patientFields: {
@@ -183,7 +163,7 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
             ← Laudos
           </Link>
           <h1 className="text-lg font-bold text-gray-900">{editedFields.patientName || "Laudo"}</h1>
-          <p className="text-sm text-gray-500">{SPECIALTY_LABELS["ultrasound_abdominal"]}</p>
+          <p className="text-sm text-gray-500">{SPECIALTY_LABELS.ultrasound_abdominal}</p>
         </div>
         <div className="flex items-center gap-2">
           {isEditing ? (
@@ -275,8 +255,7 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Castrado(a)</label>
-                    <select value={editedFields.neutered === null ? "" : editedFields.neutered ? "true" : "false"} onChange={(e) => setEditedFields({ ...editedFields, neutered: e.target.value === "" ? null : e.target.value === "true" })} className={inputCls}>
-                      <option value="">Não informado</option>
+                    <select value={editedFields.neutered ? "true" : "false"} onChange={(e) => setEditedFields({ ...editedFields, neutered: e.target.value === "true" })} className={inputCls}>
                       <option value="false">Não</option>
                       <option value="true">Sim</option>
                     </select>
@@ -323,7 +302,7 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
 
           {/* Specialty title */}
           <div className="text-center font-bold underline text-sm mb-6">
-            {SPECIALTY_LABELS["ultrasound_abdominal"].toUpperCase()}
+            {SPECIALTY_LABELS.ultrasound_abdominal.toUpperCase()}
           </div>
 
           {/* Generated content */}
@@ -377,7 +356,7 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
                         <button type="button" onClick={() => removeImpressao(i)} className="text-red-400 hover:text-red-600 text-lg leading-none mt-1">×</button>
                       </>
                     ) : (
-                      <span className="text-justify">{line}</span>
+                      <span className="text-justify">• {line}</span>
                     )}
                   </div>
                 ))}

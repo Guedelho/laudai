@@ -1,5 +1,7 @@
 export type Specialty = "ultrasound_abdominal";
 
+// ─── Parsed laudo content ────────────────────────────────────────────────────
+
 export interface LaudoSection {
   label: string;
   content: string;
@@ -11,8 +13,28 @@ export interface ParsedLaudo {
   impressao?: string[];
   recomendacoes?: string[];
   observacoes?: string[];
-  raw?: string; // fallback for old plain text
+  raw?: string;
 }
+
+// ─── Shared field sets ───────────────────────────────────────────────────────
+
+export interface PatientFields {
+  patientName: string;
+  species: string;
+  breed?: string;
+  age?: string;
+  sex: string;
+  neutered: boolean;
+  ownerName: string;
+}
+
+export interface LaudoFields extends PatientFields {
+  clinicName?: string;
+  responsibleVet?: string;
+  examDate?: string;
+}
+
+// ─── DB row models ───────────────────────────────────────────────────────────
 
 export interface Profile {
   id: string;
@@ -33,8 +55,8 @@ export interface Pet {
   species: string;
   breed?: string;
   age?: string;
-  sex?: string;
-  neutered?: boolean;
+  sex: string;
+  neutered: boolean;
   owner_name: string;
   created_at: string;
 }
@@ -63,8 +85,8 @@ export interface Laudo {
   species: string;
   breed?: string;
   age?: string;
-  sex?: string;
-  neutered?: boolean;
+  sex: string;
+  neutered: boolean;
   owner_name: string;
   clinic_name?: string;
   responsible_vet?: string;
@@ -82,18 +104,52 @@ export interface LaudoImage {
   url: string;
 }
 
-export interface GenerateRequest {
+// ─── API request/response types ──────────────────────────────────────────────
+
+export interface GenerateRequest extends LaudoFields {
   specialty: Specialty;
   rawInput: string;
-  patientName: string;
+  petId?: string;
+}
+
+export interface PetRequest {
+  name: string;
   species: string;
   breed?: string;
   age?: string;
-  sex?: string;
-  neutered?: boolean;
+  sex: string;
+  neutered: boolean;
   ownerName: string;
-  examDate?: string;
-  clinicName?: string;
-  responsibleVet?: string;
-  petId?: string;
 }
+
+export interface UpdateLaudoRequest {
+  generatedContent: ParsedLaudo;
+  patientFields: {
+    patient_name: string;
+    species: string;
+    breed?: string | null;
+    age?: string | null;
+    sex: string;
+    neutered: boolean;
+    owner_name: string;
+    clinic_name?: string | null;
+    responsible_vet?: string | null;
+    exam_date?: string | null;
+  };
+}
+
+export interface UpdateProfileRequest {
+  full_name: string;
+  cpf: string;
+  signature_font?: string;
+  signature_image_url?: string | null;
+  crmv?: string;
+  crmv_state?: string;
+}
+
+export type SseEvent =
+  | { status: "generating" }
+  | { status: "reviewing" }
+  | { status: "saving" }
+  | { status: "error"; message: string }
+  | { status: "done"; laudo: { id: string; generated_content: string; created_at: string } };

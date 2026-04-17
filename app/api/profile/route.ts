@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
+import { UpdateProfileRequest } from "@/types";
 
 export async function GET(req: NextRequest) {
   const userId = await getUserId(req);
@@ -14,11 +15,11 @@ export async function PUT(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json();
+  const body: UpdateProfileRequest = await req.json();
   const { full_name, cpf, signature_font, signature_image_url } = body;
 
   const upsertData: Record<string, unknown> = { id: userId, full_name, cpf, signature_font };
-  if (Object.prototype.hasOwnProperty.call(body, "signature_image_url")) {
+  if ("signature_image_url" in body) {
     upsertData.signature_image_url = signature_image_url;
   }
 

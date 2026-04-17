@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { findOrCreatePet } from "@/lib/db";
+import { PetRequest } from "@/types";
 
 export async function GET(req: NextRequest) {
   const userId = await getUserId(req);
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { name, species, breed, age, ownerName } = await req.json();
+  const { name, species, breed, age, sex, neutered, ownerName }: PetRequest = await req.json();
   if (!name || !species || !ownerName) {
     return NextResponse.json({ error: "Campos obrigatórios: nome, espécie, tutor" }, { status: 400 });
   }
@@ -36,6 +37,8 @@ export async function POST(req: NextRequest) {
       species,
       breed: breed || null,
       age: age || null,
+      sex,
+      neutered,
     });
     return NextResponse.json({ pet });
   } catch (err) {

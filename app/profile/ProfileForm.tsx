@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getAuthHeaders } from "@/lib/supabase/client";
 
 function validateCpf(value: string): boolean {
   const digits = value.replace(/\D/g, "");
@@ -76,12 +76,6 @@ export default function ProfileForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sigInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-
-  async function getAuthHeaders(): Promise<Record<string, string>> {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
-  }
 
   async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Pet, Clinic, ParsedLaudo } from "@/types";
-import { createClient } from "@/lib/supabase/client";
+import { Pet, Clinic, ParsedLaudo, SseEvent } from "@/types";
+import { getAuthHeaders } from "@/lib/supabase/client";
 import { parseLaudoContent } from "@/lib/parseLaudo";
 import LaudoReviewPanel from "./LaudoReviewPanel";
 
@@ -20,7 +20,7 @@ export default function NewLaudoPage() {
   const [breed, setBreed] = useState("");
   const [age, setAge] = useState("");
   const [sex, setSex] = useState("");
-  const [neutered, setNeutered] = useState<boolean | null>(null);
+  const [neutered, setNeutered] = useState(false);
   const [ownerName, setOwnerName] = useState("");
 
   // Clinic/vet
@@ -72,9 +72,7 @@ export default function NewLaudoPage() {
 
   useEffect(() => {
     async function loadData() {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {};
+      const headers = await getAuthHeaders();
       const [petsRes, clinicsRes] = await Promise.all([
         fetch("/api/pets", { headers }),
         fetch("/api/clinics", { headers }),
@@ -98,8 +96,8 @@ export default function NewLaudoPage() {
       setSpecies(pet.species);
       setBreed(pet.breed ?? "");
       setAge(pet.age ?? "");
-      setSex(pet.sex ?? "");
-      setNeutered(pet.neutered ?? null);
+      setSex(pet.sex);
+      setNeutered(pet.neutered);
       setOwnerName(pet.owner_name);
     }
   }
@@ -143,21 +141,16 @@ export default function NewLaudoPage() {
     URL.revokeObjectURL(objectUrls[index]);
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
     setObjectUrls((prev) => prev.filter((_, i) => i !== index));
+    if (lightboxIndex !== null) {
+      if (index === lightboxIndex) setLightboxIndex(null);
+      else if (index < lightboxIndex) setLightboxIndex(lightboxIndex - 1);
+    }
   }
 
   const selectedClinic = clinics.find((c) => c.id === selectedClinicId);
   const vets = selectedClinic?.clinic_vets ?? [];
   const clinicName = selectedClinic?.name ?? newClinicName;
   const responsibleVet = vets.find((v) => v.id === selectedVetId)?.name ?? newVetName;
-
-  async function getAuthHeaders() {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    return {
-      "Content-Type": "application/json",
-      ...(session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {}),
-    };
-  }
 
   async function startRecording() {
     try {
@@ -189,13 +182,11 @@ export default function NewLaudoPage() {
   async function transcribeAudio(blob: Blob) {
     setTranscribing(true);
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
       const res = await fetch("/api/transcribe", {
         method: "POST",
-        headers: session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {},
+        headers: await getAuthHeaders(),
         body: formData,
       });
       const data = await res.json();
@@ -217,7 +208,7 @@ export default function NewLaudoPage() {
     setGeneratingStatus("Gerando laudo...");
 
     try {
-      const headers = await getAuthHeaders();
+      const headers = { "Content-Type": "application/json", ...(await getAuthHeaders()) };
 
       let resolvedClinicName = clinicName;
       let resolvedVetName = responsibleVet;
@@ -256,8 +247,8 @@ export default function NewLaudoPage() {
         headers,
         body: JSON.stringify({
           specialty, rawInput, patientName, species, breed, age,
-          sex: sex || undefined,
-          neutered: neutered ?? undefined,
+          sex,
+          neutered,
           ownerName, clinicName: resolvedClinicName || undefined,
           responsibleVet: resolvedVetName || undefined,
           examDate: examDate || undefined,
@@ -286,7 +277,7 @@ export default function NewLaudoPage() {
         for (const part of parts) {
           const line = part.trim();
           if (!line.startsWith("data: ")) continue;
-          const event = JSON.parse(line.slice(6));
+          const event: SseEvent = JSON.parse(line.slice(6));
           if (event.status === "generating") setGeneratingStatus("Gerando laudo...");
           else if (event.status === "reviewing") setGeneratingStatus("Revisando laudo...");
           else if (event.status === "saving") setGeneratingStatus("Salvando...");
@@ -300,12 +291,9 @@ export default function NewLaudoPage() {
 
       // Upload images if any
       if (selectedFiles.length > 0) {
-        const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        const authHeader: Record<string, string> = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
         const formData = new FormData();
         selectedFiles.forEach((f) => formData.append("images", f));
-        const imgRes = await fetch(`/api/laudos/${laudoId}/images`, { method: "POST", headers: authHeader, body: formData });
+        const imgRes = await fetch(`/api/laudos/${laudoId}/images`, { method: "POST", headers: await getAuthHeaders(), body: formData });
         if (!imgRes.ok) {
           let imgData: { error?: string } = {};
           try { imgData = await imgRes.json(); } catch { /* ignore */ }
@@ -467,11 +455,10 @@ export default function NewLaudoPage() {
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Castrado(a)</label>
                 <select
-                  value={neutered === null ? "" : neutered ? "true" : "false"}
-                  onChange={(e) => setNeutered(e.target.value === "" ? null : e.target.value === "true")}
+                  value={neutered ? "true" : "false"}
+                  onChange={(e) => setNeutered(e.target.value === "true")}
                   className={inputCls}
                 >
-                  <option value="">Não informado</option>
                   <option value="false">Não</option>
                   <option value="true">Sim</option>
                 </select>
@@ -549,15 +536,15 @@ export default function NewLaudoPage() {
               <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileSelect} />
             </div>
             {selectedFiles.length > 0 ? (
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="grid grid-cols-3 gap-2">
                 {selectedFiles.map((file, i) => (
-                  <div key={i} className="relative group flex-shrink-0">
+                  <div key={objectUrls[i]} className="relative group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={objectUrls[i]}
                       alt={file.name}
                       onClick={() => setLightboxIndex(i)}
-                      className="h-24 w-32 object-cover rounded-lg border border-gray-200 bg-black cursor-pointer"
+                      className="w-full aspect-[4/3] object-cover rounded-lg border border-gray-200 bg-black cursor-pointer"
                     />
                     <button
                       type="button"
@@ -591,8 +578,8 @@ export default function NewLaudoPage() {
                   className="flex flex-1 overflow-x-auto snap-x snap-mandatory"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {objectUrls.map((url, i) => (
-                    <div key={i} className="snap-center flex-shrink-0 w-full flex items-center justify-center px-6 pb-6">
+                  {objectUrls.map((url) => (
+                    <div key={url} className="snap-center flex-shrink-0 w-full flex items-center justify-center px-6 pb-6">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={url} alt="" className="max-w-full max-h-full object-contain" />
                     </div>
