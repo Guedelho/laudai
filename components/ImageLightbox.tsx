@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface LightboxImage {
   key: string;
@@ -19,14 +19,26 @@ export default function ImageLightbox({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const [currentIndex, setCurrentIndex] = useState(selectedIndex);
+
   useEffect(() => {
     const ref = scrollRef.current;
     if (!ref) return;
     requestAnimationFrame(() => {
-      const child = ref.children[selectedIndex] as HTMLElement | undefined;
+      const child = ref.children[currentIndex] as HTMLElement | undefined;
       child?.scrollIntoView({ behavior: "instant", block: "nearest", inline: "center" });
     });
-  }, [selectedIndex]);
+  }, [currentIndex]);
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "ArrowLeft") setCurrentIndex((i) => Math.max(0, i - 1));
+      else if (e.key === "ArrowRight") setCurrentIndex((i) => Math.min(images.length - 1, i + 1));
+      else if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [images.length, onClose]);
 
   return (
     <div
@@ -44,11 +56,11 @@ export default function ImageLightbox({
       </div>
       <div
         ref={scrollRef}
-        className="flex flex-1 overflow-x-auto snap-x snap-mandatory"
+        className="flex-1 w-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory flex"
         onClick={(e) => e.stopPropagation()}
       >
         {images.map((img) => (
-          <div key={img.key} className="snap-center flex-shrink-0 min-w-full flex items-center justify-center px-6 pb-6">
+          <div key={img.key} className="snap-center shrink-0 w-screen h-full flex items-center justify-center px-6 pb-6">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={img.src} alt={img.alt ?? ""} className="max-w-full max-h-full object-contain" />
           </div>
