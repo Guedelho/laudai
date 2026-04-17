@@ -4,12 +4,12 @@ import { useState, useRef, useEffect } from "react";
 import ImageLightbox from "@/components/ImageLightbox";
 import Typeahead from "@/components/Typeahead";
 import Link from "next/link";
-import { Pet, Clinic, ParsedLaudo, SseEvent, SPECIES_OPTIONS, SEX_OPTIONS } from "@/types";
+import { useRouter } from "next/navigation";
+import { Pet, Clinic, SseEvent, SPECIES_OPTIONS, SEX_OPTIONS } from "@/types";
 import { getAuthHeaders } from "@/lib/supabase/client";
-import { parseLaudoContent } from "@/lib/parseLaudo";
-import LaudoReviewPanel from "./LaudoReviewPanel";
 
 export default function NewLaudoPage() {
+  const router = useRouter();
   const specialty = "ultrasound_abdominal" as const;
 
   // Pets
@@ -54,13 +54,6 @@ export default function NewLaudoPage() {
   useEffect(() => {
     return () => { objectUrlsRef.current.forEach(URL.revokeObjectURL); };
   }, []);
-
-
-  // Review phase
-  const [phase, setPhase] = useState<"form" | "review">("form");
-  const [reviewLaudoId, setReviewLaudoId] = useState("");
-  const [reviewParsed, setReviewParsed] = useState<ParsedLaudo | null>(null);
-  const [reviewCreatedAt, setReviewCreatedAt] = useState("");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -290,39 +283,12 @@ export default function NewLaudoPage() {
         }
       }
 
-      // Switch to review phase
-      setReviewLaudoId(laudoId);
-      setReviewParsed(parseLaudoContent(laudoPayload.generated_content));
-      setReviewCreatedAt(laudoPayload.created_at);
-      setPhase("review");
+      router.push(`/laudai/${laudoId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar laudo.");
     } finally {
       setGenerating(false);
     }
-  }
-
-  // Review phase
-  if (phase === "review" && reviewParsed) {
-    return (
-      <LaudoReviewPanel
-        laudoId={reviewLaudoId}
-        initialParsed={reviewParsed}
-        initialFields={{
-          patientName,
-          species,
-          breed,
-          age,
-          sex,
-          neutered,
-          ownerName,
-          clinicName,
-          responsibleVet,
-          examDate,
-          createdAt: reviewCreatedAt,
-        }}
-      />
-    );
   }
 
   const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
