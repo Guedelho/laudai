@@ -12,7 +12,7 @@ const generationConfig = {
   topK: 1,
 } as Record<string, unknown>;
 
-const DRAFT_MODEL = "gemini-2.5-pro";
+const DRAFT_MODEL = "gemini-3.1-pro";
 const VERIFIER_MODEL = "gemini-3-flash";
 
 const modelCache = new Map<string, ReturnType<typeof genAI.getGenerativeModel>>();
@@ -21,10 +21,7 @@ function getModel(modelId: string, systemInstruction: string) {
   const key = `${modelId}::${systemInstruction}`;
   let model = modelCache.get(key);
   if (!model) {
-    model = genAI.getGenerativeModel(
-      { model: modelId, systemInstruction },
-      { apiVersion: "v1beta" },
-    );
+    model = genAI.getGenerativeModel({ model: modelId, systemInstruction });
     modelCache.set(key, model);
   }
   return model;
