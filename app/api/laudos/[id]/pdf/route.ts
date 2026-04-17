@@ -179,7 +179,7 @@ export async function GET(
   const buffer = await generatePdfBuffer(pdfData);
 
   // Cache the PDF in storage
-  const storagePath = `${userId}/${id}/laudo.pdf`;
+  const storagePath = `${userId}/${id}/${filename}`;
   try {
     await admin.storage.from(PDF_BUCKET).upload(storagePath, Buffer.from(buffer), {
       contentType: "application/pdf",
