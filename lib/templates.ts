@@ -24,13 +24,13 @@ PÂNCREAS: Pâncreas normoecogênico, com ecotextura preservada em região de lo
 
 ADRENAIS: Adrenais de formato mantido, bordas regulares, distinção córticomedular e ecogenicidade preservadas.`;
 
-const DEFAULTS_MALE_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual, de contornos regulares, hiperecogênica e homogênea.
+const DEFAULTS_MALE_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual, de contornos regulares, formato preservado, hiperecogênica e homogênea.
 
 TESTÍCULO DIREITO: Localizado em bolsa escrotal, hipoecogênico, homogêneo, mediastino testicular preservado, sem evidências de alterações sonográficas.
 
 TESTÍCULO ESQUERDO: Localizado em bolsa escrotal, hipoecogênico, homogêneo, mediastino testicular preservado, sem evidências de alterações sonográficas.`;
 
-const DEFAULTS_MALE_NEUTERED_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual, de contornos regulares, hiperecogênica e homogênea.
+const DEFAULTS_MALE_NEUTERED_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual, de contornos regulares, formato preservado, hiperecogênica e homogênea.
 
 TESTÍCULO DIREITO: Não visualizado, com histórico de castração.
 
