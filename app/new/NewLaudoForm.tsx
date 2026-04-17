@@ -45,10 +45,14 @@ export default function NewLaudoPage() {
   const [objectUrls, setObjectUrls] = useState<string[]>([]);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const objectUrlsRef = useRef<string[]>([]);
+  objectUrlsRef.current = objectUrls;
 
+  // Revoke all remaining URLs only on unmount, not on every change.
+  // removeFile() already revokes individual URLs when they're removed.
   useEffect(() => {
-    return () => { objectUrls.forEach(URL.revokeObjectURL); };
-  }, [objectUrls]);
+    return () => { objectUrlsRef.current.forEach(URL.revokeObjectURL); };
+  }, []);
 
   // Review phase
   const [phase, setPhase] = useState<"form" | "review">("form");
