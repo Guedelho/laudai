@@ -28,7 +28,7 @@ const textareaCls =
 
 export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: LaudoImage[] }) {
   const router = useRouter();
-  const initialParsed = parseLaudoContent(laudo.edited_content || laudo.generated_content);
+  const initialParsed = parseLaudoContent(laudo.edited_content);
 
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
