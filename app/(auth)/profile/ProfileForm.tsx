@@ -302,40 +302,27 @@ export default function ProfileForm({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Assinatura no laudo</label>
 
-          {/* Signature image upload */}
-          <div className="mb-3 space-y-2">
-            <p className="text-xs font-medium text-gray-600">Imagem da assinatura</p>
-            {sigSrc ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={sigSrc}
-                alt="Assinatura"
-                className="max-h-48 w-full object-contain rounded border border-gray-200 bg-gray-50 p-2"
-              />
-            ) : (
-              <div className="h-48 w-full rounded border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-sm text-gray-400">
-                Sem imagem
-              </div>
-            )}
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => sigInputRef.current?.click()}
-                disabled={sigUploading}
-                className="text-xs text-blue-600 hover:text-blue-700 disabled:opacity-50"
-              >
-                {sigUploading ? "Enviando..." : sigSrc ? "Alterar imagem" : "Enviar imagem"}
-              </button>
-              {sigSrc && (
-                <button
-                  type="button"
-                  onClick={handleRemoveSignatureImage}
-                  className="text-xs text-gray-400 hover:text-gray-600"
-                >
-                  Remover
-                </button>
+          <div className="flex flex-col gap-2">
+            {/* Uploaded image option */}
+            <button
+              type="button"
+              onClick={() => (sigSrc ? handleRemoveSignatureImage() : sigInputRef.current?.click())}
+              disabled={sigUploading}
+              className={`rounded-lg border px-3 py-4 text-left transition-colors ${
+                sigSrc ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white hover:border-gray-300"
+              }`}
+            >
+              <p className="text-xs text-gray-400 mb-1">Imagem</p>
+              {sigSrc ? (
+                <div className="flex items-center justify-between">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={sigSrc} alt="Assinatura" className="max-h-16 object-contain" />
+                  <span className="text-xs text-gray-400">Alterar</span>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">{sigUploading ? "Enviando..." : "Enviar imagem da assinatura"}</p>
               )}
-            </div>
+            </button>
             <input
               ref={sigInputRef}
               type="file"
@@ -344,13 +331,8 @@ export default function ProfileForm({
               onChange={handleSignatureImageChange}
             />
             {sigError && <p className="text-xs text-red-600">{sigError}</p>}
-            <p className="text-xs text-gray-400">
-              JPEG ou PNG · máx. 5 MB · selecionar imagem remove a fonte escolhida
-            </p>
-          </div>
 
-          {/* Font selector */}
-          <div className="flex flex-col gap-2">
+            {/* Font options */}
             {SIGNATURE_FONTS.map((f) => (
               <button
                 key={f.key}
@@ -367,10 +349,13 @@ export default function ProfileForm({
               </button>
             ))}
           </div>
-          {signatureFont && !sigSrc && (
+          {(signatureFont || sigSrc) && (
             <button
               type="button"
-              onClick={() => handleFontSelect(signatureFont)}
+              onClick={() => {
+                if (sigSrc) handleRemoveSignatureImage();
+                else handleFontSelect(signatureFont);
+              }}
               className="mt-2 text-xs text-gray-400 hover:text-gray-600"
             >
               Remover assinatura
