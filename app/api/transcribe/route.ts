@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   const audioBuffer = await audio.arrayBuffer();
   const audioBase64 = Buffer.from(audioBuffer).toString("base64");
 
-  const model = genAI.getGenerativeModel({ model: "gemini-3-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
   const result = await model.generateContent([
     {
