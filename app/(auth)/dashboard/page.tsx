@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
-import AppHeader from "@/components/AppHeader";
 import LaudoList from "./LaudoList";
 
 export default async function DashboardPage() {
@@ -18,12 +17,9 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppHeader current="/dashboard" />
-      <main className="max-w-3xl mx-auto px-6 py-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">Laudos Recentes</h2>
-        <LaudoList laudos={laudos ?? []} />
-      </main>
-    </div>
+    <main className="max-w-3xl mx-auto px-6 py-8">
+      <h2 className="text-xl font-semibold text-gray-900 mb-6">Laudos Recentes</h2>
+      <LaudoList laudos={laudos ?? []} />
+    </main>
   );
 }

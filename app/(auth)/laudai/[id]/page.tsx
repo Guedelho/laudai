@@ -3,7 +3,6 @@ import { createAdmin } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { Laudo } from "@/types";
-import AppHeader from "@/components/AppHeader";
 import LaudoDetail from "./LaudoDetail";
 
 const BUCKET = "laudo-images";
@@ -43,10 +42,5 @@ export default async function LaudoPage({ params }: { params: Promise<{ id: stri
   const { laudo, images } = await getLaudoData(id, user.id);
   if (!laudo) notFound();
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <AppHeader current={`/laudai/${id}`} />
-      <LaudoDetail laudo={laudo as Laudo} images={images} />
-    </div>
-  );
+  return <LaudoDetail laudo={laudo as Laudo} images={images} />;
 }

@@ -1,9 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import AppHeader from "@/components/AppHeader";
-import NewLaudoForm from "./NewLaudoForm";
 
-export default async function NewPage() {
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -11,7 +10,7 @@ export default async function NewPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <AppHeader />
-      <NewLaudoForm />
+      {children}
     </div>
   );
 }

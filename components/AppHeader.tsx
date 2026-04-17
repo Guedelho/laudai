@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import LogoutButton from "./LogoutButton";
 
 const NAV_LINKS = [
@@ -8,7 +11,9 @@ const NAV_LINKS = [
   { href: "/profile", label: "Perfil" },
 ];
 
-export default function AppHeader({ current }: { current?: string }) {
+export default function AppHeader() {
+  const pathname = usePathname();
+
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
       <Link href="/dashboard" className="text-lg font-bold text-gray-900">
@@ -19,7 +24,7 @@ export default function AppHeader({ current }: { current?: string }) {
           <Link
             key={l.href}
             href={l.href}
-            className={`text-sm ${l.href === current ? "font-medium text-gray-900 underline underline-offset-4" : "text-gray-500 hover:text-gray-900"}`}
+            className={`text-sm ${pathname.startsWith(l.href) ? "font-medium text-gray-900 underline underline-offset-4" : "text-gray-500 hover:text-gray-900"}`}
           >
             {l.label}
           </Link>

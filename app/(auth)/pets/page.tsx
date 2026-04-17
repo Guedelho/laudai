@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
-import AppHeader from "@/components/AppHeader";
 import PetsManager from "./PetsManager";
 import { Pet } from "@/types";
 
@@ -18,11 +17,8 @@ export default async function PetsPage() {
     .order("name", { ascending: true });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppHeader current="/pets" />
-      <main className="max-w-3xl mx-auto px-6 py-8">
-        <PetsManager initialPets={(pets ?? []) as Pet[]} />
-      </main>
-    </div>
+    <main className="max-w-3xl mx-auto px-6 py-8">
+      <PetsManager initialPets={(pets ?? []) as Pet[]} />
+    </main>
   );
 }

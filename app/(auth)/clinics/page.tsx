@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
-import AppHeader from "@/components/AppHeader";
 import ClinicsManager from "./ClinicsManager";
 import { Clinic } from "@/types";
 
@@ -18,11 +17,8 @@ export default async function ClinicsPage() {
     .order("name", { ascending: true });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppHeader current="/clinics" />
-      <main className="max-w-3xl mx-auto px-6 py-8">
-        <ClinicsManager initialClinics={(clinics ?? []) as Clinic[]} />
-      </main>
-    </div>
+    <main className="max-w-3xl mx-auto px-6 py-8">
+      <ClinicsManager initialClinics={(clinics ?? []) as Clinic[]} />
+    </main>
   );
 }
