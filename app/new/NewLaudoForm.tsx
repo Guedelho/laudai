@@ -540,15 +540,15 @@ export default function NewLaudoPage() {
               <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileSelect} />
             </div>
             {selectedFiles.length > 0 ? (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-1">
                 {selectedFiles.map((file, i) => (
-                  <div key={i} className="relative group">
+                  <div key={i} className="relative group flex-shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={objectUrls[i]}
                       alt={file.name}
                       onClick={() => setLightboxUrl(objectUrls[i])}
-                      className="w-full h-24 object-cover rounded-lg border border-gray-200 bg-black cursor-pointer"
+                      className="h-24 w-32 object-cover rounded-lg border border-gray-200 bg-black cursor-pointer"
                     />
                     <button
                       type="button"
