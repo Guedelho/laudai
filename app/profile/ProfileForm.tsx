@@ -35,6 +35,7 @@ export default function ProfileForm({
   initialSignatureFont,
   initialCrmvState,
   initialEmail,
+  hasSignatureImage,
 }: {
   initialFullName: string;
   initialCrmv: string;
@@ -43,12 +44,14 @@ export default function ProfileForm({
   initialSignatureFont: string;
   initialCrmvState: string;
   initialEmail: string;
+  hasSignatureImage: boolean;
 }) {
   const [fullName, setFullName] = useState(initialFullName);
   const [cpf, setCpf] = useState(initialCpf);
   const crmv = initialCrmv;
   const crmvState = initialCrmvState;
   const [logoVersion, setLogoVersion] = useState(() => hasLogo ? Date.now() : 0);
+  const [sigVersion, setSigVersion] = useState(() => hasSignatureImage ? Date.now() : 0);
   const [signatureFont, setSignatureFont] = useState(initialSignatureFont);
   const [cpfError, setCpfError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -56,6 +59,8 @@ export default function ProfileForm({
   const [saveError, setSaveError] = useState("");
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState("");
+  const [sigUploading, setSigUploading] = useState(false);
+  const [sigError, setSigError] = useState("");
   const fontAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -69,7 +74,14 @@ export default function ProfileForm({
     }
   }, []);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sigInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  async function getAuthHeaders(): Promise<Record<string, string>> {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+  }
 
   async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -78,21 +90,17 @@ export default function ProfileForm({
     setLogoUploading(true);
     setLogoError("");
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
       const formData = new FormData();
       formData.append("logo", file);
 
       const res = await fetch("/api/profile/logo", {
         method: "POST",
-        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+        headers: await getAuthHeaders(),
         body: formData,
       });
 
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Erro ao enviar logo");
-      // Increment version to cache-bust the proxy URL
       setLogoVersion(Date.now());
     } catch (err) {
       setLogoError(err instanceof Error ? err.message : "Erro ao enviar logo");
@@ -102,24 +110,69 @@ export default function ProfileForm({
     }
   }
 
+  async function handleSignatureImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSigUploading(true);
+    setSigError("");
+    try {
+      const formData = new FormData();
+      formData.append("signature", file);
+
+      const res = await fetch("/api/profile/signature", {
+        method: "POST",
+        headers: await getAuthHeaders(),
+        body: formData,
+      });
+
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Erro ao enviar assinatura");
+      setSigVersion(Date.now());
+      setSignatureFont("");
+    } catch (err) {
+      setSigError(err instanceof Error ? err.message : "Erro ao enviar assinatura");
+    } finally {
+      setSigUploading(false);
+      if (sigInputRef.current) sigInputRef.current.value = "";
+    }
+  }
+
+  async function handleRemoveSignatureImage() {
+    setSigError("");
+    try {
+      const res = await fetch("/api/profile/signature", {
+        method: "DELETE",
+        headers: await getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error();
+      setSigVersion(0);
+    } catch {
+      setSigError("Erro ao remover assinatura.");
+    }
+  }
+
   async function handleFontSelect(fontKey: string) {
     const next = signatureFont === fontKey ? "" : fontKey;
     setSignatureFont(next);
+    setSigVersion(0);
     fontAbortRef.current?.abort();
     const controller = new AbortController();
     fontAbortRef.current = controller;
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      await fetch("/api/profile", {
+      const res = await fetch("/api/profile", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          ...(await getAuthHeaders()),
         },
-        body: JSON.stringify({ full_name: fullName, cpf, signature_font: next }),
+        body: JSON.stringify({ full_name: fullName, cpf, signature_font: next, signature_image_url: null }),
         signal: controller.signal,
       });
+      if (res.ok && next !== "") {
+        // Eagerly remove stored signature image path from DB — already done server-side,
+        // but also delete the file preview locally
+      }
     } catch {
       // non-critical, silent fail (includes aborted requests)
     }
@@ -151,14 +204,11 @@ export default function ProfileForm({
     }
     setCpfError("");
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          ...(await getAuthHeaders()),
         },
         body: JSON.stringify({ full_name: fullName, crmv, cpf, crmv_state: crmvState, signature_font: signatureFont }),
       });
@@ -176,6 +226,7 @@ export default function ProfileForm({
   }
 
   const logoSrc = logoVersion ? `/api/profile/logo?v=${logoVersion}` : null;
+  const sigSrc = sigVersion ? `/api/profile/signature?v=${sigVersion}` : null;
 
   return (
     <div className="space-y-6">
@@ -183,6 +234,7 @@ export default function ProfileForm({
         <label className="block text-sm font-medium text-gray-700 mb-2">Logo do laudo</label>
         <div className="flex flex-col gap-3">
           {logoSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={logoSrc} alt="Logo" className="max-h-48 w-full object-contain rounded border border-gray-200 bg-gray-50 p-2" />
           ) : (
             <div className="h-48 w-full rounded border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-sm text-gray-400">
@@ -259,6 +311,47 @@ export default function ProfileForm({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Assinatura no laudo</label>
+
+          {/* Signature image upload */}
+          <div className="mb-3 p-3 rounded-lg border border-gray-200 bg-gray-50 space-y-2">
+            <p className="text-xs font-medium text-gray-600">Imagem da assinatura</p>
+            {sigSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={sigSrc} alt="Assinatura" className="max-h-20 object-contain rounded bg-white border border-gray-200 p-1" />
+            ) : (
+              <p className="text-xs text-gray-400 italic">Sem imagem</p>
+            )}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => sigInputRef.current?.click()}
+                disabled={sigUploading}
+                className="text-xs text-blue-600 hover:text-blue-700 disabled:opacity-50"
+              >
+                {sigUploading ? "Enviando..." : sigSrc ? "Alterar imagem" : "Enviar imagem"}
+              </button>
+              {sigSrc && (
+                <button
+                  type="button"
+                  onClick={handleRemoveSignatureImage}
+                  className="text-xs text-gray-400 hover:text-gray-600"
+                >
+                  Remover
+                </button>
+              )}
+            </div>
+            <input
+              ref={sigInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleSignatureImageChange}
+            />
+            {sigError && <p className="text-xs text-red-600">{sigError}</p>}
+            <p className="text-xs text-gray-400">JPEG ou PNG · máx. 5 MB · selecionar imagem remove a fonte escolhida</p>
+          </div>
+
+          {/* Font selector */}
           <div className="flex flex-col gap-2">
             {SIGNATURE_FONTS.map((f) => (
               <button
@@ -266,7 +359,7 @@ export default function ProfileForm({
                 type="button"
                 onClick={() => handleFontSelect(f.key)}
                 className={`rounded-lg border px-3 py-4 text-left transition-colors ${
-                  signatureFont === f.key
+                  signatureFont === f.key && !sigSrc
                     ? "border-blue-500 bg-blue-50"
                     : "border-gray-200 bg-white hover:border-gray-300"
                 }`}
@@ -278,7 +371,7 @@ export default function ProfileForm({
               </button>
             ))}
           </div>
-          {signatureFont && (
+          {(signatureFont && !sigSrc) && (
             <button
               type="button"
               onClick={() => handleFontSelect(signatureFont)}

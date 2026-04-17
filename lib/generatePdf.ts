@@ -58,6 +58,7 @@ export interface PdfData {
   imageBase64List: string[];
   logoBase64?: string;
   signatureFont?: string;
+  signatureImageBase64?: string;
   crmvState?: string;
 }
 
@@ -170,7 +171,7 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
 }
 
 export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
-  const { patientName, species, breed, age, sex, neutered, ownerName, clinicName, responsibleVet, date, reportTitle, vetName, crmv, parsedLaudo, imageBase64List, logoBase64: providedLogo, signatureFont, crmvState } = data;
+  const { patientName, species, breed, age, sex, neutered, ownerName, clinicName, responsibleVet, date, reportTitle, vetName, crmv, parsedLaudo, imageBase64List, logoBase64: providedLogo, signatureFont, signatureImageBase64, crmvState } = data;
   const crmvLabel = crmvState ? `CRMV-${crmvState} ${crmv}` : `CRMV ${crmv}`;
 
   // Fetch fonts from CDN (cached after first call)
@@ -261,7 +262,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
 
   const docDefinition: Content = {
     pageSize: "A4",
-    pageMargins: [50, 36, 50, signatureFont && SIGNATURE_FONT_URLS[signatureFont] ? 130 : 48],
+    pageMargins: [50, 36, 50, (signatureFont && SIGNATURE_FONT_URLS[signatureFont]) || signatureImageBase64 ? 130 : 48],
 
     // Centered watermark on every page
     ...(logoBase64 ? {
@@ -303,7 +304,8 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
     ],
 
     footer: (currentPage: number, pageCount: number) => {
-      const hasSignature = !!(signatureFont && SIGNATURE_FONT_URLS[signatureFont]);
+      const hasSignatureFont = !!(signatureFont && SIGNATURE_FONT_URLS[signatureFont]);
+      const hasSignature = hasSignatureFont || !!signatureImageBase64;
 
       // On non-last pages when signature is active, push footer to bottom of the larger area
       const redFooterMarginTop = hasSignature && currentPage !== pageCount ? 105 : 8;
@@ -317,7 +319,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
         margin: [50, redFooterMarginTop, 50, 0],
       };
 
-      if (hasSignature && currentPage === pageCount) {
+      if (hasSignatureFont && currentPage === pageCount) {
         return {
           stack: [
             {
@@ -331,6 +333,44 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
             {
               canvas: [{ type: "line", x1: 198, y1: 0, x2: 397, y2: 0, lineWidth: 0.5, lineColor: "#9ca3af" }],
               margin: [0, -20, 0, 2],
+            },
+            {
+              text: `Dr(a). ${vetName}`,
+              fontSize: 9,
+              alignment: "center",
+              color: "#6b7280",
+              margin: [50, 2, 50, 0],
+            },
+            {
+              text: "Médico(a) Veterinário(a)",
+              fontSize: 9,
+              alignment: "center",
+              color: "#6b7280",
+              margin: [50, 0, 50, 0],
+            },
+            {
+              text: crmvLabel,
+              fontSize: 9,
+              alignment: "center",
+              color: "#6b7280",
+              margin: [50, 0, 50, 2],
+            },
+          ],
+        };
+      }
+
+      if (signatureImageBase64 && currentPage === pageCount) {
+        return {
+          stack: [
+            {
+              image: signatureImageBase64,
+              width: 160,
+              alignment: "center",
+              margin: [50, 4, 50, 0],
+            },
+            {
+              canvas: [{ type: "line", x1: 198, y1: 0, x2: 397, y2: 0, lineWidth: 0.5, lineColor: "#9ca3af" }],
+              margin: [0, 2, 0, 2],
             },
             {
               text: `Dr(a). ${vetName}`,

@@ -22,6 +22,7 @@ export interface Profile {
   created_at: string;
   logo_url?: string;
   signature_font?: string;
+  signature_image_url?: string;
   crmv_state?: string;
 }
 

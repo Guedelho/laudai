@@ -15,11 +15,16 @@ export async function PUT(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { full_name, cpf, signature_font } = body;
+  const { full_name, cpf, signature_font, signature_image_url } = body;
+
+  const upsertData: Record<string, unknown> = { id: userId, full_name, cpf, signature_font };
+  if (Object.prototype.hasOwnProperty.call(body, "signature_image_url")) {
+    upsertData.signature_image_url = signature_image_url;
+  }
 
   const { data, error } = await createAdmin()
     .from("profiles")
-    .upsert({ id: userId, full_name, cpf, signature_font }, { onConflict: "id" })
+    .upsert(upsertData, { onConflict: "id" })
     .select()
     .single();
 

@@ -30,6 +30,7 @@ export default async function ProfilePage() {
             initialSignatureFont={profile?.signature_font ?? ""}
             initialCrmvState={profile?.crmv_state ?? ""}
             initialEmail={user.email ?? ""}
+            hasSignatureImage={!!profile?.signature_image_url}
           />
         </div>
       </main>

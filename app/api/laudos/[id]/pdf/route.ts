@@ -120,6 +120,20 @@ export async function GET(
     }
   }
 
+  let signatureImageBase64: string | undefined;
+  if (profile?.signature_image_url) {
+    try {
+      const { data: sigSigned } = await admin.storage
+        .from("profile-logos")
+        .createSignedUrl(profile.signature_image_url, 60);
+      if (sigSigned?.signedUrl) {
+        signatureImageBase64 = await fetchAsBase64(sigSigned.signedUrl);
+      }
+    } catch (err) {
+      console.error("Failed to fetch signature image:", err);
+    }
+  }
+
   const pdfData: PdfData = {
     patientName: laudo.patient_name,
     species: laudo.species,
@@ -138,6 +152,7 @@ export async function GET(
     imageBase64List,
     logoBase64,
     signatureFont: profile?.signature_font ?? undefined,
+    signatureImageBase64,
     crmvState: profile?.crmv_state ?? undefined,
   };
 
