@@ -7,7 +7,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 - **Next.js 16** (App Router) · **React 19** · **TypeScript**
 - **Tailwind CSS 4**
 - **Supabase** — auth, Postgres, storage
-- **Google Gemini AI** — `gemini-3.1-pro` (report draft), `gemini-3-flash` (verification + transcription)
+- **Google Gemini AI** — `gemini-3.1-pro-preview` (report draft), `gemini-3-flash-preview` (verification + transcription)
 - **pdfmake** — server-side PDF generation
 
 ## Prerequisites
@@ -33,8 +33,8 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 
 3. **Set up Supabase**
    - Open your project's SQL Editor and run the full contents of `supabase/schema.sql`
-   - Go to **Storage** → create two private buckets: `laudo-images` and `profile-logos`
-   - RLS policies are applied via migrations — both buckets scope access to `auth.uid() = first folder in path`
+   - Go to **Storage** → create three private buckets: `laudo-images`, `laudo-pdfs`, and `profile-logos`
+   - RLS policies are applied via migrations — all buckets scope access to `auth.uid() = first folder in path`
 
 4. **Run the dev server**
    ```bash
@@ -48,7 +48,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 |-------|---------|
 | `/new` | Create a new laudo |
 | `/dashboard` | List recent laudos |
-| `/laudai/[id]` | View / download a laudo |
+| `/laudai/[id]` | View / edit / download a laudo |
 | `/profile` | Vet profile (name, CRMV) |
 | `/pets` | Manage patients |
 | `/clinics` | Manage clinics and responsible vets |
@@ -64,13 +64,15 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 
 ```
 app/
+  (auth)/        # Route group — shared layout with auth check + AppHeader
+    dashboard/   # Recent laudos list
+    new/         # New laudo form
+    laudai/[id]/ # View / edit / print laudo (unified page)
+    profile/     # Vet profile editor
+    pets/        # Pet management
+    clinics/     # Clinic management
   api/           # Route handlers (generate, transcribe, laudos, pets, clinics, profile)
-  new/           # New laudo form + review panel
-  laudai/[id]/   # View single laudo
-  dashboard/     # Recent laudos list
-  profile/       # Vet profile editor
-  pets/          # Pet management
-  clinics/       # Clinic management
+  login/         # Public login page
 lib/
   gemini.ts      # Gemini API calls (draft + verification agent)
   templates.ts   # Specialty templates, defaults, report titles
