@@ -58,15 +58,19 @@ export async function POST(req: NextRequest) {
     examDate,
   } = body;
 
-  if (!patientName.trim()) return NextResponse.json({ error: "Nome do paciente é obrigatório." }, { status: 400 });
-  if (!ownerName.trim()) return NextResponse.json({ error: "Nome do tutor é obrigatório." }, { status: 400 });
-  if (!breed.trim()) return NextResponse.json({ error: "Raça é obrigatória." }, { status: 400 });
-  if (!age.trim()) return NextResponse.json({ error: "Idade é obrigatória." }, { status: 400 });
-  if (!clinicName.trim()) return NextResponse.json({ error: "Nome da clínica é obrigatório." }, { status: 400 });
-  if (!responsibleVet.trim())
-    return NextResponse.json({ error: "Nome do médico responsável é obrigatório." }, { status: 400 });
-  if (!examDate.trim()) return NextResponse.json({ error: "Data do exame é obrigatória." }, { status: 400 });
-  if (!rawInput.trim()) return NextResponse.json({ error: "Achados do exame são obrigatórios." }, { status: 400 });
+  const required: [string, string][] = [
+    [patientName, "Nome do paciente"],
+    [ownerName, "Nome do tutor"],
+    [breed, "Raça"],
+    [age, "Idade"],
+    [clinicName, "Nome da clínica"],
+    [responsibleVet, "Médico responsável"],
+    [examDate, "Data do exame"],
+    [rawInput, "Achados do exame"],
+  ];
+  for (const [value, label] of required) {
+    if (!value.trim()) return NextResponse.json({ error: `${label} é obrigatório(a).` }, { status: 400 });
+  }
   if (rawInput.length > 2_000)
     return NextResponse.json({ error: "Achados do exame muito longos. Máximo 2.000 caracteres." }, { status: 400 });
 

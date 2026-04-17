@@ -191,32 +191,18 @@ export default function NewLaudoPage() {
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!patientName.trim()) {
-      setError("Nome do paciente é obrigatório.");
-      return;
-    }
-    if (!ownerName.trim()) {
-      setError("Nome do responsável é obrigatório.");
-      return;
-    }
-    if (!breed.trim()) {
-      setError("Raça é obrigatória.");
-      return;
-    }
-    if (!age.trim()) {
-      setError("Idade é obrigatória.");
-      return;
-    }
-    if (!clinicName.trim()) {
-      setError("Nome da clínica é obrigatório.");
-      return;
-    }
-    if (!responsibleVet.trim()) {
-      setError("Nome do médico responsável é obrigatório.");
-      return;
-    }
-    if (!rawInput.trim()) {
-      setError("Achados do exame são obrigatórios.");
+    const required: [string, string][] = [
+      [patientName, "Nome do paciente"],
+      [ownerName, "Nome do responsável"],
+      [breed, "Raça"],
+      [age, "Idade"],
+      [clinicName, "Nome da clínica"],
+      [responsibleVet, "Médico responsável"],
+      [rawInput, "Achados do exame"],
+    ];
+    const missing = required.find(([v]) => !v.trim());
+    if (missing) {
+      setError(`${missing[1]} é obrigatório(a).`);
       return;
     }
     setGenerating(true);
@@ -232,7 +218,7 @@ export default function NewLaudoPage() {
         const res = await fetch("/api/clinics", {
           method: "POST",
           headers,
-          body: JSON.stringify({ name: newClinicName.trim(), vetName: newVetName.trim() || undefined }),
+          body: JSON.stringify({ name: newClinicName.trim(), vetName: newVetName.trim() }),
         });
         if (res.ok) {
           const data = await res.json();
