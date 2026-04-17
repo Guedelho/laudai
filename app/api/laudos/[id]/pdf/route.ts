@@ -175,7 +175,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     reportTitle: REPORT_TITLES[specialty],
     vetName: profile.full_name,
     crmv: profile.crmv,
-    parsedLaudo: parseLaudoContent(laudo.edited_content ?? laudo.generated_content),
+    parsedLaudo: parseLaudoContent(laudo.edited_content),
     imageBase64List,
     logoBase64,
     signatureFont: profile.signature_font,
