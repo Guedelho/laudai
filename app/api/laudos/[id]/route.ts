@@ -21,6 +21,7 @@ export async function PATCH(
     .update({
       generated_content: JSON.stringify(generatedContent),
       ...patientFields,
+      pdf_storage_path: null,
     })
     .eq("id", id)
     .eq("user_id", userId)

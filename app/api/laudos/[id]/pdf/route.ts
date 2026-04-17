@@ -8,7 +8,8 @@ import { REPORT_TITLES, SPECIALTY_ABBR } from "@/lib/templates";
 import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
 import sharp from "sharp";
 
-const BUCKET = "laudo-images";
+const IMAGES_BUCKET = "laudo-images";
+const PDF_BUCKET = "laudo-images";
 const SUPPORTED_MIME = new Set(["image/jpeg", "image/jpg", "image/png"]);
 
 function slugify(s: string) {
@@ -39,6 +40,24 @@ async function fetchAsBase64(url: string, maxWidth?: number, maxHeight?: number)
   return `data:${finalMime};base64,${buf.toString("base64")}`;
 }
 
+function buildFilename(laudo: { patient_name: string; owner_name: string; specialty: string; exam_date?: string; created_at: string }) {
+  const dateSource = laudo.exam_date
+    ? new Date(laudo.exam_date + "T12:00:00")
+    : new Date(laudo.created_at);
+  const dateShort = [
+    String(dateSource.getDate()).padStart(2, "0"),
+    String(dateSource.getMonth() + 1).padStart(2, "0"),
+    String(dateSource.getFullYear()).slice(2),
+  ].join(".");
+  return [
+    "Laudo",
+    SPECIALTY_ABBR[laudo.specialty as Specialty],
+    slugify(laudo.patient_name),
+    slugify(laudo.owner_name),
+    dateShort,
+  ].join(".") + ".pdf";
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -50,19 +69,42 @@ export async function GET(
   if (!checkRateLimit("pdf", userId, 5)) return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
   recordRateLimit("pdf", userId);
 
-  const [profile, admin] = [
-    await getProfile(userId),
-    createAdmin(),
-  ];
+  const admin = createAdmin();
 
   const { data: laudo } = await admin
     .from("laudos")
-    .select("patient_name, species, breed, age, sex, neutered, owner_name, clinic_name, responsible_vet, specialty, exam_date, created_at, generated_content")
+    .select("patient_name, species, breed, age, sex, neutered, owner_name, clinic_name, responsible_vet, specialty, exam_date, created_at, generated_content, pdf_storage_path")
     .eq("id", id)
     .eq("user_id", userId)
     .single();
 
   if (!laudo) return NextResponse.json({ error: "Laudo not found" }, { status: 404 });
+
+  const filename = buildFilename(laudo);
+
+  // Serve cached PDF if available
+  if (laudo.pdf_storage_path) {
+    try {
+      const { data: signed } = await admin.storage.from(PDF_BUCKET).createSignedUrl(laudo.pdf_storage_path, 300);
+      if (signed?.signedUrl) {
+        const cached = await fetch(signed.signedUrl);
+        if (cached.ok) {
+          return new NextResponse(await cached.arrayBuffer(), {
+            headers: {
+              "Content-Type": "application/pdf",
+              "Content-Disposition": `inline; filename="${filename}"`,
+              "Cache-Control": "private, max-age=300",
+            },
+          });
+        }
+      }
+    } catch {
+      // Cache miss — regenerate below
+    }
+  }
+
+  // Generate PDF
+  const profile = await getProfile(userId);
 
   const { data: rawImages } = await admin
     .from("laudo_images")
@@ -76,17 +118,11 @@ export async function GET(
     ? new Date(laudo.exam_date + "T12:00:00")
     : new Date(laudo.created_at);
   const date = dateSource.toLocaleDateString("pt-BR");
-  const dateShort = [
-    String(dateSource.getDate()).padStart(2, "0"),
-    String(dateSource.getMonth() + 1).padStart(2, "0"),
-    String(dateSource.getFullYear()).slice(2),
-  ].join(".");
 
-  // Fetch images and logo in parallel
   const imageResults = await Promise.all(
     (rawImages ?? []).map(async (img) => {
       try {
-        const { data } = await admin.storage.from(BUCKET).createSignedUrl(img.storage_path, 60);
+        const { data } = await admin.storage.from(IMAGES_BUCKET).createSignedUrl(img.storage_path, 60);
         if (!data) return null;
         return await fetchAsBase64(data.signedUrl);
       } catch (err) {
@@ -97,17 +133,12 @@ export async function GET(
   );
 
   const imageBase64List = imageResults.filter((b): b is string => b !== null);
-  const imageFailures = imageResults.filter((b) => b === null).length;
 
   let logoBase64: string | undefined;
   if (profile?.logo_url) {
     try {
-      const { data: logoSigned } = await admin.storage
-        .from("profile-logos")
-        .createSignedUrl(profile.logo_url, 60);
-      if (logoSigned?.signedUrl) {
-        logoBase64 = await fetchAsBase64(logoSigned.signedUrl);
-      }
+      const { data: logoSigned } = await admin.storage.from("profile-logos").createSignedUrl(profile.logo_url, 60);
+      if (logoSigned?.signedUrl) logoBase64 = await fetchAsBase64(logoSigned.signedUrl);
     } catch (err) {
       console.error("Failed to fetch user logo:", err);
     }
@@ -116,12 +147,8 @@ export async function GET(
   let signatureImageBase64: string | undefined;
   if (profile?.signature_image_url) {
     try {
-      const { data: sigSigned } = await admin.storage
-        .from("profile-logos")
-        .createSignedUrl(profile.signature_image_url, 60);
-      if (sigSigned?.signedUrl) {
-        signatureImageBase64 = await fetchAsBase64(sigSigned.signedUrl);
-      }
+      const { data: sigSigned } = await admin.storage.from("profile-logos").createSignedUrl(profile.signature_image_url, 60);
+      if (sigSigned?.signedUrl) signatureImageBase64 = await fetchAsBase64(sigSigned.signedUrl);
     } catch (err) {
       console.error("Failed to fetch signature image:", err);
     }
@@ -151,21 +178,23 @@ export async function GET(
 
   const buffer = await generatePdfBuffer(pdfData);
 
-  // Filename: Laudo.us.Chico.Juliana.09.03.26.pdf
-  const filename = [
-    "Laudo",
-    SPECIALTY_ABBR[specialty],
-    slugify(laudo.patient_name),
-    slugify(laudo.owner_name),
-    dateShort,
-  ].join(".") + ".pdf";
+  // Cache the PDF in storage
+  const storagePath = `${userId}/${id}/laudo.pdf`;
+  try {
+    await admin.storage.from(PDF_BUCKET).upload(storagePath, Buffer.from(buffer), {
+      contentType: "application/pdf",
+      upsert: true,
+    });
+    await admin.from("laudos").update({ pdf_storage_path: storagePath }).eq("id", id).eq("user_id", userId);
+  } catch (err) {
+    console.error("Failed to cache PDF:", err);
+  }
 
-  const responseHeaders: Record<string, string> = {
-    "Content-Type": "application/pdf",
-    "Content-Disposition": `inline; filename="${filename}"`,
-    "Cache-Control": "no-store",
-  };
-  if (imageFailures > 0) responseHeaders["X-Image-Failures"] = String(imageFailures);
-
-  return new NextResponse(new Uint8Array(buffer), { headers: responseHeaders });
+  return new NextResponse(new Uint8Array(buffer), {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `inline; filename="${filename}"`,
+      "Cache-Control": "private, max-age=300",
+    },
+  });
 }

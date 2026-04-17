@@ -32,5 +32,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Erro ao remover imagem." }, { status: 500 });
   }
 
+  await admin.from("laudos").update({ pdf_storage_path: null }).eq("id", id).eq("user_id", userId);
   return NextResponse.json({ success: true });
 }

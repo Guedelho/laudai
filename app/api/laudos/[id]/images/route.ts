@@ -149,6 +149,7 @@ export async function POST(
     );
 
     revalidateTag(`laudo-${id}`, "default");
+    await admin.from("laudos").update({ pdf_storage_path: null }).eq("id", id).eq("user_id", userId);
     return NextResponse.json({ images: results });
   } catch (err) {
     console.error("Image upload error:", err);
