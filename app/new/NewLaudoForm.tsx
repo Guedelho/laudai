@@ -266,7 +266,8 @@ export default function NewLaudoPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+        let data: { error?: string } = {};
+        try { data = await res.json(); } catch { /* ignore */ }
         throw new Error(data.error || "Erro ao gerar laudo.");
       }
 
@@ -306,7 +307,8 @@ export default function NewLaudoPage() {
         selectedFiles.forEach((f) => formData.append("images", f));
         const imgRes = await fetch(`/api/laudos/${laudoId}/images`, { method: "POST", headers: authHeader, body: formData });
         if (!imgRes.ok) {
-          const imgData = await imgRes.json().catch(() => ({}));
+          let imgData: { error?: string } = {};
+          try { imgData = await imgRes.json(); } catch { /* ignore */ }
           throw new Error(imgData.error || "Erro ao enviar imagens.");
         }
       }

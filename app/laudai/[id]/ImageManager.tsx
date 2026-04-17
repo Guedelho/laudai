@@ -52,7 +52,8 @@ export default function ImageManager({ initialImages, laudoId }: { initialImages
       const headers = await getAuthHeaders();
       const res = await fetch(`/api/laudos/${laudoId}/images/${imageId}`, { method: "DELETE", headers });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+        let data: { error?: string } = {};
+        try { data = await res.json(); } catch { /* ignore */ }
         throw new Error(data.error || "Erro ao remover imagem.");
       }
       setImages((prev) => prev.filter((img) => img.id !== imageId));
