@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Pet } from "@/shared/models";
 import { PetResponse, ApiResponse } from "@/shared/interfaces";
-import { SPECIES_OPTIONS, SEX_OPTIONS, sexLabel } from "@/shared/constants";
+import { SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared/constants";
+import { sexLabel } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import Typeahead from "@/components/Typeahead";
 
