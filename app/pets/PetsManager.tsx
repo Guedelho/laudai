@@ -31,8 +31,8 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
       breed: pet.breed ?? "",
       age: pet.age ?? "",
       owner_name: pet.owner_name,
-      sex: pet.sex ?? "",
-      neutered: pet.neutered ?? false,
+      sex: pet.sex,
+      neutered: pet.neutered,
     });
     setEditError("");
   }
@@ -258,11 +258,10 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Sexo</label>
                     <select
-                      value={editFields.sex ?? ""}
+                      value={editFields.sex}
                       onChange={(e) => setEditFields((f) => ({ ...f, sex: e.target.value }))}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="">Não informado</option>
                       <option value="Macho">Macho</option>
                       <option value="Fêmea">Fêmea</option>
                     </select>
@@ -271,7 +270,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                 <label className="flex items-center gap-2 text-sm text-gray-700">
                   <input
                     type="checkbox"
-                    checked={editFields.neutered ?? false}
+                    checked={editFields.neutered}
                     onChange={(e) => setEditFields((f) => ({ ...f, neutered: e.target.checked }))}
                     className="rounded border-gray-300"
                   />

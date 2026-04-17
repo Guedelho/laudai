@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import ImageLightbox from "@/components/ImageLightbox";
 import Link from "next/link";
 import { Pet, Clinic, ParsedLaudo, SseEvent } from "@/types";
 import { getAuthHeaders } from "@/lib/supabase/client";
@@ -19,7 +20,7 @@ export default function NewLaudoPage() {
   const [species, setSpecies] = useState("Canina");
   const [breed, setBreed] = useState("");
   const [age, setAge] = useState("");
-  const [sex, setSex] = useState("");
+  const [sex, setSex] = useState("M");
   const [neutered, setNeutered] = useState(false);
   const [ownerName, setOwnerName] = useState("");
 
@@ -44,7 +45,6 @@ export default function NewLaudoPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [objectUrls, setObjectUrls] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const lightboxRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const objectUrlsRef = useRef<string[]>([]);
   objectUrlsRef.current = objectUrls;
@@ -55,11 +55,6 @@ export default function NewLaudoPage() {
     return () => { objectUrlsRef.current.forEach(URL.revokeObjectURL); };
   }, []);
 
-  useEffect(() => {
-    if (lightboxIndex === null || !lightboxRef.current) return;
-    const child = lightboxRef.current.children[lightboxIndex] as HTMLElement | undefined;
-    child?.scrollIntoView({ behavior: "instant", block: "nearest", inline: "center" });
-  }, [lightboxIndex]);
 
   // Review phase
   const [phase, setPhase] = useState<"form" | "review">("form");
@@ -447,7 +442,6 @@ export default function NewLaudoPage() {
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Sexo</label>
                 <select value={sex} onChange={(e) => setSex(e.target.value)} className={inputCls}>
-                  <option value="">Não informado</option>
                   <option value="M">Macho</option>
                   <option value="F">Fêmea</option>
                 </select>
@@ -560,32 +554,11 @@ export default function NewLaudoPage() {
               <p className="text-sm text-gray-400 italic">Nenhuma imagem selecionada</p>
             )}
             {lightboxIndex !== null && (
-              <div
-                className="fixed inset-0 z-50 bg-black/90 flex flex-col"
-                onClick={() => setLightboxIndex(null)}
-              >
-                <div className="flex justify-end p-4">
-                  <button
-                    type="button"
-                    onClick={() => setLightboxIndex(null)}
-                    className="text-white text-sm bg-black/50 px-3 py-1 rounded-full hover:bg-black/70"
-                  >
-                    Fechar ✕
-                  </button>
-                </div>
-                <div
-                  ref={lightboxRef}
-                  className="flex flex-1 overflow-x-auto snap-x snap-mandatory"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {objectUrls.map((url) => (
-                    <div key={url} className="snap-center flex-shrink-0 w-full flex items-center justify-center px-6 pb-6">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt="" className="max-w-full max-h-full object-contain" />
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ImageLightbox
+                images={objectUrls.map((url) => ({ key: url, src: url }))}
+                selectedIndex={lightboxIndex}
+                onClose={() => setLightboxIndex(null)}
+              />
             )}
           </div>
 

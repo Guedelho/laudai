@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import { LaudoImage } from "@/types";
 import { getAuthHeaders } from "@/lib/supabase/client";
+import ImageLightbox from "@/components/ImageLightbox";
 
 export default function ImageManager({ initialImages, laudoId }: { initialImages: LaudoImage[]; laudoId: string }) {
   const [images, setImages] = useState<LaudoImage[]>(initialImages);
@@ -11,13 +12,6 @@ export default function ImageManager({ initialImages, laudoId }: { initialImages
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const lightboxRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (selectedIndex === null || !lightboxRef.current) return;
-    const child = lightboxRef.current.children[selectedIndex] as HTMLElement | undefined;
-    child?.scrollIntoView({ behavior: "instant", block: "nearest", inline: "center" });
-  }, [selectedIndex]);
 
   async function handleAdd(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -120,37 +114,11 @@ export default function ImageManager({ initialImages, laudoId }: { initialImages
       </div>
 
       {selectedIndex !== null && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex flex-col"
-          onClick={() => setSelectedIndex(null)}
-        >
-          <div className="flex justify-end p-4">
-            <button
-              onClick={() => setSelectedIndex(null)}
-              className="text-white text-sm bg-black/50 px-3 py-1 rounded-full hover:bg-black/70"
-            >
-              Fechar ✕
-            </button>
-          </div>
-          <div
-            ref={lightboxRef}
-            className="flex flex-1 overflow-x-auto snap-x snap-mandatory"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {images.map((img) => (
-              <div key={img.id} className="snap-center flex-shrink-0 w-full flex items-center justify-center px-6 pb-6">
-                <Image
-                  src={img.url}
-                  alt={img.file_name}
-                  width={1200}
-                  height={900}
-                  sizes="100vw"
-                  className="max-w-full max-h-full object-contain"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+        <ImageLightbox
+          images={images.map((img) => ({ key: img.id, src: img.url, alt: img.file_name }))}
+          selectedIndex={selectedIndex}
+          onClose={() => setSelectedIndex(null)}
+        />
       )}
     </>
   );

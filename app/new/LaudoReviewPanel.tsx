@@ -248,7 +248,6 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Sexo</label>
                     <select value={editedFields.sex} onChange={(e) => setEditedFields({ ...editedFields, sex: e.target.value })} className={inputCls}>
-                      <option value="">Não informado</option>
                       <option value="M">Macho</option>
                       <option value="F">Fêmea</option>
                     </select>
