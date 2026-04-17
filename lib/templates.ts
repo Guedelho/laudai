@@ -54,113 +54,108 @@ export function buildDefaults(sex?: string | null, neutered?: boolean | null): s
 // ─── Nomenclature sections (organ-keyed, no classification labels) ───────────
 
 export const NOMENCLATURE: Record<string, string> = {
-  liver: `FÍGADO — Padrões de alteração difusa:
-- Dimensões fora do gradil costal, superfície regular, margens finas, ecogenicidade e ecotextura normais, arquitetura vascular preservada
-- Dimensões fora do gradil, superfície irregular, margens abauladas, ecogenicidade e ecotextura normais, arquitetura vascular preservada
-- Dimensões diminuídas, superfície regular, margens finas, ecogenicidade preservada, ecotextura homogênea, arquitetura vascular preservada
-- Dimensões diminuídas, superfície irregular, margens abauladas, ecogenicidade aumentada, ecotextura grosseira, vasos pobremente evidenciados
-- Dimensões fora do gradil, superfície regular, margens abauladas, ecogenicidade diminuída, ecotextura normal, vasos preservados
-- Dimensões fora do gradil, superfície irregular, margens abauladas, ecogenicidade diminuída, ecotextura normal, calibre vascular aumentado
-- Fígado fora do gradil, superfície irregular, margens abauladas, ecogenicidade diminuída, ecotextura normal, vasos de calibre aumentados + vesícula biliar e vias biliares extra-hepáticas com espessamento de parede, calibre aumentado, conteúdo anecogênico com material amorfo ecodenso e móvel
-- Dimensões fora do gradil, superfície irregular, margens abauladas, ecogenicidade difusamente aumentada, ecotextura preservada, vasos pobremente visualizados
-- Dimensões fora do gradil, superfície irregular, margens abauladas, ecogenicidade difusamente aumentada com perda da atenuação do feixe sonoro distal, ecotextura grosseira, vasos pobremente visualizados
+  liver: `FÍGADO — Alterações difusas (descrição → impressão → recomendação):
+- Dimensões fora do gradil, superfície regular, margens finas, ecogenicidade e ecotextura normais, vasos preservados → Hepatomegalia pouco específica, podendo indicar processo inflamatório → Sugiro pesquisa de hepatopatias. Em filhotes: hepatomegalia é condição normalmente encontrada até oito meses.
+- Dimensões fora do gradil, superfície irregular, margens abauladas, ecogenicidade e ecotextura normais, vasos preservados → Alterações correlacionadas com processo inflamatório → Sugiro correlação com achados clínicos e demais exames laboratoriais.
+- Dimensões diminuídas, superfície regular, margens finas, ecogenicidade preservada, ecotextura homogênea → Em filhotes: hipoplasia portal ou desvios portossistêmicos → Sugiro correlação com tomografia computadorizada.
+- Dimensões diminuídas, superfície irregular, margens abauladas, ecogenicidade aumentada, ecotextura grosseira, vasos pobremente evidenciados → Hepatopatia crônica em estágio avançado → Sugiro exame dopplervelocimétrico hepático.
+- Dimensões fora do gradil, ecogenicidade diminuída, vasos preservados → Processo inflamatório (hepatite aguda), DD hepatopatia por toxemia → Sugiro correlação clínico-laboratorial. DD: neoplasias infiltrativas (linfoma, linfossarcoma, leucemia).
+- Dimensões fora do gradil, ecogenicidade diminuída, calibre vascular aumentado → Congestão hepática → Sugiro pesquisa de cardiopatias.
+- Fígado + vesícula biliar e vias biliares com espessamento de parede e material ecodenso → Colangiohepatite → Sugiro correlação laboratorial.
+- Ecogenicidade difusamente aumentada, vasos pobremente visualizados → Hepatopatia crônica → Sugiro correlação laboratorial. DD: hepatopatia esteroidal, lipidose, fibrose, neoplasias infiltrativas.
+- Ecogenicidade aumentada com perda da atenuação distal, ecotextura grosseira → Infiltração gordurosa (esteatose hepática) → Sugiro dopplervelocimétrico hepático.
 
-FÍGADO — Alterações focais:
-Nódulo único hiperecogênico, múltiplos nódulos hiperecogênicos, mineralização do parênquima hepático, nódulo único hipoecogênico, múltiplos nódulos hipoecogênicos, nódulos hipo e hiperecogênicos, formação com necrose, cisto único, cisto complexo, múltiplos cistos, formação com cistos em felinos, lesão em alvo, hematoma, formações, grandes formações`,
+FÍGADO — Alterações focais: nódulos (hiper/hipoecogênicos), mineralização, formações, cistos, lesão em alvo, hematoma`,
 
-  gallbladder: `VESÍCULA BILIAR — Alterações da parede:
-Variação anatômica, colangite, espessamento da parede por edema, espessamento da parede por anafilaxia, colecistite crônica, colecistite enfisematosa, hiperplasia mucinosa cística
+  gallbladder: `VESÍCULA BILIAR — Alterações da parede (descrição → impressão):
+- Espessamento de parede com edema → Colecistite aguda, DD hipertensão portal, hipoalbuminemia, obstrução biliar
+- Espessamento crônico → Colecistite crônica
+- Presença de gás na parede → Colecistite enfisematosa
+- Hiperplasia mucinosa cística → Hiperplasia mucinosa cística acompanhada de mucocele
 
 VESÍCULA BILIAR — Alterações de conteúdo:
-Sedimento em animais idosos, graduação de sedimento, concreção biliar, colelitíase, cálculo de colesterol, mucocele
-(Mucocele: para bexiga e vesícula biliar, NÃO indicar cistocentese/colecistocentese quando houver presença de gás ou mucocele)
+- Sedimento leve → Colestase, DD hipofunção motora em idosos ou endocrinopatias
+- Sedimento moderado/grave → Colestase
+- Concreção biliar, colelitíase, mucocele
+(NÃO indicar colecistocentese quando presença de gás ou mucocele)
 
-VIAS BILIARES:
-Mineralização em vias biliares intra-hepáticas, coledocolitíase, obstrução das vias biliares`,
+VIAS BILIARES: mineralização intra-hepática, coledocolitíase, obstrução`,
 
-  spleen: `BAÇO — Alterações difusas:
-Esplenomegalia, microesplenia, mineralização, congestão esplênica, torção esplênica, esplenite, ruptura esplênica
+  spleen: `BAÇO — Alterações difusas (descrição → impressão → recomendação):
+- Esplenomegalia → Hiperplasia linfoide, processo inflamatório/infeccioso → Correlação clínico-laboratorial
+- Microesplenia → DD desidratação ou caquexia → Correlação clínico-laboratorial
+- Mineralização → Mineralização esplênica → Sugiro pesquisa de adrenopatias e nefropatias
+- Congestão esplênica, torção esplênica, esplenite, ruptura esplênica
 
-BAÇO — Alterações focais:
-Nódulo único hiperecogênico, mielolipoma (cães/gatos), nódulo único hipoecogênico, múltiplos nódulos hipoecogênicos, padrão micronodular, padrão micronodular em filhotes, cisto único, abscesso, hematoma, infarto, imagem em alvo, formações, grandes formações, formações cavitárias, trombose de veia esplênica`,
+BAÇO — Alterações focais: nódulos, mielolipoma, cistos, abscesso, hematoma, infarto, imagem em alvo, formações, trombose`,
 
-  pancreas: `PÂNCREAS — Alterações difusas:
-Pancreatite aguda, pancreatite crônica agudizada, pâncreas do gato idoso, edema pancreático, pancreatite hemorrágica necrotizante
+  pancreas: `PÂNCREAS — Alterações difusas (descrição → impressão → recomendação):
+- Ecogenicidade diminuída, aumento, gordura periférica reativa → Pancreatite aguda → Sugiro correlação laboratorial e acompanhamento ultrassonográfico
+- Ecotextura heterogênea, contornos irregulares → Pancreatite crônica agudizada → Sugiro correlação laboratorial e acompanhamento
+- Em gatos idosos: alterações comumente encontradas em senis, não descartar pancreatopatias → Correlação clínico-laboratorial
+- Edema pancreático
+- Áreas anecogênicas + ecogenicidade heterogênea → Pancreatite necrotizante hemorrágica → Sugiro tomografia computadorizada
 
-PÂNCREAS — Alterações focais:
-Nódulo único, múltiplos nódulos, cisto único, múltiplos cistos, abscesso, neoplasia, litíase pancreática`,
+PÂNCREAS — Alterações focais: nódulos, cistos, abscesso, neoplasia, litíase`,
 
-  adrenals: `ADRENAIS — Alterações difusas:
-Adrenalite, hiperplasia unilateral, hiperplasia bilateral, atrofia bilateral, uma aumentada e uma diminuída, hiperaldosteronismo em felinos
+  adrenals: `ADRENAIS — Alterações difusas: adrenalite, hiperplasia (uni/bilateral), atrofia bilateral, hiperaldosteronismo em felinos
+ADRENAIS — Alterações focais: hiperplasia nodular, calcificação, neoplasia, comprometimento da VCC`,
 
-ADRENAIS — Alterações focais:
-Hiperplasia nodular hipoecogênica, hiperplasia nodular hiperecogênica, calcificação, neoplasia, neoplasia com comprometimento da VCC`,
+  stomach: `ESTÔMAGO — Alterações (descrição → impressão → recomendação):
+- Espessamento difuso → Gastrite → Correlação clínica
+- Espessamento focal severo → DD processo inflamatório/edema → Acompanhamento ultrassonográfico
+- Úlcera gástrica → Sugiro endoscopia
+- Gastrite urêmica → Correlação clínico-laboratorial
+- Gastrite polipoide → Sugiro endoscopia
+- Corpo estranho gástrico, corpo estranho perfurante`,
 
-  stomach: `ESTÔMAGO — Alterações da parede:
-Espessamento difuso, espessamento focal, úlcera gástrica, gastrite urêmica, gastrite polipoide, formações
+  intestines: `INTESTINOS — Alterações (descrição → impressão → recomendação):
+- Espessamento por segmento → Processo inflamatório (duodenite/jejunite)
+- Espessamento difuso → Enterite
+- Em felinos: espessamento difuso → DD doença intestinal inflamatória ou neoplasia infiltrativa → Sugiro endoscopia
+- Linfangiectasia → Processo inflamatório intenso → Sugiro exame cito/histopatológico
+- Tiflite, colite, hiperplasia folicular linfoide
+- Corpo estranho (linear/obstrutivo/não obstrutivo), intussuscepção`,
 
-ESTÔMAGO — Alterações de conteúdo:
-Acúmulo de líquido por processo inflamatório, acúmulo de líquido por processo obstrutivo, corpo estranho gástrico, corpo estranho perfurante`,
+  kidneys: `RINS — Alterações difusas (descrição → impressão → recomendação):
+- Nefropatia aguda → Sugiro correlação clínico-laboratorial
+- Nefropatia crônica (graus variados de perda da junção corticomedular, ecogenicidade aumentada, dimensões reduzidas) → Sugiro urinálise e correlação laboratorial
+- Síndrome do rim grande/pequeno (felinos) → Doença renal crônica com atrofia + hiperplasia compensatória → Sugiro urinálise
+- Sinal da medular, sinal da banda → Alteração pouco específica → Sugiro pesquisa de nefropatias e urinálise
+- Displasia renal, PIF, linfoma renal
 
-  intestines: `INTESTINOS — Alterações da parede:
-Espessamento da parede por segmento, espessamento difuso da parede, espessamento da parede em felinos, espessamento focal da parede (forma/amorfo), linfangiectasia, tiflite, colite, hiperplasia folicular linfoide
+RINS — Alterações focais: cistos, doença policística, pseudocisto, infarto, abscesso, nefrocalcinose, dioctophyma, neoplasia
+SISTEMA COLETOR: pielectasia, litíase, hidronefrose, pielonefrite
+URETERES: cálculos, ureter ectópico, ureterocele`,
 
-INTESTINOS — Alterações de conteúdo:
-Dilatação por conteúdo líquido, corpo estranho linear, corpo estranho não obstrutivo, corpo estranho obstrutivo, intussuscepção`,
+  bladder: `BEXIGA — Alterações (descrição → impressão → recomendação):
+- Divertículo uracal → Acompanhamento clínico e ultrassonográfico
+- Espessamento difuso → Cistite crônica → Sugiro urinálise (EAS)
+- Espessamento no ápice → Cistite crônica com debris → Sugiro urinálise
+- Espessamento no colo → DD processo inflamatório focal severo ou neoplasia → Sugiro urinálise via sonda e cito/histopatológico
+- Cistite enfisematosa, cistite polipoide → Sugiro videocistoscopia
+- Cistite pseudomembranosa → Sugiro exame de controle
+- Sedimento, cálculos, coágulo, obstrução, ruptura
+(NÃO indicar cistocentese quando presença de gás)
 
-  kidneys: `RINS — Alterações difusas:
-Nefropatia aguda, nefropatia crônica, síndrome do rim grande-rim pequeno, sinal da medular, sinal da banda, displasia renal, PIF, linfoma renal
+URETRA: uretrite, cálculos, neoplasia`,
 
-RINS — Alterações focais:
-Cisto único, múltiplos cistos, doença policística autossômica dominante, pseudocisto perinéfrico, infarto renal, abscesso renal, nefrocalcinose, dioctophyma renale, neoplasia focal
+  uterus: `ÚTERO: hiperplasia endometrial cística, mucometra/hidrometra, neoplasia, granuloma de coto, piometra de coto
+ÚTERO PÓS-PARTO: metrite, retenção de placenta
+ANOMALIAS GESTACIONAIS: hidrocefalia, hidropsia fetal, onfalocele, gastrosquise, morte embrionária, feto macerado/mumificado/enfisematoso`,
 
-SISTEMA COLETOR:
-Pielectasia, litíase, hidronefrose unilateral, hidronefrose bilateral, pielonefrite
+  ovaries: `OVÁRIOS: cistos, neoplasia, ovário remanescente, granuloma`,
 
-URETERES:
-Cálculo único, múltiplos cálculos, ureter ectópico, ureterocele`,
+  prostate: `PRÓSTATA: hiperplasia prostática benigna, hiperplasia cística, cisto, cisto paraprostático, abscesso, prostatite, neoplasia`,
 
-  bladder: `BEXIGA — Alterações da parede:
-Divertículo uracal, espessamento difuso, espessamento no ápice, espessamento no colo, cistite enfisematosa, cistite polipoide, cistite pseudomembranosa, neoplasia
+  testicles: `TESTÍCULOS: atrofia, criptorquidismo, cistos, nódulo hiperecogênico, orquite/epididimite, neoplasia`,
 
-BEXIGA — Alterações de conteúdo:
-Pontos ecogênicos em suspensão, pontos ecogênicos depositados ao fundo, cálculo único, múltiplos cálculos, coágulo, obstrução, ruptura de parede
+  lymphnodes: `LINFONODOS: linfonodo aumentado (cístico), múltiplos aumentados, coalescência`,
 
-URETRA:
-Uretrite, cálculo único, múltiplos cálculos, neoplasia`,
-
-  uterus: `ÚTERO:
-Hiperplasia endometrial cística, mucometra/hidrometra, neoplasia, granuloma de coto, piometra de coto
-
-ÚTERO PÓS-PARTO:
-Metrite, retenção de placenta
-
-ANOMALIAS GESTACIONAIS:
-Hidrocefalia, hidropsia ou anasarca fetal, onfalocele e gastrosquise, morte embrionária, feto macerado, feto mumificado, feto enfisematoso`,
-
-  ovaries: `OVÁRIOS:
-Cistos, neoplasia, ovário remanescente, granuloma`,
-
-  prostate: `PRÓSTATA:
-Hiperplasia prostática benigna, hiperplasia prostática cística, cisto único, cisto paraprostático, abscesso prostático, prostatite, neoplasia`,
-
-  testicles: `TESTÍCULOS:
-Atrofia testicular, criptorquidismo, cisto simples, cisto septado, nódulo hiperecogênico, orquite e epididimite, neoplasia`,
-
-  lymphnodes: `LINFONODOS:
-Linfonodo aumentado (cístico), múltiplos linfonodos aumentados, coalescência de linfonodos`,
-
-  misc: `HÉRNIAS:
-Descontinuidade da parede, hérnia perineal
-
-MASSA EXPANSIVA:
-Formações, formações cavitárias, necrose em formações
-
-EFUSÃO PERITONEAL:
-Líquido livre
-
-PERITONITE:
-Peritonite focal, peritonite difusa`,
+  misc: `HÉRNIAS: descontinuidade da parede, hérnia perineal
+MASSA EXPANSIVA: formações, formações cavitárias, necrose
+EFUSÃO PERITONEAL: líquido livre
+PERITONITE: focal, difusa`,
 };
 
 export const FRASES_SALVADORAS = `FRASES SALVADORAS (use quando aplicável):
