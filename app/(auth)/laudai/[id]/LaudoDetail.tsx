@@ -257,8 +257,6 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
             <InfoItem label="Responsável:" value={fields.ownerName} />
             {fields.clinicName && <InfoItem label="Clínica:" value={fields.clinicName} />}
             {fields.responsibleVet && <InfoItem label="Médico:" value={fields.responsibleVet} />}
-            {examDate && <InfoItem label="Data do exame:" value={examDate} />}
-            <InfoItem label="Criado em:" value={createdDate} />
           </div>
         </div>
       )}

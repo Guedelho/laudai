@@ -59,9 +59,10 @@ export default function LaudoList({ laudos }: { laudos: LaudoSummary[] }) {
                   {SPECIALTY_LABELS[laudo.specialty]} · {laudo.owner_name}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  {laudo.exam_date
-                    ? `Exame: ${new Date(laudo.exam_date + "T12:00:00").toLocaleDateString("pt-BR")}`
-                    : `Criado: ${new Date(laudo.created_at).toLocaleDateString("pt-BR")}`}
+                  Criado: {new Date(laudo.created_at).toLocaleDateString("pt-BR")}
+                  {laudo.exam_date && (
+                    <> · Exame: {new Date(laudo.exam_date + "T12:00:00").toLocaleDateString("pt-BR")}</>
+                  )}
                 </p>
               </div>
               <Link
