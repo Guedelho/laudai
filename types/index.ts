@@ -166,6 +166,8 @@ export interface UpdateProfileRequest {
 export type SseEvent =
   | { status: "generating" }
   | { status: "reviewing" }
+  | { status: "retrying" }
   | { status: "saving" }
+  | { status: "chunk"; text: string }
   | { status: "error"; message: string }
   | { status: "done"; laudo: { id: string; generated_content: string; created_at: string } };

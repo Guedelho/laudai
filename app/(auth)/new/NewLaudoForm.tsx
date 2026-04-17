@@ -286,9 +286,12 @@ export default function NewLaudoPage() {
           if (!line.startsWith("data: ")) continue;
           const event: SseEvent = JSON.parse(line.slice(6));
           if (event.status === "generating") setGeneratingStatus("Gerando laudo...");
+          else if (event.status === "retrying") setGeneratingStatus("Tentando novamente...");
           else if (event.status === "reviewing") setGeneratingStatus("Revisando laudo...");
           else if (event.status === "saving") setGeneratingStatus("Salvando...");
-          else if (event.status === "error") throw new Error(event.message || "Erro ao gerar laudo.");
+          else if (event.status === "chunk") {
+            /* streaming preview — text arriving */
+          } else if (event.status === "error") throw new Error(event.message || "Erro ao gerar laudo.");
           else if (event.status === "done") {
             laudoPayload = event.laudo;
             break outer;

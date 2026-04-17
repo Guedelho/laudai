@@ -6,6 +6,8 @@ import { GenerateRequest } from "@/types";
 import { findOrCreatePet } from "@/lib/db";
 import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
 
+export const maxDuration = 30;
+
 function sseStream(handler: (send: (data: object) => void) => Promise<void>): NextResponse {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -33,14 +35,13 @@ export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const profile = await getProfile(userId);
-  if (!profile) return NextResponse.json({ error: "Perfil não encontrado. Complete seu cadastro." }, { status: 400 });
-
   if (!checkRateLimit("generate", userId, 5))
     return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
 
-  const supabase = createAdmin();
-  const body: GenerateRequest = await req.json();
+  const [profile, body] = await Promise.all([getProfile(userId), req.json() as Promise<GenerateRequest>]);
+
+  if (!profile) return NextResponse.json({ error: "Perfil não encontrado. Complete seu cadastro." }, { status: 400 });
+
   const {
     specialty,
     rawInput,
@@ -63,8 +64,9 @@ export async function POST(req: NextRequest) {
   if (rawInput.length > 2_000)
     return NextResponse.json({ error: "Achados do exame muito longos. Máximo 2.000 caracteres." }, { status: 400 });
 
+  const supabase = createAdmin();
+
   return sseStream(async (send) => {
-    // Find or create pet (deduped), run in parallel with Gemini
     const petPromise = !petId
       ? findOrCreatePet(supabase, userId, patientName.trim(), ownerName.trim(), {
           species,
@@ -89,9 +91,8 @@ export async function POST(req: NextRequest) {
           sex,
           neutered,
           ownerName,
-          veterinarian: profile.full_name,
-          crmv: profile.crmv,
           onStatus: (status) => send({ status }),
+          onChunk: (text) => send({ status: "chunk", text }),
         }),
         petPromise,
       ]);
