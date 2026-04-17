@@ -1,16 +1,16 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, type GenerationConfig } from "@google/generative-ai";
 import { TEMPLATES, buildDefaults, NOMENCLATURE, FRASES_SALVADORAS } from "@/lib/templates";
 import { extractJson } from "@/lib/parseLaudo";
 import { Specialty, PatientFields } from "@/types";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
-const generationConfig = {
+const generationConfig: GenerationConfig = {
   responseMimeType: "application/json",
   temperature: 0,
   topP: 0.95,
   topK: 1,
-} as Record<string, unknown>;
+};
 
 const DRAFT_MODEL = "gemini-3.1-pro-preview";
 const VERIFIER_MODEL = "gemini-3-flash-preview";
