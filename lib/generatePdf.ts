@@ -366,21 +366,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
               image: signatureImageBase64,
               fit: [160, 44],
               alignment: "center",
-              margin: [50, 4, 50, 0],
-            },
-            {
-              text: "Médico(a) Veterinário(a)",
-              fontSize: 9,
-              alignment: "center",
-              color: "#6b7280",
-              margin: [50, 4, 50, 0],
-            },
-            {
-              text: crmvLabel,
-              fontSize: 9,
-              alignment: "center",
-              color: "#6b7280",
-              margin: [50, 0, 50, 2],
+              margin: [50, 4, 50, 2],
             },
           ],
         };
