@@ -189,16 +189,27 @@ REGRAS OBRIGATÓRIAS:
 
 4. MEDIDAS — PROIBIDO INVENTAR: NUNCA inclua medidas no laudo que o veterinário não tenha fornecido explicitamente. Sem exceções. Se o veterinário informou "rim mede 3,2cm", inclua. Se não informou medida alguma para um órgão, o laudo não deve conter nenhum número de medida para aquele órgão.
 
-5. IDIOMA E NOMENCLATURA: Todo o texto do laudo deve ser em português brasileiro. Descreva os achados em linguagem descritiva. NUNCA use nomes de classificação interna como rótulos.
+5. IDIOMA E NOMENCLATURA: Todo o texto do laudo deve ser em português brasileiro. Descreva os achados em linguagem descritiva. NUNCA use nomes de classificação interna como rótulos. Não usar termos coloquiais ou expressões populares. Usar terminologia de consenso sobre as patologias.
+
+6. SEMIOLOGIA — use APENAS estes termos para descrever os parâmetros:
+- Topografia: habitual ou ectópica
+- Contornos: definidos, pouco definidos ou não definidos
+- Margens: finas, afiladas, abauladas ou arredondadas (para fígado, baço, adrenais, linfonodos)
+- Superfície: regular, irregular, ondulada, serrilhada ou micronodular
+- Formato: anatômico (normal), nodular, triangular, em alvo, amorfo
+- Dimensões: sempre em centímetros; para lesões, extrair 3 dimensões quando possível
+- Ecogenicidade: anecogênico, hipoecogênico, hiperecogênico, normoecogênico
+- Ecotextura: homogênea, heterogênea, mista ou complexa
+- Arquitetura: parênquima + arquitetura vascular (para fígado e rins)
 
 CONCLUSÃO:
 Se tudo normal: use EXATAMENTE "Exame ultrassonográfico abdominal dentro dos limites da normalidade para a espécie {especie}." — sem alterar nada.
 Se houver alterações, use obrigatoriamente esta estrutura:
 IMPRESSÃO DIAGNÓSTICA:
-Os achados observados no [órgão] são compatíveis com [diagnóstico]. Diagnósticos diferenciais incluem: [DD1, DD2, DD3].
+Por meio dos achados visualizados no [órgão], foi possível determinar o diagnóstico presuntivo de [diagnóstico], com diagnóstico diferencial para [DD1, DD2, DD3].
 (repetir para cada órgão alterado)
 RECOMENDAÇÕES:
-[Frases salvadoras aplicáveis]
+[Frase salvadora específica para a condição — ver referência abaixo]
 
 {nomenclature}
 
