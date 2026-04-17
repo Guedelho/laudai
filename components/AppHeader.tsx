@@ -11,7 +11,7 @@ const NAV_LINKS = [
 export default function AppHeader({ current }: { current?: string }) {
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-      <Link href="/dashboard" className="text-base font-bold text-gray-900">
+      <Link href="/dashboard" className="text-lg font-bold text-gray-900">
         Laudai
       </Link>
       <div className="flex items-center gap-4">
