@@ -334,7 +334,7 @@ export default function NewLaudoPage() {
           body: formData,
         });
         if (!imgRes.ok) {
-          let imgData: { error?: string } = {};
+          let imgData: ApiResponse = {};
           try {
             imgData = await imgRes.json();
           } catch {
