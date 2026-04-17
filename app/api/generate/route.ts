@@ -8,11 +8,16 @@ const generateRateLimit = new Map<string, number[]>();
 
 function checkRateLimit(userId: string): boolean {
   const now = Date.now();
-  const timestamps = (generateRateLimit.get(userId) ?? []).filter(t => now - t < 120_000);
-  if (timestamps.length >= 1) return false;
+  const timestamps = (generateRateLimit.get(userId) ?? []).filter(t => now - t < 60_000);
+  if (timestamps.length >= 5) return false;
+  return true;
+}
+
+function recordSuccess(userId: string) {
+  const now = Date.now();
+  const timestamps = (generateRateLimit.get(userId) ?? []).filter(t => now - t < 60_000);
   timestamps.push(now);
   generateRateLimit.set(userId, timestamps);
-  return true;
 }
 
 function sseStream(handler: (send: (data: object) => void) => Promise<void>): NextResponse {
@@ -121,6 +126,7 @@ export async function POST(req: NextRequest) {
       return;
     }
 
+    recordSuccess(userId);
     send({ status: "done", laudo });
   });
 }
