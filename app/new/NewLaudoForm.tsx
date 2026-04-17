@@ -79,6 +79,12 @@ export default function NewLaudoPage() {
     loadData();
   }, []);
 
+  function normalizeSpecies(s: string) {
+    if (s === "Canino") return "Canina";
+    if (s === "Felino") return "Felina";
+    return s;
+  }
+
   function handlePetSelect(petId: string) {
     setSelectedPetId(petId);
     if (!petId) {
@@ -88,7 +94,7 @@ export default function NewLaudoPage() {
     const pet = pets.find((p) => p.id === petId);
     if (pet) {
       setPatientName(pet.name);
-      setSpecies(pet.species);
+      setSpecies(normalizeSpecies(pet.species));
       setBreed(pet.breed ?? "");
       setAge(pet.age ?? "");
       setSex(pet.sex ?? "");

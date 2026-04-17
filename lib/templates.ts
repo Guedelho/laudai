@@ -6,13 +6,13 @@ export const SPECIALTY_LABELS: Record<Specialty, string> = {
 
 const DEFAULTS_BASE_ABDOMINAL = `BEXIGA: Bexiga de repleção líquida adequada, formato habitual, paredes finas e ecogênicas, margens internas lisas e conteúdo anecogênico e homogêneo normal.
 
-RIM ESQUERDO: Em topografia habitual, contornos definidos e regulares, medindo x cm, relação/junção corticomedular preservada e ecotextura sem evidências de alterações sonográficas.
+RIM ESQUERDO: Em topografia habitual, contornos definidos e regulares, relação/junção corticomedular preservada e ecotextura sem evidências de alterações sonográficas.
 
-RIM DIREITO: Em topografia habitual, contornos definidos e regulares, medindo x cm, relação/junção corticomedular preservada e ecotextura sem evidências de alterações sonográficas.
+RIM DIREITO: Em topografia habitual, contornos definidos e regulares, relação/junção corticomedular preservada e ecotextura sem evidências de alterações sonográficas.
 
 FÍGADO: Fígado de dimensões dentro dos limites do gradil costal, superfície lisa, margens afiladas, parênquima de ecogenicidade e ecotextura dentro dos limites da normalidade. Arquitetura vascular portal e intra-hepática preservadas quanto ao calibre e trajeto dos vasos.
 
-VESÍCULA BILIAR: Vesícula biliar repleta, paredes finas medindo x cm e ecogênicas com conteúdo anecogênico e homogêneo.
+VESÍCULA BILIAR: Vesícula biliar repleta, paredes finas e ecogênicas com conteúdo anecogênico e homogêneo.
 
 BAÇO: Baço de contornos definidos, superfície lisa, margens finas, ecogenicidade e ecotextura preservadas.
 
@@ -20,25 +20,35 @@ ESTÔMAGO: Estômago com conteúdo luminal de padrão misto (gás e alimento), p
 
 ALÇAS INTESTINAIS: Alças intestinais de distribuição topográfica habitual; segmentos de alça com padrão em camadas mantido e ecogenicidade normal, peristaltismo evolutivo e com número de contrações normal. Duodeno mede 0,44cm, jejuno 0,38cm, íleo 0,38cm e cólon descendente 0,15cm.
 
-PÂNCREAS: Pâncreas de ecogenicidade e ecotextura preservadas, medindo x cm de espessura em região de lobo direito.
+PÂNCREAS: Pâncreas de ecogenicidade e ecotextura preservadas em região de lobo direito.
 
-ADRENAIS: Adrenais de formato mantido, bordas regulares, distinção córticomedular e ecogenicidade preservadas. Adrenal direita medindo 0,00 x 0,00 x 0,00cm e esquerda com 0,00 x 0,00 x 0,00cm (comprimento x altura cranial x altura caudal).`;
+ADRENAIS: Adrenais de formato mantido, bordas regulares, distinção córticomedular e ecogenicidade preservadas.`;
 
-const DEFAULTS_MALE_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual e de contornos definidos, superfície lisa, formato preservado, ecogênica e homogênea, medindo 1,24 x 1,40 (comprimento x largura).
+const DEFAULTS_MALE_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual e de contornos definidos, superfície lisa, formato preservado, ecogênica e homogênea.
 
-TESTÍCULO DIREITO: Localizado em bolsa escrotal, medindo aproximadamente x cm (normal), hipoecogênico, homogêneo, com presença de linha central hiperecogênica (mediastino testicular), sem evidências de alterações sonográficas.
+TESTÍCULO DIREITO: Localizado em bolsa escrotal, hipoecogênico, homogêneo, com presença de linha central hiperecogênica (mediastino testicular), sem evidências de alterações sonográficas.
 
-TESTÍCULO ESQUERDO: Localizado em bolsa escrotal, medindo aproximadamente x cm (normal), hipoecogêneo, homogêneo, com presença de linha central hiperecogênica (mediastino testicular), sem evidências de alterações sonográficas.`;
+TESTÍCULO ESQUERDO: Localizado em bolsa escrotal, hipoecogênico, homogêneo, com presença de linha central hiperecogênica (mediastino testicular), sem evidências de alterações sonográficas.`;
+
+const DEFAULTS_MALE_NEUTERED_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual e de contornos definidos, superfície lisa, formato preservado, ecogênica e homogênea.
+
+TESTÍCULO DIREITO: Não visualizado, com histórico de castração.
+
+TESTÍCULO ESQUERDO: Não visualizado, com histórico de castração.`;
 
 const DEFAULTS_FEMALE_ABDOMINAL = `ÚTERO: Útero de dimensões, contornos e ecotextura preservados, sem evidências de alterações sonográficas.
 
 OVÁRIOS: Ovários de contornos definidos, dimensões e ecotextura preservadas, sem evidências de alterações sonográficas.`;
 
-export function buildDefaults(specialty: string, sex?: string | null): string {
+const DEFAULTS_FEMALE_NEUTERED_ABDOMINAL = `ÚTERO: Não visualizado, com histórico de castração.
+
+OVÁRIOS: Não visualizados, com histórico de castração.`;
+
+export function buildDefaults(specialty: string, sex?: string | null, neutered?: boolean | null): string {
   if (specialty !== "ultrasound_abdominal") return "";
   const base = DEFAULTS_BASE_ABDOMINAL;
-  if (sex === "M") return `${base}\n\n${DEFAULTS_MALE_ABDOMINAL}`;
-  if (sex === "F") return `${base}\n\n${DEFAULTS_FEMALE_ABDOMINAL}`;
+  if (sex === "M") return `${base}\n\n${neutered ? DEFAULTS_MALE_NEUTERED_ABDOMINAL : DEFAULTS_MALE_ABDOMINAL}`;
+  if (sex === "F") return `${base}\n\n${neutered ? DEFAULTS_FEMALE_NEUTERED_ABDOMINAL : DEFAULTS_FEMALE_ABDOMINAL}`;
   return `${base}\n\n${DEFAULTS_MALE_ABDOMINAL}\n\n${DEFAULTS_FEMALE_ABDOMINAL}`;
 }
 
@@ -69,7 +79,7 @@ REGRAS OBRIGATÓRIAS:
 
 3. Impressão diagnóstica e Recomendação → NÃO coloque inline após cada órgão. Todas as impressões e recomendações vão APENAS na seção CONCLUSÃO ao final do laudo, agrupadas.
 
-4. PLACEHOLDERS DE MEDIDA — REGRA CRÍTICA: Os valores "x cm", "0,00", "0,00 x 0,00 x 0,00cm" e similares no TEXTO PADRÃO são placeholders que JAMAIS devem aparecer no laudo final. Se o veterinário informou a medida, substitua pelo valor real. Se NÃO informou, APAGUE completamente toda a expressão de medida, incluindo as palavras que a introduzem. Exemplos: "medindo x cm" → apague "medindo x cm"; "paredes finas medindo x cm e ecogênicas" → "paredes finas e ecogênicas"; "medindo 0,00 x 0,00 x 0,00cm" → apague "medindo 0,00 x 0,00 x 0,00cm". O laudo entregue não pode conter nenhum placeholder.
+4. MEDIDAS: O texto padrão não contém placeholders. Se o veterinário informar medidas explicitamente (ex: "rim mede 3,2cm"), inclua-as no laudo. Se NÃO informar medidas de um órgão, não as invente nem adicione — omita completamente qualquer expressão de medida para esse órgão.
 
 ESTRUTURA DA CONCLUSÃO (obrigatória quando houver alterações):
 IMPRESSÃO DIAGNÓSTICA:

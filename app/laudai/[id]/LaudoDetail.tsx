@@ -43,7 +43,7 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
         </div>
         <div className="text-center font-bold underline text-sm mb-6">{SPECIALTY_LABELS[laudo.specialty].toUpperCase()}</div>
         <LaudoContent parsedLaudo={parseLaudoContent(laudo.generated_content)} />
-        <ImageManager initialImages={images} />
+        <ImageManager initialImages={images} laudoId={laudo.id} />
       </div>
     </main>
   );
