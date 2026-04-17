@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   if (!patientName.trim()) return NextResponse.json({ error: "Nome do paciente é obrigatório." }, { status: 400 });
   if (!ownerName.trim()) return NextResponse.json({ error: "Nome do tutor é obrigatório." }, { status: 400 });
   if (!rawInput.trim()) return NextResponse.json({ error: "Achados do exame são obrigatórios." }, { status: 400 });
-  if (rawInput.length > 5_000) return NextResponse.json({ error: "Achados do exame muito longos. Máximo 5.000 caracteres." }, { status: 400 });
+  if (rawInput.length > 2_000) return NextResponse.json({ error: "Achados do exame muito longos. Máximo 2.000 caracteres." }, { status: 400 });
 
   return sseStream(async (send) => {
     // Find or create pet (deduped), run in parallel with Gemini

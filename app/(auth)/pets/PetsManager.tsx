@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Pet, SPECIES_OPTIONS, SEX_OPTIONS, sexLabel } from "@/types";
 import { getAuthHeaders } from "@/lib/supabase/client";
+import Typeahead from "@/components/Typeahead";
 
 export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
   const [pets, setPets] = useState<Pet[]>(initialPets);
@@ -22,6 +23,8 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
+
+  const breedSuggestions = [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
 
   function startEdit(pet: Pet) {
     setEditingId(pet.id);
@@ -164,9 +167,10 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Raça</label>
-              <input
+              <Typeahead
                 value={breed}
-                onChange={(e) => setBreed(e.target.value)}
+                onChange={setBreed}
+                suggestions={breedSuggestions}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -236,9 +240,10 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Raça</label>
-                    <input
+                    <Typeahead
                       value={editFields.breed ?? ""}
-                      onChange={(e) => setEditFields((f) => ({ ...f, breed: e.target.value }))}
+                      onChange={(v) => setEditFields((f) => ({ ...f, breed: v }))}
+                      suggestions={breedSuggestions}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>

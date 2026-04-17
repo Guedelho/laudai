@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import ImageLightbox from "@/components/ImageLightbox";
+import Typeahead from "@/components/Typeahead";
 import Link from "next/link";
 import { Pet, Clinic, ParsedLaudo, SseEvent, SPECIES_OPTIONS, SEX_OPTIONS } from "@/types";
 import { getAuthHeaders } from "@/lib/supabase/client";
@@ -146,6 +147,8 @@ export default function NewLaudoPage() {
   const vets = selectedClinic?.clinic_vets ?? [];
   const clinicName = selectedClinic?.name ?? newClinicName;
   const responsibleVet = vets.find((v) => v.id === selectedVetId)?.name ?? newVetName;
+
+  const breedSuggestions = [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
 
   async function startRecording() {
     try {
@@ -456,7 +459,7 @@ export default function NewLaudoPage() {
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Raça</label>
-                <input value={breed} onChange={(e) => setBreed(e.target.value)} className={inputCls} />
+                <Typeahead value={breed} onChange={setBreed} suggestions={breedSuggestions} className={inputCls} />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Idade</label>
@@ -498,12 +501,12 @@ export default function NewLaudoPage() {
               onChange={(e) => setRawInput(e.target.value)}
               placeholder="Informe apenas as alterações encontradas... Deixe em branco para gerar laudo normal."
               rows={6}
-              maxLength={5000}
+              maxLength={2000}
               className={`${inputCls} resize-none`}
               required
             />
-            <p className={`text-xs text-right ${rawInput.length >= 4800 ? "text-amber-500" : "text-gray-400"}`}>
-              {rawInput.length}/5000
+            <p className={`text-xs text-right ${rawInput.length >= 1800 ? "text-amber-500" : "text-gray-400"}`}>
+              {rawInput.length}/2000
             </p>
           </div>
 
