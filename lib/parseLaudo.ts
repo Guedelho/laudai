@@ -11,7 +11,8 @@ export function extractJson(text: string): string {
 
 const SECTION_RE_PARSE = /^([A-ZÁÂÃÀÉÊÍÓÔÕÚÇ][A-ZÁÂÃÀÉÊÍÓÔÕÚÇ\s\/\-]{0,40}):\s*(.*)/;
 
-export function parseLaudoContent(content: string): ParsedLaudo {
+export function parseLaudoContent(content: string | null | undefined): ParsedLaudo {
+  if (!content) return { sections: [] };
   try {
     const raw = extractJson(content);
     const parsed = JSON.parse(raw);
