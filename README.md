@@ -8,7 +8,8 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 - **Tailwind CSS 4**
 - **Supabase** — auth, Postgres, storage
 - **Google Gemini AI** — `gemini-3.1-pro-preview` (report draft), `gemini-3-flash-preview` (verification + transcription)
-- **pdfmake** — server-side PDF generation
+- **pdfmake** — server-side PDF generation (cached in storage)
+- **Prettier** — code formatting with pre-commit hook
 
 ## Prerequisites
 
@@ -19,6 +20,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 ## Local setup
 
 1. **Clone and install**
+
    ```bash
    git clone <repo-url>
    cd laudai
@@ -26,6 +28,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
    ```
 
 2. **Configure environment**
+
    ```bash
    cp .env.example .env.local
    # Fill in the four values — see .env.example for instructions
@@ -44,14 +47,14 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 
 ## Key routes
 
-| Route | Purpose |
-|-------|---------|
-| `/new` | Create a new laudo |
-| `/dashboard` | List recent laudos |
-| `/laudai/[id]` | View / edit / download a laudo |
-| `/profile` | Vet profile (name, CRMV) |
-| `/pets` | Manage patients |
-| `/clinics` | Manage clinics and responsible vets |
+| Route          | Purpose                             |
+| -------------- | ----------------------------------- |
+| `/new`         | Create a new laudo                  |
+| `/dashboard`   | List recent laudos                  |
+| `/laudai/[id]` | View / edit / download a laudo      |
+| `/profile`     | Vet profile (name, CRMV)            |
+| `/pets`        | Manage patients                     |
+| `/clinics`     | Manage clinics and responsible vets |
 
 ## Deploying to Vercel
 
@@ -73,9 +76,14 @@ app/
     clinics/     # Clinic management
   api/           # Route handlers (generate, transcribe, laudos, pets, clinics, profile)
   login/         # Public login page
+components/
+  AppHeader.tsx    # Navigation (auto-detects active route)
+  ImageLightbox.tsx # Shared carousel lightbox with keyboard nav
+  Typeahead.tsx    # Autocomplete input from existing values
+  LoadingSkeleton.tsx
 lib/
-  gemini.ts      # Gemini API calls (draft + verification agent)
-  templates.ts   # Specialty templates, defaults, report titles
+  gemini.ts      # Gemini API calls (streaming draft + verification + retry + scrubbers)
+  templates.ts   # Specialty templates, defaults, nomenclature (from Mapa do Laudo Memorável)
   generatePdf.ts # pdfmake PDF builder
   parseLaudo.ts  # Parse Gemini JSON output
   rateLimit.ts   # Shared sliding-window rate limiter
@@ -85,7 +93,7 @@ lib/
     admin.ts     # Service-role client for API routes
     server.ts    # Server-side client for pages
 types/
-  index.ts       # All shared types (models, API request/response, SSE events)
+  index.ts       # All shared types, dropdown options, API request/response, SSE events
 supabase/
   migrations/    # Incremental SQL migrations
 ```

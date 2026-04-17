@@ -7,9 +7,10 @@
 ## Stack
 
 - **Next.js 16 App Router** — Tailwind 4 (PostCSS-based, no `tailwind.config.*`), Supabase SSR via `@supabase/ssr`
-- **AI**: `lib/gemini.ts` makes two Gemini calls per laudo — draft (`gemini-3.1-pro-preview`) + verification (`gemini-3-flash-preview`). Verification is skipped when input is empty. Model instances are cached module-level per `modelId::systemPrompt` key. Generation uses `temperature: 0` to minimize hallucinations.
+- **AI**: `lib/gemini.ts` makes two Gemini calls per laudo — draft (`gemini-3.1-pro-preview`) + verification (`gemini-3-flash-preview`). Streaming via `generateContentStream`. Retry with exponential backoff on transient errors. Post-processing scrubbers strip hallucinated measurements and classification labels. Generation uses `temperature: 0` to minimize hallucinations.
 - **Transcription**: `app/api/transcribe/route.ts` uses `gemini-3-flash-preview` for audio → text.
 - **PDF**: `lib/generatePdf.ts` (pdfmake). Fonts fetched from CDN and cached module-level. Generated PDFs are cached in the `laudo-pdfs` bucket — cleared on laudo edit or image changes.
+- **Formatting**: Prettier with pre-commit hook via lint-staged. Run `npm run format` to format all files.
 - **Database**: Supabase Postgres (project `rgemiayidnumeotplozm`, region `sa-east-1`). RLS on every table with `(select auth.uid()) = user_id` scoped to `authenticated` role. All FK and user_id columns are indexed.
 - **Storage**: Three private buckets — `laudo-images` (exam images), `laudo-pdfs` (cached PDFs), `profile-logos` (logos + signatures). All have RLS policies scoping access to `auth.uid() = folder name`. All access via service role in API routes.
 - **Auth**: Supabase Auth via cookies (SSR). `proxy.ts` (middleware) syncs session and redirects unauthenticated users to `/login`. API routes use `getUserId()` from `@/lib/auth` which accepts both cookie session and `Authorization: Bearer <token>`.
@@ -39,12 +40,21 @@ All authenticated pages live inside `app/(auth)/`. The route group layout handle
 - Auth headers: `getAuthHeaders()` from `@/lib/supabase/client` — never inline `createClient().auth.getSession()`.
 - JSON requests: add `"Content-Type": "application/json"` alongside `getAuthHeaders()`. FormData requests use `getAuthHeaders()` alone (browser sets multipart boundary).
 
+## Data model
+
+- `generated_content` — immutable LLM output, set once on creation, never updated.
+- `edited_content` — always the latest version. Starts equal to `generated_content`, updated on vet edits. All reads use `edited_content`.
+- `raw_input` — original vet findings, immutable.
+- Profile fields `cpf`, `crmv`, `crmv_state` are immutable after first profile creation.
+- All patient/laudo fields (`breed`, `age`, `sex`, `neutered`, `clinicName`, `responsibleVet`, `examDate`) are required — never nullable.
+- Dropdown options (`SPECIES_OPTIONS`, `SEX_OPTIONS`, `sexLabel`) centralized in `types/index.ts`.
+
 ## Types
 
 - Shared field sets: `PatientFields`, `LaudoFields` in `types/index.ts` — reuse via `extends` instead of repeating fields.
 - API request bodies: `GenerateRequest`, `PetRequest`, `UpdateLaudoRequest`, `UpdateProfileRequest` — always type `req.json()`.
 - SSE events: `SseEvent` discriminated union — type all streaming event parsing.
-- `sex` and `neutered` are required (`string` and `boolean`) everywhere — never nullable.
+- Required field validation: use a `required` array + loop, not repeated if/return blocks.
 
 ## Rules
 
