@@ -71,8 +71,6 @@ REGRAS OBRIGATÓRIAS:
 
 4. PLACEHOLDERS DE MEDIDA — REGRA CRÍTICA: Os valores "x cm", "0,00", "0,00 x 0,00 x 0,00cm" e similares no TEXTO PADRÃO são placeholders que JAMAIS devem aparecer no laudo final. Se o veterinário informou a medida, substitua pelo valor real. Se NÃO informou, APAGUE completamente toda a expressão de medida, incluindo as palavras que a introduzem. Exemplos: "medindo x cm" → apague "medindo x cm"; "paredes finas medindo x cm e ecogênicas" → "paredes finas e ecogênicas"; "medindo 0,00 x 0,00 x 0,00cm" → apague "medindo 0,00 x 0,00 x 0,00cm". O laudo entregue não pode conter nenhum placeholder.
 
-5. NOME DA ESPÉCIE: Use o nome da espécie EXATAMENTE como informado: {especie}. Nunca o flexione, adapte ou traduza para forma adjetival. Na conclusão de exame normal, use EXATAMENTE: "Exame ultrassonográfico abdominal dentro dos limites da normalidade para a espécie {especie}."
-
 ESTRUTURA DA CONCLUSÃO (obrigatória quando houver alterações):
 IMPRESSÃO DIAGNÓSTICA:
 Os achados observados no [órgão] são compatíveis com [diagnóstico]. Diagnósticos diferenciais incluem: [DD1, DD2, DD3].

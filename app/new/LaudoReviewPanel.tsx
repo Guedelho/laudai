@@ -252,8 +252,8 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Espécie</label>
                     <select value={editedFields.species} onChange={(e) => setEditedFields({ ...editedFields, species: e.target.value })} className={inputCls}>
-                      <option value="Canino">Canino</option>
-                      <option value="Felino">Felino</option>
+                      <option value="Canina">Canina</option>
+                      <option value="Felina">Felina</option>
                       <option value="Outro">Outro</option>
                     </select>
                   </div>

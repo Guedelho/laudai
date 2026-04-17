@@ -16,7 +16,7 @@ export default function NewLaudoPage() {
 
   // Patient fields
   const [patientName, setPatientName] = useState("");
-  const [species, setSpecies] = useState("Canino");
+  const [species, setSpecies] = useState("Canina");
   const [breed, setBreed] = useState("");
   const [age, setAge] = useState("");
   const [sex, setSex] = useState("");
@@ -78,7 +78,7 @@ export default function NewLaudoPage() {
   function handlePetSelect(petId: string) {
     setSelectedPetId(petId);
     if (!petId) {
-      setPatientName(""); setSpecies("Canino"); setBreed(""); setAge(""); setSex(""); setOwnerName("");
+      setPatientName(""); setSpecies("Canina"); setBreed(""); setAge(""); setSex(""); setOwnerName("");
       return;
     }
     const pet = pets.find((p) => p.id === petId);
@@ -438,8 +438,8 @@ export default function NewLaudoPage() {
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Espécie</label>
                 <select value={species} onChange={(e) => setSpecies(e.target.value)} className={inputCls}>
-                  <option value="Canino">Canino</option>
-                  <option value="Felino">Felino</option>
+                  <option value="Canina">Canina</option>
+                  <option value="Felina">Felina</option>
                   <option value="Outro">Outro</option>
                 </select>
               </div>

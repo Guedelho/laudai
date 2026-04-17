@@ -8,7 +8,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
   const [pets, setPets] = useState<Pet[]>(initialPets);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
-  const [species, setSpecies] = useState("Canino");
+  const [species, setSpecies] = useState("Canina");
   const [breed, setBreed] = useState("");
   const [age, setAge] = useState("");
   const [ownerName, setOwnerName] = useState("");
@@ -126,7 +126,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
 
       setPets((prev) => [...prev, data.pet].sort((a, b) => a.name.localeCompare(b.name)));
       setName("");
-      setSpecies("Canino");
+      setSpecies("Canina");
       setBreed("");
       setAge("");
       setOwnerName("");
@@ -179,8 +179,8 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                 onChange={(e) => setSpecies(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option>Canino</option>
-                <option>Felino</option>
+                <option>Canina</option>
+                <option>Felina</option>
                 <option>Outro</option>
               </select>
             </div>
@@ -249,12 +249,12 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Espécie</label>
                     <select
-                      value={editFields.species ?? "Canino"}
+                      value={editFields.species ?? "Canina"}
                       onChange={(e) => setEditFields((f) => ({ ...f, species: e.target.value }))}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option>Canino</option>
-                      <option>Felino</option>
+                      <option>Canina</option>
+                      <option>Felina</option>
                       <option>Outro</option>
                     </select>
                   </div>
