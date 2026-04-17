@@ -275,7 +275,7 @@ export default function NewLaudoPage() {
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      let laudoPayload: { id: string; generated_content: string; created_at: string } | null = null;
+      let laudoId: string | null = null;
 
       outer: while (true) {
         const { done, value } = await reader.read();
@@ -295,17 +295,16 @@ export default function NewLaudoPage() {
             /* streaming preview — text arriving */
           } else if (event.status === "error") throw new Error(event.message || "Erro ao gerar laudo.");
           else if (event.status === "done") {
-            laudoPayload = event.laudo;
+            laudoId = event.laudo.id;
             break outer;
           }
         }
       }
 
-      if (!laudoPayload) throw new Error("Erro ao gerar laudo. Tente novamente.");
-      const laudoId = laudoPayload.id;
+      if (!laudoId) throw new Error("Erro ao gerar laudo. Tente novamente.");
 
-      // Upload images if any
       if (selectedFiles.length > 0) {
+        setGeneratingStatus("Enviando imagens...");
         const formData = new FormData();
         selectedFiles.forEach((f) => formData.append("images", f));
         const imgRes = await fetch(`/api/laudos/${laudoId}/images`, {
@@ -575,11 +574,20 @@ export default function NewLaudoPage() {
         <button
           type="submit"
           disabled={generating}
-          className="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
+          className="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          {generating ? "Aguarde..." : "Gerar Laudo"}
+          {generating ? (
+            <>
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              {generatingStatus}
+            </>
+          ) : (
+            "Gerar Laudo"
+          )}
         </button>
-        {generating && <p className="text-center text-sm text-gray-500 animate-pulse">{generatingStatus}</p>}
       </form>
     </main>
   );

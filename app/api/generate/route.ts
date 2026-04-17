@@ -146,6 +146,6 @@ export async function POST(req: NextRequest) {
     }
 
     recordRateLimit("generate", userId);
-    send({ status: "done", laudo });
+    send({ status: "done", laudo: { id: laudo.id } });
   });
 }

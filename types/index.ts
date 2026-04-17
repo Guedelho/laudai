@@ -171,4 +171,4 @@ export type SseEvent =
   | { status: "saving" }
   | { status: "chunk"; text: string }
   | { status: "error"; message: string }
-  | { status: "done"; laudo: { id: string; generated_content: string; created_at: string } };
+  | { status: "done"; laudo: { id: string } };

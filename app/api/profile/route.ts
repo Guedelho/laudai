@@ -16,12 +16,12 @@ export async function PUT(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body: UpdateProfileRequest = await req.json();
-  const { full_name, cpf, signature_font, signature_image_url } = body;
+  const { full_name, cpf, signature_font, signature_image_url, crmv, crmv_state } = body;
 
   const upsertData: Record<string, unknown> = { id: userId, full_name, cpf, signature_font };
-  if ("signature_image_url" in body) {
-    upsertData.signature_image_url = signature_image_url;
-  }
+  if ("crmv" in body) upsertData.crmv = crmv;
+  if ("crmv_state" in body) upsertData.crmv_state = crmv_state;
+  if ("signature_image_url" in body) upsertData.signature_image_url = signature_image_url;
 
   const { data, error } = await createAdmin()
     .from("profiles")
