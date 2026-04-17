@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdmin();
   const body: GenerateRequest = await req.json();
-  const { specialty, rawInput, patientName, species, breed, age, sex, neutered, ownerName, clinicName, responsibleVet, petId } = body;
+  const { specialty, rawInput, patientName, species, breed, age, sex, neutered, ownerName, clinicName, responsibleVet, petId, examDate } = body;
 
   if (!patientName?.trim()) return NextResponse.json({ error: "Nome do paciente é obrigatório." }, { status: 400 });
   if (!ownerName?.trim()) return NextResponse.json({ error: "Nome do tutor é obrigatório." }, { status: 400 });
@@ -115,6 +115,7 @@ export async function POST(req: NextRequest) {
         neutered: neutered ?? null,
         clinic_name: clinicName ?? null,
         responsible_vet: responsibleVet ?? null,
+        exam_date: examDate ?? null,
         pet_id: resolvedPetId,
       })
       .select()

@@ -31,6 +31,7 @@ export default function NewLaudoPage() {
   const [newVetName, setNewVetName] = useState("");
 
   // Exam
+  const [examDate, setExamDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [rawInput, setRawInput] = useState("");
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -247,6 +248,7 @@ export default function NewLaudoPage() {
           neutered: neutered ?? undefined,
           ownerName, clinicName: resolvedClinicName || undefined,
           responsibleVet: resolvedVetName || undefined,
+          examDate: examDate || undefined,
           petId: selectedPetId || undefined,
         }),
       });
@@ -325,6 +327,7 @@ export default function NewLaudoPage() {
           ownerName,
           clinicName,
           responsibleVet,
+          examDate,
           createdAt: reviewCreatedAt,
         }}
       />
@@ -468,6 +471,17 @@ export default function NewLaudoPage() {
                 <input value={age} onChange={(e) => setAge(e.target.value)} placeholder="ex: 3 anos" className={inputCls} />
               </div>
             </div>
+          </div>
+
+          {/* Exam date */}
+          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+            <label className="block text-sm font-semibold text-gray-700">Data do exame</label>
+            <input
+              type="date"
+              value={examDate}
+              onChange={(e) => setExamDate(e.target.value)}
+              className={inputCls}
+            />
           </div>
 
           {/* Findings */}

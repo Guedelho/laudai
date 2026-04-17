@@ -66,7 +66,7 @@ export async function GET(
 
   const { data: laudo } = await admin
     .from("laudos")
-    .select("patient_name, species, breed, age, sex, neutered, owner_name, clinic_name, responsible_vet, specialty, created_at, generated_content")
+    .select("patient_name, species, breed, age, sex, neutered, owner_name, clinic_name, responsible_vet, specialty, exam_date, created_at, generated_content")
     .eq("id", id)
     .eq("user_id", userId)
     .single();
@@ -81,12 +81,14 @@ export async function GET(
     .order("created_at", { ascending: true });
 
   const specialty = laudo.specialty as Specialty;
-  const createdAt = new Date(laudo.created_at);
-  const date = createdAt.toLocaleDateString("pt-BR");
+  const dateSource = laudo.exam_date
+    ? new Date(laudo.exam_date + "T12:00:00")
+    : new Date(laudo.created_at);
+  const date = dateSource.toLocaleDateString("pt-BR");
   const dateShort = [
-    String(createdAt.getDate()).padStart(2, "0"),
-    String(createdAt.getMonth() + 1).padStart(2, "0"),
-    String(createdAt.getFullYear()).slice(2),
+    String(dateSource.getDate()).padStart(2, "0"),
+    String(dateSource.getMonth() + 1).padStart(2, "0"),
+    String(dateSource.getFullYear()).slice(2),
   ].join(".");
 
   // Fetch images and logo in parallel

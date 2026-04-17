@@ -38,7 +38,7 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
             {laudo.clinic_name && <div><span className="font-bold">Clínica:</span> {laudo.clinic_name}</div>}
             {laudo.responsible_vet && <div><span className="font-bold">Médico Responsável:</span> {laudo.responsible_vet}</div>}
             <div><span className="font-bold">Responsável:</span> {laudo.owner_name}</div>
-            <div><span className="font-bold">Data:</span> {new Date(laudo.created_at).toLocaleDateString("pt-BR")}</div>
+            <div><span className="font-bold">Data:</span> {laudo.exam_date ? new Date(laudo.exam_date + "T12:00:00").toLocaleDateString("pt-BR") : new Date(laudo.created_at).toLocaleDateString("pt-BR")}</div>
           </div>
         </div>
         <div className="text-center font-bold underline text-sm mb-6">{SPECIALTY_LABELS[laudo.specialty].toUpperCase()}</div>

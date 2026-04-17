@@ -18,6 +18,7 @@ interface ReviewFields {
   ownerName: string;
   clinicName: string;
   responsibleVet: string;
+  examDate: string;
   createdAt: string;
 }
 
@@ -78,6 +79,7 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
           owner_name: fields.ownerName,
           clinic_name: fields.clinicName || null,
           responsible_vet: fields.responsibleVet || null,
+          exam_date: fields.examDate || null,
         },
       }),
     });
@@ -169,7 +171,9 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
     setEditedParsed({ ...editedParsed, recomendacoes: recomendacoes.length ? recomendacoes : undefined });
   }
 
-  const date = new Date(editedFields.createdAt).toLocaleDateString("pt-BR");
+  const displayDate = editedFields.examDate
+    ? new Date(editedFields.examDate + "T12:00:00").toLocaleDateString("pt-BR")
+    : new Date(editedFields.createdAt).toLocaleDateString("pt-BR");
 
   return (
     <>
@@ -291,7 +295,10 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
                     <label className="block text-xs text-gray-500 mb-1">Responsável</label>
                     <input value={editedFields.ownerName} onChange={(e) => setEditedFields({ ...editedFields, ownerName: e.target.value })} className={inputCls} />
                   </div>
-                  <div className="text-sm text-gray-500 pt-1">Data: {date}</div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Data do exame</label>
+                    <input type="date" value={editedFields.examDate} onChange={(e) => setEditedFields({ ...editedFields, examDate: e.target.value })} className={inputCls} />
+                  </div>
                 </div>
               </>
             ) : (
@@ -308,7 +315,7 @@ export default function LaudoReviewPanel({ laudoId, initialParsed, initialFields
                   {editedFields.clinicName && <div><span className="font-bold">Clínica:</span> {editedFields.clinicName}</div>}
                   {editedFields.responsibleVet && <div><span className="font-bold">Médico Responsável:</span> {editedFields.responsibleVet}</div>}
                   <div><span className="font-bold">Responsável:</span> {editedFields.ownerName}</div>
-                  <div><span className="font-bold">Data:</span> {date}</div>
+                  <div><span className="font-bold">Data:</span> {displayDate}</div>
                 </div>
               </>
             )}

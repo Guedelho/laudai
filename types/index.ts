@@ -70,6 +70,7 @@ export interface Laudo {
   responsible_vet?: string;
   raw_input: string;
   generated_content: string;
+  exam_date?: string;
   created_at: string;
   updated_at?: string;
   pet_id?: string;
@@ -91,6 +92,7 @@ export interface GenerateRequest {
   sex?: string;
   neutered?: boolean;
   ownerName: string;
+  examDate?: string;
   clinicName?: string;
   responsibleVet?: string;
   petId?: string;
