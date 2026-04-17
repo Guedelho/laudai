@@ -34,18 +34,18 @@ const DEFAULTS_FEMALE_ABDOMINAL = `ÚTERO: Útero de dimensões, contornos e eco
 
 OVÁRIOS: Ovários de contornos definidos, dimensões e ecotextura preservadas, sem evidências de alterações sonográficas.`;
 
-export function buildDefaults(specialty: string, sex?: string | null, neutered?: boolean | null): string {
+export function buildDefaults(specialty: string, sex?: string | null): string {
   if (specialty !== "ultrasound_abdominal") return "";
   const base = DEFAULTS_BASE_ABDOMINAL;
-  if (!sex) return `${base}\n\n${DEFAULTS_MALE_ABDOMINAL}\n\n${DEFAULTS_FEMALE_ABDOMINAL}`;
-  if (sex === "M" && !neutered) return `${base}\n\n${DEFAULTS_MALE_ABDOMINAL}`;
-  if (sex === "F" && !neutered) return `${base}\n\n${DEFAULTS_FEMALE_ABDOMINAL}`;
-  return base;
+  if (sex === "M") return `${base}\n\n${DEFAULTS_MALE_ABDOMINAL}`;
+  if (sex === "F") return `${base}\n\n${DEFAULTS_FEMALE_ABDOMINAL}`;
+  return `${base}\n\n${DEFAULTS_MALE_ABDOMINAL}\n\n${DEFAULTS_FEMALE_ABDOMINAL}`;
 }
 
 export const DEFAULTS: Record<string, string> = {
   ultrasound_abdominal: buildDefaults("ultrasound_abdominal"),
 };
+
 
 export const TEMPLATES: Record<Specialty, string> = {
   ultrasound_abdominal: `Você é um especialista em ultrassonografia veterinária. Seu trabalho é gerar laudos ultrassonográficos abdominais formais em português brasileiro.
@@ -69,7 +69,9 @@ REGRAS OBRIGATÓRIAS:
 
 3. Impressão diagnóstica e Recomendação → NÃO coloque inline após cada órgão. Todas as impressões e recomendações vão APENAS na seção CONCLUSÃO ao final do laudo, agrupadas.
 
-4. Medidas no texto padrão ("x cm", "0,00", "0,00 x 0,00 x 0,00cm", etc.) são placeholders. Se o veterinário informar o valor real, substitua pelo valor informado. Se o veterinário NÃO mencionar medidas, remova completamente a parte da medida do texto gerado — nunca escreva "x cm" ou "0,00" no laudo.
+4. PLACEHOLDERS DE MEDIDA — REGRA CRÍTICA: Os valores "x cm", "0,00", "0,00 x 0,00 x 0,00cm" e similares no TEXTO PADRÃO são placeholders que JAMAIS devem aparecer no laudo final. Se o veterinário informou a medida, substitua pelo valor real. Se NÃO informou, APAGUE completamente toda a expressão de medida, incluindo as palavras que a introduzem. Exemplos: "medindo x cm" → apague "medindo x cm"; "paredes finas medindo x cm e ecogênicas" → "paredes finas e ecogênicas"; "medindo 0,00 x 0,00 x 0,00cm" → apague "medindo 0,00 x 0,00 x 0,00cm". O laudo entregue não pode conter nenhum placeholder.
+
+5. NOME DA ESPÉCIE: Use o nome da espécie EXATAMENTE como informado: {especie}. Nunca o flexione, adapte ou traduza para forma adjetival. Na conclusão de exame normal, use EXATAMENTE: "Exame ultrassonográfico abdominal dentro dos limites da normalidade para a espécie {especie}."
 
 ESTRUTURA DA CONCLUSÃO (obrigatória quando houver alterações):
 IMPRESSÃO DIAGNÓSTICA:
@@ -210,7 +212,7 @@ Médico Veterinário: {veterinario} | CRMV: {crmv}
 Gere o laudo completo com todas as seções. Ao final, inclua:
 
 CONCLUSÃO:
-Se tudo normal: "Exame ultrassonográfico abdominal dentro dos limites da normalidade para a espécie."
+Se tudo normal: use EXATAMENTE "Exame ultrassonográfico abdominal dentro dos limites da normalidade para a espécie {especie}." — sem alterar nada.
 Se houver alterações, use obrigatoriamente esta estrutura:
 IMPRESSÃO DIAGNÓSTICA:
 Os achados observados no [órgão] são compatíveis com [diagnóstico]. Diagnósticos diferenciais incluem: [DD1, DD2, DD3].

@@ -40,7 +40,7 @@ interface GenerateParams {
 export async function generateLaudo(params: GenerateParams): Promise<string> {
   const { specialty, rawInput, patientName, species, breed, age, sex, neutered, ownerName, veterinarian, crmv, onStatus } = params;
 
-  const resolvedDefaults = buildDefaults(specialty, sex, neutered);
+  const resolvedDefaults = buildDefaults(specialty, sex);
 
   const today = new Date().toLocaleDateString("pt-BR");
   const systemPrompt = TEMPLATES[specialty]
