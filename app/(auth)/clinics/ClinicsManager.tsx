@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Clinic, ClinicVet } from "@/types";
+import { Clinic, ClinicVet, ClinicResponse, VetResponse, ApiResponse } from "@/types";
 import { getAuthHeaders } from "@/lib/supabase/client";
 
 export default function ClinicsManager({ initialClinics }: { initialClinics: Clinic[] }) {
@@ -41,7 +41,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
         headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
         body: JSON.stringify({ name: editName }),
       });
-      const data = await res.json();
+      const data: ClinicResponse = await res.json();
       if (!res.ok) throw new Error(data.error);
 
       setClinics((prev) =>
@@ -68,7 +68,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
         headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
         body: JSON.stringify({ name: newVetName }),
       });
-      const data = await res.json();
+      const data: VetResponse = await res.json();
       if (!res.ok) throw new Error(data.error);
 
       setClinics((prev) =>
@@ -92,7 +92,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
         headers: await getAuthHeaders(),
       });
       if (!res.ok) {
-        const data = await res.json();
+        const data: ApiResponse = await res.json();
         throw new Error(data.error);
       }
 
@@ -118,7 +118,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
         body: JSON.stringify({ name, vetName }),
       });
 
-      const data = await res.json();
+      const data: ClinicResponse = await res.json();
       if (!res.ok) throw new Error(data.error);
 
       setClinics((prev) => [...prev, data.clinic].sort((a, b) => a.name.localeCompare(b.name)));
@@ -138,7 +138,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     try {
       const res = await fetch(`/api/clinics/${id}`, { method: "DELETE", headers: await getAuthHeaders() });
       if (!res.ok) {
-        const data = await res.json();
+        const data: ApiResponse = await res.json();
         throw new Error(data.error);
       }
       setClinics((prev) => prev.filter((c) => c.id !== id));

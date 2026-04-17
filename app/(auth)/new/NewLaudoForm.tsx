@@ -5,7 +5,19 @@ import ImageLightbox from "@/components/ImageLightbox";
 import Typeahead from "@/components/Typeahead";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Pet, Clinic, SseEvent, SPECIES_OPTIONS, SEX_OPTIONS } from "@/types";
+import {
+  Pet,
+  Clinic,
+  SseEvent,
+  SPECIES_OPTIONS,
+  SEX_OPTIONS,
+  ApiResponse,
+  PetsResponse,
+  ClinicsResponse,
+  ClinicResponse,
+  VetResponse,
+  TranscribeResponse,
+} from "@/types";
 import { getAuthHeaders } from "@/lib/supabase/client";
 
 export default function NewLaudoPage() {
@@ -67,8 +79,8 @@ export default function NewLaudoPage() {
         fetch("/api/pets", { headers }),
         fetch("/api/clinics", { headers }),
       ]);
-      if (petsRes.ok) setPets((await petsRes.json()).pets ?? []);
-      if (clinicsRes.ok) setClinics((await clinicsRes.json()).clinics ?? []);
+      if (petsRes.ok) setPets(((await petsRes.json()) as PetsResponse).pets ?? []);
+      if (clinicsRes.ok) setClinics(((await clinicsRes.json()) as ClinicsResponse).clinics ?? []);
     }
     loadData();
   }, []);
@@ -179,7 +191,7 @@ export default function NewLaudoPage() {
         headers: await getAuthHeaders(),
         body: formData,
       });
-      const data = await res.json();
+      const data: TranscribeResponse = await res.json();
       setRawInput((prev) => prev + (prev ? " " : "") + data.text);
     } catch {
       setError("Erro ao transcrever áudio.");
@@ -221,7 +233,7 @@ export default function NewLaudoPage() {
           body: JSON.stringify({ name: newClinicName.trim(), vetName: newVetName.trim() }),
         });
         if (res.ok) {
-          const data = await res.json();
+          const data: ClinicResponse = await res.json();
           setClinics((prev) => [...prev, data.clinic]);
           resolvedClinicName = data.clinic.name;
           if (data.clinic.clinic_vets?.[0]) resolvedVetName = data.clinic.clinic_vets[0].name;
@@ -233,7 +245,7 @@ export default function NewLaudoPage() {
           body: JSON.stringify({ name: newVetName.trim() }),
         });
         if (res.ok) {
-          const data = await res.json();
+          const data: VetResponse = await res.json();
           setClinics((prev) =>
             prev.map((c) => (c.id === selectedClinicId ? { ...c, clinic_vets: [...c.clinic_vets, data.vet] } : c)),
           );
@@ -262,7 +274,7 @@ export default function NewLaudoPage() {
       });
 
       if (!res.ok) {
-        let data: { error?: string } = {};
+        let data: ApiResponse = {};
         try {
           data = await res.json();
         } catch {

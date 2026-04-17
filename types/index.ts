@@ -166,6 +166,44 @@ export interface UpdateProfileRequest {
   crmv_state?: string;
 }
 
+// ─── API response types ──────────────────────────────────────────────────────
+
+export interface ApiResponse {
+  error?: string;
+}
+
+export interface PetResponse extends ApiResponse {
+  pet: Pet;
+}
+
+export interface PetsResponse extends ApiResponse {
+  pets: Pet[];
+}
+
+export interface ClinicResponse extends ApiResponse {
+  clinic: Clinic;
+}
+
+export interface ClinicsResponse extends ApiResponse {
+  clinics: Clinic[];
+}
+
+export interface VetResponse extends ApiResponse {
+  vet: ClinicVet;
+}
+
+export interface LaudoResponse extends ApiResponse {
+  laudo: Laudo;
+}
+
+export interface ImagesResponse extends ApiResponse {
+  images: LaudoImage[];
+}
+
+export interface TranscribeResponse extends ApiResponse {
+  text: string;
+}
+
 export type SseEvent =
   | { status: "generating" }
   | { status: "reviewing" }

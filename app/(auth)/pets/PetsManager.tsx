@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pet, SPECIES_OPTIONS, SEX_OPTIONS, sexLabel } from "@/types";
+import { Pet, SPECIES_OPTIONS, SEX_OPTIONS, sexLabel, PetResponse, ApiResponse } from "@/types";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import Typeahead from "@/components/Typeahead";
 
@@ -60,7 +60,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
         }),
       });
 
-      const data = await res.json();
+      const data: PetResponse = await res.json();
       if (!res.ok) throw new Error(data.error);
 
       setPets((prev) =>
@@ -80,7 +80,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
     try {
       const res = await fetch(`/api/pets/${id}`, { method: "DELETE", headers: await getAuthHeaders() });
       if (!res.ok) {
-        const data = await res.json();
+        const data: ApiResponse = await res.json();
         throw new Error(data.error);
       }
       setPets((prev) => prev.filter((p) => p.id !== id));
@@ -103,7 +103,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
         body: JSON.stringify({ name, species, breed, age, ownerName }),
       });
 
-      const data = await res.json();
+      const data: PetResponse = await res.json();
       if (!res.ok) throw new Error(data.error);
 
       setPets((prev) => [...prev, data.pet].sort((a, b) => a.name.localeCompare(b.name)));

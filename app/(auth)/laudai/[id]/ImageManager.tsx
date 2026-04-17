@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { LaudoImage } from "@/types";
+import { LaudoImage, ImagesResponse, ApiResponse } from "@/types";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import ImageLightbox from "@/components/ImageLightbox";
 
@@ -31,9 +31,9 @@ export default function ImageManager({
       const formData = new FormData();
       files.forEach((f) => formData.append("images", f));
       const res = await fetch(`/api/laudos/${laudoId}/images`, { method: "POST", headers, body: formData });
-      const data = await res.json();
+      const data: ImagesResponse = await res.json();
       if (!res.ok) throw new Error(data.error || "Erro ao enviar imagens.");
-      setImages((prev) => [...prev, ...data.images]);
+      setImages((prev) => [...prev, ...(data.images ?? [])]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao enviar imagens.");
     } finally {
@@ -48,7 +48,7 @@ export default function ImageManager({
       const headers = await getAuthHeaders();
       const res = await fetch(`/api/laudos/${laudoId}/images/${imageId}`, { method: "DELETE", headers });
       if (!res.ok) {
-        let data: { error?: string } = {};
+        let data: ApiResponse = {};
         try {
           data = await res.json();
         } catch {
