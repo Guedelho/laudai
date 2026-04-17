@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import PetsManager from "./PetsManager";
-import { Pet } from "@/shared";
+import { Pet } from "@/shared/models";
 
 export default async function PetsPage() {
   const {

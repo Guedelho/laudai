@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
-import { Laudo } from "@/shared";
+import { Laudo } from "@/shared/models";
 import LaudoDetail from "./LaudoDetail";
 
 const BUCKET = "laudo-images";

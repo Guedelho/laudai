@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { findOrCreatePet } from "@/lib/db";
-import { PetRequest } from "@/shared";
+import { PetRequest } from "@/shared/interfaces";
 
 export async function GET(req: NextRequest) {
   const userId = await getUserId(req);

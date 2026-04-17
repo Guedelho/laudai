@@ -5,19 +5,17 @@ import ImageLightbox from "@/components/ImageLightbox";
 import Typeahead from "@/components/Typeahead";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Pet, Clinic } from "@/shared/models";
 import {
-  Pet,
-  Clinic,
   SseEvent,
-  SPECIES_OPTIONS,
-  SEX_OPTIONS,
   ApiResponse,
   PetsResponse,
   ClinicsResponse,
   ClinicResponse,
   VetResponse,
   TranscribeResponse,
-} from "@/shared";
+} from "@/shared/interfaces";
+import { SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared/constants";
 import { getAuthHeaders } from "@/lib/supabase/client";
 
 export default function NewLaudoPage() {

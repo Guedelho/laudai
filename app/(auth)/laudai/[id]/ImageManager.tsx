@@ -2,7 +2,8 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { LaudoImage, ImagesResponse, ApiResponse } from "@/shared";
+import { LaudoImage } from "@/shared/models";
+import { ImagesResponse, ApiResponse } from "@/shared/interfaces";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import ImageLightbox from "@/components/ImageLightbox";
 

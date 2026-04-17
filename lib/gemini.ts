@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI, type GenerationConfig } from "@google/generative-ai";
 import { TEMPLATES, buildDefaults, NOMENCLATURE, FRASES_SALVADORAS } from "@/lib/templates";
 import { extractJson } from "@/lib/parseLaudo";
-import { Specialty, PatientFields } from "@/shared";
+import { Specialty, PatientFields } from "@/shared/models";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 

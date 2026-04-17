@@ -1,4 +1,4 @@
-import { ParsedLaudo, PatientFields } from "@/shared";
+import { ParsedLaudo, PatientFields } from "@/shared/models";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfmake = require("pdfmake");
 

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
-import { Profile } from "@/shared";
+import { Profile } from "@/shared/models";
 
 export async function getUserId(req: NextRequest): Promise<string | null> {
   const authHeader = req.headers.get("Authorization");

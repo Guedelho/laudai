@@ -3,7 +3,7 @@ import { getUserId, getProfile } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { parseLaudoContent } from "@/lib/parseLaudo";
 import { generatePdfBuffer, PdfData } from "@/lib/generatePdf";
-import { Specialty } from "@/shared";
+import { Specialty } from "@/shared/models";
 import { REPORT_TITLES, SPECIALTY_ABBR } from "@/lib/templates";
 import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
 import sharp from "sharp";

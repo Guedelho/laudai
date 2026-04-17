@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Pet, SPECIES_OPTIONS, SEX_OPTIONS, sexLabel, PetResponse, ApiResponse } from "@/shared";
+import { Pet } from "@/shared/models";
+import { PetResponse, ApiResponse } from "@/shared/interfaces";
+import { SPECIES_OPTIONS, SEX_OPTIONS, sexLabel } from "@/shared/constants";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import Typeahead from "@/components/Typeahead";
 
