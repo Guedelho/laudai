@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
+import { findOrCreatePet } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const supabase = createAdmin();
-
-  const { data: pets, error } = await supabase
+  const admin = createAdmin();
+  const { data: pets, error } = await admin
     .from("pets")
     .select("*")
     .eq("user_id", userId)
@@ -18,7 +18,6 @@ export async function GET(req: NextRequest) {
     console.error("Pets fetch error:", error);
     return NextResponse.json({ error: "Erro ao buscar pacientes." }, { status: 500 });
   }
-
   return NextResponse.json({ pets });
 }
 
@@ -26,35 +25,21 @@ export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const supabase = createAdmin();
-
   const { name, species, breed, age, ownerName } = await req.json();
-
   if (!name || !species || !ownerName) {
     return NextResponse.json({ error: "Campos obrigatórios: nome, espécie, tutor" }, { status: 400 });
   }
 
-  // Find or create pet (case-insensitive dedup on name + owner)
-  const { data: existing } = await supabase
-    .from("pets")
-    .select("*")
-    .eq("user_id", userId)
-    .ilike("name", name.trim())
-    .ilike("owner_name", ownerName.trim())
-    .maybeSingle();
-
-  if (existing) return NextResponse.json({ pet: existing });
-
-  const { data: pet, error } = await supabase
-    .from("pets")
-    .insert({ user_id: userId, name, species, breed: breed || null, age: age || null, owner_name: ownerName })
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Pet create error:", error);
+  const admin = createAdmin();
+  try {
+    const pet = await findOrCreatePet(admin, userId, name.trim(), ownerName.trim(), {
+      species,
+      breed: breed || null,
+      age: age || null,
+    });
+    return NextResponse.json({ pet });
+  } catch (err) {
+    console.error("Pet create error:", err);
     return NextResponse.json({ error: "Erro ao criar paciente." }, { status: 500 });
   }
-
-  return NextResponse.json({ pet });
 }

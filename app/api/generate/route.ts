@@ -3,6 +3,7 @@ import { generateLaudo } from "@/lib/gemini";
 import { getUserId, getProfile } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { GenerateRequest } from "@/types";
+import { findOrCreatePet } from "@/lib/db";
 
 const generateRateLimit = new Map<string, number[]>();
 
@@ -62,23 +63,15 @@ export async function POST(req: NextRequest) {
   if (rawInput.length > 5_000) return NextResponse.json({ error: "Achados do exame muito longos. Máximo 5.000 caracteres." }, { status: 400 });
 
   return sseStream(async (send) => {
-    // Find or create pet (case-insensitive dedup), run in parallel with Gemini
-    const petPromise: Promise<{ data: { id: string } | null }> | null = !petId
-      ? (async () => {
-          const { data: found } = await supabase
-            .from("pets")
-            .select("id")
-            .eq("user_id", userId)
-            .ilike("name", patientName.trim())
-            .ilike("owner_name", ownerName.trim())
-            .maybeSingle();
-          if (found) return { data: found };
-          return supabase
-            .from("pets")
-            .insert({ user_id: userId, name: patientName.trim(), species, breed: breed || null, age: age || null, sex: sex || null, neutered: neutered ?? null, owner_name: ownerName.trim() })
-            .select("id")
-            .single();
-        })()
+    // Find or create pet (deduped), run in parallel with Gemini
+    const petPromise = !petId
+      ? findOrCreatePet(supabase, userId, patientName.trim(), ownerName.trim(), {
+          species,
+          breed: breed || null,
+          age: age || null,
+          sex: sex || null,
+          neutered: neutered ?? null,
+        })
       : null;
 
     let generatedContent: string;
@@ -102,7 +95,7 @@ export async function POST(req: NextRequest) {
         petPromise,
       ]);
       generatedContent = content;
-      if (petResult?.data?.id) resolvedPetId = petResult.data.id;
+      if (petResult?.id) resolvedPetId = petResult.id;
     } catch (err) {
       console.error("Gemini generation error:", err);
       send({ status: "error", message: "Erro ao gerar laudo. Tente novamente." });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
+import { findOrCreateClinic, findOrCreateVet } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   const userId = await getUserId(req);
@@ -28,37 +29,17 @@ export async function POST(req: NextRequest) {
   if (!name?.trim()) return NextResponse.json({ error: "Nome da clínica é obrigatório" }, { status: 400 });
 
   const admin = createAdmin();
+  try {
+    const clinic = await findOrCreateClinic(admin, userId, name.trim());
 
-  // Find or create clinic (case-insensitive dedup)
-  const { data: existing } = await admin
-    .from("clinics")
-    .select("*, clinic_vets(*)")
-    .eq("user_id", userId)
-    .ilike("name", name.trim())
-    .maybeSingle();
+    let vet = null;
+    if (vetName?.trim()) {
+      vet = await findOrCreateVet(admin, clinic.id, userId, vetName.trim());
+    }
 
-  if (existing) return NextResponse.json({ clinic: existing });
-
-  const { data: clinic, error } = await admin
-    .from("clinics")
-    .insert({ user_id: userId, name: name.trim() })
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Clinic create error:", error);
+    return NextResponse.json({ clinic: { ...clinic, clinic_vets: vet ? [vet] : clinic.clinic_vets } });
+  } catch (err) {
+    console.error("Clinic create error:", err);
     return NextResponse.json({ error: "Erro ao criar clínica." }, { status: 500 });
   }
-
-  let vet = null;
-  if (vetName?.trim()) {
-    const { data } = await admin
-      .from("clinic_vets")
-      .insert({ clinic_id: clinic.id, user_id: userId, name: vetName.trim() })
-      .select()
-      .single();
-    vet = data;
-  }
-
-  return NextResponse.json({ clinic: { ...clinic, clinic_vets: vet ? [vet] : [] } });
 }
