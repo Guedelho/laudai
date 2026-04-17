@@ -6,15 +6,15 @@ export const SPECIALTY_LABELS: Record<Specialty, string> = {
 
 const DEFAULTS_BASE_ABDOMINAL = `BEXIGA: Bexiga de repleção líquida adequada, formato habitual, paredes finas e ecogênicas, margens internas lisas e conteúdo anecogênico e homogêneo normal.
 
-RIM ESQUERDO: Em topografia habitual, contornos definidos e regulares, relação/junção corticomedular preservada e ecotextura sem evidências de alterações sonográficas.
+RIM ESQUERDO: Rim de formato mantido, contornos regulares e localizado em topografia habitual, relação/junção corticomedular preservada e ecotextura sem evidências de alterações sonográficas.
 
-RIM DIREITO: Em topografia habitual, contornos definidos e regulares, relação/junção corticomedular preservada e ecotextura sem evidências de alterações sonográficas.
+RIM DIREITO: Rim de formato mantido, contornos regulares e localizado em topografia habitual, relação/junção corticomedular preservada e ecotextura sem evidências de alterações sonográficas.
 
-FÍGADO: Fígado de dimensões dentro dos limites do gradil costal, superfície lisa, margens afiladas, parênquima de ecogenicidade e ecotextura dentro dos limites da normalidade. Arquitetura vascular portal e intra-hepática preservadas quanto ao calibre e trajeto dos vasos.
+FÍGADO: Fígado de dimensões dentro dos limites do gradil costal, superfície regular, margens finas, parênquima de ecogenicidade preservada e ecotextura dentro dos limites da normalidade. Arquitetura vascular portal e intra-hepática preservadas quanto ao calibre e trajeto dos vasos.
 
-VESÍCULA BILIAR: Vesícula biliar repleta, paredes finas e ecogênicas com conteúdo anecogênico e homogêneo.
+VESÍCULA BILIAR: Vesícula biliar com repleção preservada, paredes finas e ecogênicas com conteúdo anecogênico e homogêneo.
 
-BAÇO: Baço de contornos definidos, superfície lisa, margens finas, ecogenicidade e ecotextura preservadas.
+BAÇO: Baço de contornos definidos, superfície regular, margens finas, ecogenicidade e ecotextura preservadas.
 
 ESTÔMAGO: Estômago com conteúdo luminal de padrão misto (gás e alimento), paredes de aspecto sonográfico mantido com padrão em camadas.
 
@@ -24,13 +24,13 @@ PÂNCREAS: Pâncreas de ecogenicidade e ecotextura preservadas em região de lob
 
 ADRENAIS: Adrenais de formato mantido, bordas regulares, distinção córticomedular e ecogenicidade preservadas.`;
 
-const DEFAULTS_MALE_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual e de contornos definidos, superfície lisa, formato preservado, ecogênica e homogênea.
+const DEFAULTS_MALE_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual, de contornos regulares, formato preservado, ecogênica e homogênea.
 
 TESTÍCULO DIREITO: Localizado em bolsa escrotal, hipoecogênico, homogêneo, com presença de linha central hiperecogênica (mediastino testicular), sem evidências de alterações sonográficas.
 
 TESTÍCULO ESQUERDO: Localizado em bolsa escrotal, hipoecogênico, homogêneo, com presença de linha central hiperecogênica (mediastino testicular), sem evidências de alterações sonográficas.`;
 
-const DEFAULTS_MALE_NEUTERED_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual e de contornos definidos, superfície lisa, formato preservado, ecogênica e homogênea.
+const DEFAULTS_MALE_NEUTERED_ABDOMINAL = `PRÓSTATA: Próstata em topografia habitual, de contornos regulares, formato preservado, ecogênica e homogênea.
 
 TESTÍCULO DIREITO: Não visualizado, com histórico de castração.
 
