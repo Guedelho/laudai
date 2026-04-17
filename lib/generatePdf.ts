@@ -1,4 +1,5 @@
-import { ParsedLaudo, PatientFields } from "@/shared/models";
+import { ParsedLaudo } from "@/shared/models";
+import { PdfData } from "@/shared/interfaces";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfmake = require("pdfmake");
 
@@ -26,24 +27,6 @@ async function fetchFont(name: string): Promise<Buffer> {
   const buf = Buffer.from(await res.arrayBuffer());
   fontCache.set(name, buf);
   return buf;
-}
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface PdfData extends PatientFields {
-  clinicName: string;
-  responsibleVet: string;
-  date: string;
-  reportTitle: string;
-  vetName: string;
-  signatureText: string;
-  crmv: string;
-  crmvState?: string;
-  parsedLaudo: ParsedLaudo;
-  imageBase64List: string[];
-  logoBase64?: string;
-  signatureFont?: string;
-  signatureImageBase64?: string;
 }
 
 // ─── pdfmake content builder ─────────────────────────────────────────────────

@@ -1,4 +1,14 @@
-import type { ParsedLaudo, LaudoFields, Pet, Clinic, ClinicVet, Laudo, LaudoImage, Specialty } from "./models";
+import type {
+  ParsedLaudo,
+  PatientFields,
+  LaudoFields,
+  Pet,
+  Clinic,
+  ClinicVet,
+  Laudo,
+  LaudoImage,
+  Specialty,
+} from "./models";
 
 // ─── Request types ───────────────────────────────────────────────────────────
 
@@ -92,3 +102,21 @@ export type SseEvent =
   | { status: "chunk"; text: string }
   | { status: "error"; message: string }
   | { status: "done"; laudo: { id: string } };
+
+// ─── PDF ─────────────────────────────────────────────────────────────────────
+
+export interface PdfData extends PatientFields {
+  clinicName: string;
+  responsibleVet: string;
+  date: string;
+  reportTitle: string;
+  vetName: string;
+  signatureText: string;
+  crmv: string;
+  crmvState?: string;
+  parsedLaudo: ParsedLaudo;
+  imageBase64List: string[];
+  logoBase64?: string;
+  signatureFont?: string;
+  signatureImageBase64?: string;
+}

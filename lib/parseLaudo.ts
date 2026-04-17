@@ -1,5 +1,11 @@
 import { ParsedLaudo } from "@/shared/models";
 
+const SECTION_RE = /^([A-ZÁÂÃÀÉÊÍÓÔÕÚÇ][A-ZÁÂÃÀÉÊÍÓÔÕÚÇ\s\/\-]{0,40}):\s*(.*)/;
+const HEADER_RE = /^(ULTRASSONOGRAFI|RELATÓRIO|Data:|Paciente:|Tutor:|Responsável:|Médico Vet|CRMV:|---)/i;
+const CONCLUSION_RE = /^CONCLUS[ÃA]O\s*:?\s*$/i;
+const IMPRESSAO_RE = /^IMPRESS[ÃA]O\s+DIAGN[ÓO]STICA\s*:?\s*$/i;
+const RECOMENDACOES_RE = /^RECOMENDA[ÇC][ÕO]ES\s*:?\s*$/i;
+
 export function extractJson(text: string): string {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenced) return fenced[1].trim();
@@ -8,8 +14,6 @@ export function extractJson(text: string): string {
   if (start !== -1 && end !== -1 && end > start) return text.slice(start, end + 1);
   return text.trim();
 }
-
-const SECTION_RE_PARSE = /^([A-ZÁÂÃÀÉÊÍÓÔÕÚÇ][A-ZÁÂÃÀÉÊÍÓÔÕÚÇ\s\/\-]{0,40}):\s*(.*)/;
 
 export function parseLaudoContent(content: string): ParsedLaudo {
   try {
@@ -49,9 +53,9 @@ export function parseLaudoContent(content: string): ParsedLaudo {
       continue;
     }
 
-    if (/^(ULTRASSONOGRAFI|RELATÓRIO|Data:|Paciente:|Tutor:|Responsável:|Médico Vet|CRMV:|---)/i.test(t)) continue;
+    if (HEADER_RE.test(t)) continue;
 
-    if (/^CONCLUS[ÃA]O\s*:?\s*$/i.test(t)) {
+    if (CONCLUSION_RE.test(t)) {
       if (lastSection) {
         sections.push(lastSection);
         lastSection = null;
@@ -61,7 +65,7 @@ export function parseLaudoContent(content: string): ParsedLaudo {
       inRecomendacoes = false;
       continue;
     }
-    if (/^IMPRESS[ÃA]O\s+DIAGN[ÓO]STICA\s*:?\s*$/i.test(t)) {
+    if (IMPRESSAO_RE.test(t)) {
       if (lastSection) {
         sections.push(lastSection);
         lastSection = null;
@@ -71,7 +75,7 @@ export function parseLaudoContent(content: string): ParsedLaudo {
       inConclusion = false;
       continue;
     }
-    if (/^RECOMENDA[ÇC][ÕO]ES\s*:?\s*$/i.test(t)) {
+    if (RECOMENDACOES_RE.test(t)) {
       if (lastSection) {
         sections.push(lastSection);
         lastSection = null;
@@ -95,7 +99,7 @@ export function parseLaudoContent(content: string): ParsedLaudo {
       continue;
     }
 
-    const m = t.match(SECTION_RE_PARSE);
+    const m = t.match(SECTION_RE);
     if (m) {
       if (lastSection) sections.push(lastSection);
       lastSection = { label: m[1].trim(), content: m[2].trim() };
