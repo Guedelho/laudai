@@ -285,15 +285,9 @@ export default function LaudoDetail({
       {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
       {isEditing && (
-        <div className="space-y-2 mb-4 animate-[fadeIn_0.2s_ease-out]">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-sm text-blue-700">
-            Este laudo foi gerado por inteligência artificial e pode conter imprecisões. Revise todas as informações com
-            atenção antes de confirmar.
-          </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-sm text-amber-700">
-            Você tem uma única oportunidade de edição. Após sair desta página, o laudo será bloqueado permanentemente e
-            não poderá ser editado.
-          </div>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2 mb-4 text-sm text-yellow-700 animate-[fadeIn_0.2s_ease-out]">
+          Este laudo foi gerado por inteligência artificial e pode conter imprecisões. Revise todas as informações com
+          atenção antes de salvar.
         </div>
       )}
 
