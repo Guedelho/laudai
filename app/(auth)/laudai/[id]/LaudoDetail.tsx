@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { SPECIALTY_LABELS } from "@/lib/templates";
 import { Laudo, LaudoImage, ParsedLaudo } from "@/shared/models";
+import { SEX_OPTIONS } from "@/shared/constants";
 import { sexLabel } from "@/lib/utils";
 import { parseLaudoContent } from "@/lib/parseLaudo";
 import { getAuthHeaders } from "@/lib/supabase/client";
@@ -276,11 +277,17 @@ export default function LaudoDetail({
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Sexo</label>
-              <input
+              <select
                 value={fields.sex}
                 onChange={(e) => setFields({ ...fields, sex: e.target.value })}
                 className={inputCls}
-              />
+              >
+                {SEX_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="flex items-center gap-2">
               <input
