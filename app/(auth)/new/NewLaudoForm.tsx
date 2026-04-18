@@ -264,7 +264,6 @@ export default function NewLaudoPage() {
         clinicName: resolvedClinicName,
         responsibleVet: resolvedVetName,
         examDate,
-        petId: selectedPetId || undefined,
       });
 
       let laudoId: string | null = null;
@@ -343,7 +342,7 @@ export default function NewLaudoPage() {
       }
 
       setGeneratingStatus("Redirecionando...");
-      router.push(`/laudai/${laudoId}`);
+      router.push(`/laudai/${laudoId}?review=1`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar laudo.");
       setGenerating(false);

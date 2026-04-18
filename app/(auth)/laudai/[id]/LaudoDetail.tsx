@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SPECIALTY_LABELS } from "@/lib/templates";
-import { Laudo, LaudoImage, ParsedLaudo } from "@/shared/models";
+import { Laudo, LaudoImage, ParsedLaudo, Pet, Clinic } from "@/shared/models";
 import { SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared/constants";
 import { sexLabel } from "@/lib/utils";
 import { parseLaudoContent } from "@/lib/parseLaudo";
 import { getAuthHeaders } from "@/lib/supabase/client";
+import { PetsResponse, ClinicsResponse, UpdateLaudoRequest } from "@/shared/interfaces";
+import Typeahead from "@/components/Typeahead";
 import DownloadPDFButton from "./DownloadPDFButton";
 import DeleteLaudoButton from "./DeleteLaudoButton";
 import ImageManager from "./ImageManager";
@@ -23,16 +25,65 @@ function InfoItem({ label, value }: { label: string; value: string }) {
   );
 }
 
+function EditableList({
+  listKey,
+  title,
+  items,
+  onUpdate,
+  onAdd,
+  onRemove,
+}: {
+  listKey: string;
+  title: string;
+  items: string[];
+  onUpdate: (i: number, value: string) => void;
+  onAdd: () => void;
+  onRemove: (i: number) => void;
+}) {
+  return (
+    <div>
+      <h4 className="font-semibold text-gray-900 text-sm mb-2">{title}</h4>
+      {items.map((line, i) => (
+        <div key={i} className="mb-2 flex gap-1 items-start">
+          <textarea
+            value={line}
+            onChange={(e) => onUpdate(i, e.target.value)}
+            rows={2}
+            className="w-full border border-blue-200 rounded px-2 py-1 text-sm text-gray-800 resize-none focus:outline-none focus:ring-1 focus:ring-blue-400 flex-1"
+          />
+          <button
+            type="button"
+            onClick={() => onRemove(i)}
+            className="text-red-400 hover:text-red-600 text-lg leading-none mt-1"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      <button type="button" onClick={onAdd} className="text-xs text-blue-600 hover:text-blue-700 mt-1">
+        + Adicionar linha
+      </button>
+    </div>
+  );
+}
+
 const inputCls =
   "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
 const textareaCls =
   "w-full border border-blue-200 rounded px-2 py-1 text-sm text-gray-800 resize-none focus:outline-none focus:ring-1 focus:ring-blue-400";
 
-export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: LaudoImage[] }) {
+export default function LaudoDetail({
+  laudo,
+  images,
+  isEditing,
+}: {
+  laudo: Laudo;
+  images: LaudoImage[];
+  isEditing: boolean;
+}) {
   const router = useRouter();
   const initialParsed = parseLaudoContent(laudo.edited_content);
 
-  const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [editedParsed, setEditedParsed] = useState<ParsedLaudo>(initialParsed);
@@ -49,7 +100,86 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
     examDate: laudo.exam_date,
   });
 
-  const examDate = new Date(fields.examDate + "T12:00:00").toLocaleDateString("pt-BR");
+  // Source entity IDs — tracked in UI only, not persisted on the laudo
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [selectedPetId, setSelectedPetId] = useState("");
+  const [selectedClinicId, setSelectedClinicId] = useState("");
+  const [selectedVetId, setSelectedVetId] = useState("");
+
+  useEffect(() => {
+    if (isEditing) {
+      async function loadData() {
+        const headers = await getAuthHeaders();
+        const [petsRes, clinicsRes] = await Promise.all([
+          fetch("/api/pets", { headers }),
+          fetch("/api/clinics", { headers }),
+        ]);
+        if (petsRes.ok) setPets(((await petsRes.json()) as PetsResponse).pets ?? []);
+        if (clinicsRes.ok) setClinics(((await clinicsRes.json()) as ClinicsResponse).clinics ?? []);
+      }
+      loadData();
+    } else if (!laudo.locked_at) {
+      getAuthHeaders().then((headers) => fetch(`/api/laudos/${laudo.id}/lock`, { method: "POST", headers }));
+    }
+  }, [isEditing, laudo.id, laudo.locked_at]);
+
+  const selectedClinic = clinics.find((c) => c.id === selectedClinicId);
+  const vets = selectedClinic?.clinic_vets ?? [];
+  const breedSuggestions = [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
+
+  function handlePetChange(name: string) {
+    const match = pets.find((p) => p.name.toLowerCase() === name.toLowerCase());
+    if (match) {
+      setSelectedPetId(match.id);
+      setFields((f) => ({
+        ...f,
+        patientName: match.name,
+        species: match.species,
+        breed: match.breed,
+        age: match.age,
+        sex: match.sex,
+        neutered: match.neutered,
+        ownerName: match.owner_name,
+      }));
+    } else {
+      setSelectedPetId("");
+      setFields((f) => ({ ...f, patientName: name }));
+    }
+  }
+
+  function handleClinicChange(name: string) {
+    const match = clinics.find((c) => c.name.toLowerCase() === name.toLowerCase());
+    setSelectedClinicId(match?.id ?? "");
+    setSelectedVetId("");
+    setFields((f) => ({ ...f, clinicName: name, responsibleVet: "" }));
+  }
+
+  function handleVetChange(name: string) {
+    const match = vets.find((v) => v.name.toLowerCase() === name.toLowerCase());
+    setSelectedVetId(match?.id ?? "");
+    setFields((f) => ({ ...f, responsibleVet: name }));
+  }
+
+  function revertFields() {
+    setEditedParsed(initialParsed);
+    setFields({
+      patientName: laudo.patient_name,
+      species: laudo.species,
+      breed: laudo.breed,
+      age: laudo.age,
+      sex: laudo.sex,
+      neutered: laudo.neutered,
+      ownerName: laudo.owner_name,
+      clinicName: laudo.clinic_name,
+      responsibleVet: laudo.responsible_vet,
+      examDate: laudo.exam_date,
+    });
+    setSelectedPetId("");
+    setSelectedClinicId("");
+    setSelectedVetId("");
+    setError("");
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -72,34 +202,18 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
             responsible_vet: fields.responsibleVet,
             exam_date: fields.examDate,
           },
-        }),
+          petId: selectedPetId || undefined,
+          clinicId: selectedClinicId || undefined,
+          vetId: selectedVetId || undefined,
+        } satisfies UpdateLaudoRequest),
       });
       if (!res.ok) throw new Error((await res.json()).error || "Erro ao salvar.");
-      setIsEditing(false);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar.");
     } finally {
       setSaving(false);
     }
-  }
-
-  function cancelEdit() {
-    setEditedParsed(initialParsed);
-    setFields({
-      patientName: laudo.patient_name,
-      species: laudo.species,
-      breed: laudo.breed,
-      age: laudo.age,
-      sex: laudo.sex,
-      neutered: laudo.neutered,
-      ownerName: laudo.owner_name,
-      clinicName: laudo.clinic_name,
-      responsibleVet: laudo.responsible_vet,
-      examDate: laudo.exam_date,
-    });
-    setIsEditing(false);
-    setError("");
   }
 
   function updateSection(i: number, value: string) {
@@ -123,38 +237,7 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
     setEditedParsed({ ...editedParsed, [key]: list.length ? list : undefined });
   }
 
-  function EditableList({ listKey, title }: { listKey: "impressao" | "recomendacoes" | "observacoes"; title: string }) {
-    const items = editedParsed[listKey] ?? [];
-    return (
-      <div>
-        <h4 className="font-semibold text-gray-900 text-sm mb-2">{title}</h4>
-        {items.map((line, i) => (
-          <div key={i} className="mb-2 flex gap-1 items-start">
-            <textarea
-              value={line}
-              onChange={(e) => updateList(listKey, i, e.target.value)}
-              rows={2}
-              className={`${textareaCls} flex-1`}
-            />
-            <button
-              type="button"
-              onClick={() => removeFromList(listKey, i)}
-              className="text-red-400 hover:text-red-600 text-lg leading-none mt-1"
-            >
-              ×
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          onClick={() => addToList(listKey)}
-          className="text-xs text-blue-600 hover:text-blue-700 mt-1"
-        >
-          + Adicionar linha
-        </button>
-      </div>
-    );
-  }
+  const displayDate = new Date(fields.examDate + "T12:00:00").toLocaleDateString("pt-BR");
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-8">
@@ -169,14 +252,14 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
               {SPECIALTY_LABELS[laudo.specialty]}
             </span>
-            <span className="text-xs text-gray-400">{examDate}</span>
+            <span className="text-xs text-gray-400">{displayDate}</span>
           </div>
         </div>
         <div className="flex items-center gap-2 mt-1">
           {isEditing ? (
             <>
               <button
-                onClick={cancelEdit}
+                onClick={revertFields}
                 disabled={saving}
                 className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 rounded-lg border border-gray-300"
               >
@@ -193,12 +276,6 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
           ) : (
             <>
               <DeleteLaudoButton laudoId={laudo.id} />
-              <button
-                onClick={() => setIsEditing(true)}
-                className="text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg border border-gray-300"
-              >
-                Editar
-              </button>
               <DownloadPDFButton laudoId={laudo.id} />
             </>
           )}
@@ -208,8 +285,15 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
       {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
       {isEditing && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 mb-4 text-sm text-amber-700 animate-[fadeIn_0.2s_ease-out]">
-          Modo de edição — as alterações ainda não foram salvas.
+        <div className="space-y-2 mb-4 animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-sm text-blue-700">
+            Este laudo foi gerado por inteligência artificial e pode conter imprecisões. Revise todas as informações com
+            atenção antes de confirmar.
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-sm text-amber-700">
+            Você tem uma única oportunidade de edição. Após sair desta página, o laudo será bloqueado permanentemente e
+            não poderá ser editado.
+          </div>
         </div>
       )}
 
@@ -220,9 +304,11 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Paciente</h3>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Nome</label>
-              <input
+              <Typeahead
                 value={fields.patientName}
-                onChange={(e) => setFields({ ...fields, patientName: e.target.value })}
+                onChange={handlePetChange}
+                suggestions={pets.map((p) => p.name)}
+                placeholder="Nome do paciente"
                 className={inputCls}
               />
             </div>
@@ -242,9 +328,10 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Raça</label>
-              <input
+              <Typeahead
                 value={fields.breed}
-                onChange={(e) => setFields({ ...fields, breed: e.target.value })}
+                onChange={(v) => setFields({ ...fields, breed: v })}
+                suggestions={breedSuggestions}
                 className={inputCls}
               />
             </div>
@@ -294,17 +381,21 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Clínica</label>
-              <input
+              <Typeahead
                 value={fields.clinicName}
-                onChange={(e) => setFields({ ...fields, clinicName: e.target.value })}
+                onChange={handleClinicChange}
+                suggestions={clinics.map((c) => c.name)}
+                placeholder="Nome da clínica"
                 className={inputCls}
               />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Médico Responsável</label>
-              <input
+              <Typeahead
                 value={fields.responsibleVet}
-                onChange={(e) => setFields({ ...fields, responsibleVet: e.target.value })}
+                onChange={handleVetChange}
+                suggestions={vets.map((v) => v.name)}
+                placeholder="Nome do responsável"
                 className={inputCls}
               />
             </div>
@@ -335,7 +426,7 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
             <InfoItem label="Responsável:" value={fields.ownerName} />
             <InfoItem label="Clínica:" value={fields.clinicName} />
             <InfoItem label="Médico:" value={fields.responsibleVet} />
-            {examDate && <InfoItem label="Data do exame:" value={examDate} />}
+            {displayDate && <InfoItem label="Data do exame:" value={displayDate} />}
           </div>
         </div>
       )}
@@ -377,9 +468,30 @@ export default function LaudoDetail({ laudo, images }: { laudo: Laudo; images: L
                 />
               )}
 
-              <EditableList listKey="impressao" title="IMPRESSÃO DIAGNÓSTICA:" />
-              <EditableList listKey="recomendacoes" title="RECOMENDAÇÕES:" />
-              <EditableList listKey="observacoes" title="OBS:" />
+              <EditableList
+                listKey="impressao"
+                title="IMPRESSÃO DIAGNÓSTICA:"
+                items={editedParsed.impressao ?? []}
+                onUpdate={(i, v) => updateList("impressao", i, v)}
+                onAdd={() => addToList("impressao")}
+                onRemove={(i) => removeFromList("impressao", i)}
+              />
+              <EditableList
+                listKey="recomendacoes"
+                title="RECOMENDAÇÕES:"
+                items={editedParsed.recomendacoes ?? []}
+                onUpdate={(i, v) => updateList("recomendacoes", i, v)}
+                onAdd={() => addToList("recomendacoes")}
+                onRemove={(i) => removeFromList("recomendacoes", i)}
+              />
+              <EditableList
+                listKey="observacoes"
+                title="OBS:"
+                items={editedParsed.observacoes ?? []}
+                onUpdate={(i, v) => updateList("observacoes", i, v)}
+                onAdd={() => addToList("observacoes")}
+                onRemove={(i) => removeFromList("observacoes", i)}
+              />
             </div>
           ) : (
             <LaudoContent parsedLaudo={editedParsed} />

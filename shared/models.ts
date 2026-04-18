@@ -89,9 +89,9 @@ export interface Laudo {
   generated_content: string;
   edited_content: string;
   exam_date: string;
+  locked_at: string | null;
   created_at: string;
   updated_at?: string;
-  pet_id?: string;
 }
 
 export interface LaudoImage {

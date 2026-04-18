@@ -11,7 +11,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdmin();
-  const { generatedContent, patientFields }: UpdateLaudoRequest = await req.json();
+
+  const { data: existing } = await admin.from("laudos").select("locked_at").eq("id", id).eq("user_id", userId).single();
+
+  if (!existing) return NextResponse.json({ error: "Laudo não encontrado." }, { status: 404 });
+  if (existing.locked_at)
+    return NextResponse.json({ error: "Laudo bloqueado e não pode ser editado." }, { status: 403 });
+
+  const { generatedContent, patientFields, petId, clinicId, vetId }: UpdateLaudoRequest = await req.json();
 
   const { data: updated, error } = await admin
     .from("laudos")
@@ -27,8 +34,31 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (error) {
     console.error("Laudo update error:", error);
-    return NextResponse.json({ error: "Laudo not found" }, { status: 404 });
+    return NextResponse.json({ error: "Erro ao salvar laudo." }, { status: 500 });
   }
+
+  await Promise.all(
+    [
+      petId &&
+        admin
+          .from("pets")
+          .update({
+            name: patientFields.patient_name,
+            species: patientFields.species,
+            breed: patientFields.breed,
+            age: patientFields.age,
+            sex: patientFields.sex,
+            neutered: patientFields.neutered,
+            owner_name: patientFields.owner_name,
+          })
+          .eq("id", petId)
+          .eq("user_id", userId),
+      clinicId &&
+        admin.from("clinics").update({ name: patientFields.clinic_name }).eq("id", clinicId).eq("user_id", userId),
+      vetId &&
+        admin.from("clinic_vets").update({ name: patientFields.responsible_vet }).eq("id", vetId).eq("user_id", userId),
+    ].filter(Boolean),
+  );
 
   revalidateTag(`laudo-${id}`, "default");
   return NextResponse.json({ laudo: updated });

@@ -38,8 +38,15 @@ function getLaudoData(id: string, userId: string) {
   )();
 }
 
-export default async function LaudoPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function LaudoPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ review?: string }>;
+}) {
+  const [{ id }, { review }] = await Promise.all([params, searchParams]);
+
   const {
     data: { user },
   } = await (await createClient()).auth.getUser();
@@ -48,5 +55,7 @@ export default async function LaudoPage({ params }: { params: Promise<{ id: stri
   const { laudo, images } = await getLaudoData(id, user.id);
   if (!laudo) notFound();
 
-  return <LaudoDetail laudo={laudo as Laudo} images={images} />;
+  const isEditing = review === "1" && !laudo.locked_at;
+
+  return <LaudoDetail laudo={laudo as Laudo} images={images} isEditing={isEditing} />;
 }

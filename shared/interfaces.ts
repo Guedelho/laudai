@@ -15,7 +15,6 @@ import type {
 export interface GenerateRequest extends LaudoFields {
   specialty: Specialty;
   rawInput: string;
-  petId?: string;
 }
 
 export interface PetRequest {
@@ -30,6 +29,9 @@ export interface PetRequest {
 
 export interface UpdateLaudoRequest {
   generatedContent: ParsedLaudo;
+  petId?: string;
+  clinicId?: string;
+  vetId?: string;
   patientFields: {
     patient_name: string;
     species: string;
