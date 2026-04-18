@@ -115,8 +115,24 @@ export default function LaudoDetail({
           fetch("/api/pets", { headers }),
           fetch("/api/clinics", { headers }),
         ]);
-        if (petsRes.ok) setPets(((await petsRes.json()) as PetsResponse).pets ?? []);
-        if (clinicsRes.ok) setClinics(((await clinicsRes.json()) as ClinicsResponse).clinics ?? []);
+        if (petsRes.ok) {
+          const loadedPets = ((await petsRes.json()) as PetsResponse).pets ?? [];
+          setPets(loadedPets);
+          const matchedPet = loadedPets.find((p) => p.name.toLowerCase() === laudo.patient_name.toLowerCase());
+          if (matchedPet) setSelectedPetId(matchedPet.id);
+        }
+        if (clinicsRes.ok) {
+          const loadedClinics = ((await clinicsRes.json()) as ClinicsResponse).clinics ?? [];
+          setClinics(loadedClinics);
+          const matchedClinic = loadedClinics.find((c) => c.name.toLowerCase() === laudo.clinic_name.toLowerCase());
+          if (matchedClinic) {
+            setSelectedClinicId(matchedClinic.id);
+            const matchedVet = matchedClinic.clinic_vets?.find(
+              (v) => v.name.toLowerCase() === laudo.responsible_vet.toLowerCase(),
+            );
+            if (matchedVet) setSelectedVetId(matchedVet.id);
+          }
+        }
       }
       loadData();
     } else if (!laudo.locked_at) {
