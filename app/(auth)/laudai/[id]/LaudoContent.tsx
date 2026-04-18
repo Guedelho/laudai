@@ -2,6 +2,22 @@
 
 import { ParsedLaudo } from "@/shared/models";
 
+function BulletList({ title, items, className }: { title: string; items: string[]; className?: string }) {
+  return (
+    <div className={className}>
+      <h4 className="font-semibold text-gray-900 text-sm mb-2">{title}</h4>
+      <ul className="space-y-1.5 ml-1">
+        {items.map((line, i) => (
+          <li key={i} className="flex gap-2 text-justify">
+            <span className="text-gray-400 shrink-0">•</span>
+            <span>{line}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function LaudoContent({ parsedLaudo }: { parsedLaudo: ParsedLaudo }) {
   return (
     <div className="text-sm text-gray-800 leading-relaxed space-y-2">
@@ -23,31 +39,11 @@ export default function LaudoContent({ parsedLaudo }: { parsedLaudo: ParsedLaudo
       )}
 
       {parsedLaudo.impressao?.length ? (
-        <div>
-          <h4 className="font-semibold text-gray-900 text-sm mb-2">IMPRESSÃO DIAGNÓSTICA:</h4>
-          <ul className="space-y-1.5 ml-1">
-            {parsedLaudo.impressao.map((line, i) => (
-              <li key={i} className="flex gap-2 text-justify">
-                <span className="text-gray-400 shrink-0">•</span>
-                <span>{line}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <BulletList title="IMPRESSÃO DIAGNÓSTICA:" items={parsedLaudo.impressao} />
       ) : null}
 
       {parsedLaudo.recomendacoes?.length ? (
-        <div className="mt-3">
-          <h4 className="font-semibold text-gray-900 text-sm mb-2">RECOMENDAÇÕES:</h4>
-          <ul className="space-y-1.5 ml-1">
-            {parsedLaudo.recomendacoes.map((line, i) => (
-              <li key={i} className="flex gap-2 text-justify">
-                <span className="text-gray-400 shrink-0">•</span>
-                <span>{line}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <BulletList title="RECOMENDAÇÕES:" items={parsedLaudo.recomendacoes} className="mt-3" />
       ) : null}
 
       {parsedLaudo.observacoes?.length ? (

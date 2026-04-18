@@ -34,6 +34,19 @@ async function fetchFont(name: string): Promise<Buffer> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Content = any;
 
+function pushBulletSection(items: Content[], title: string, lines: string[], topMargin: number) {
+  items.push({ text: title, bold: true, font: "Roboto", margin: [0, topMargin, 0, 4], fontSize: 12 });
+  for (const line of lines) {
+    items.push({
+      columns: [
+        { text: "•", bold: true, width: 10, fontSize: 12 },
+        { text: line, alignment: "justify", width: "*", fontSize: 12 },
+      ],
+      margin: [14, 0, 0, 3],
+    });
+  }
+}
+
 function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
   const items: Content[] = [];
 
@@ -66,43 +79,8 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
     });
   }
 
-  if (parsedLaudo.impressao?.length) {
-    items.push({
-      text: "IMPRESSÃO DIAGNÓSTICA:",
-      bold: true,
-      font: "Roboto",
-      margin: [0, 4, 0, 4],
-      fontSize: 12,
-    });
-    for (const line of parsedLaudo.impressao) {
-      items.push({
-        columns: [
-          { text: "•", bold: true, width: 10, fontSize: 12 },
-          { text: line, alignment: "justify", width: "*", fontSize: 12 },
-        ],
-        margin: [14, 0, 0, 3],
-      });
-    }
-  }
-
-  if (parsedLaudo.recomendacoes?.length) {
-    items.push({
-      text: "RECOMENDAÇÕES:",
-      bold: true,
-      font: "Roboto",
-      margin: [0, 8, 0, 4],
-      fontSize: 12,
-    });
-    for (const line of parsedLaudo.recomendacoes) {
-      items.push({
-        columns: [
-          { text: "•", bold: true, width: 10, fontSize: 12 },
-          { text: line, alignment: "justify", width: "*", fontSize: 12 },
-        ],
-        margin: [14, 0, 0, 3],
-      });
-    }
-  }
+  if (parsedLaudo.impressao?.length) pushBulletSection(items, "IMPRESSÃO DIAGNÓSTICA:", parsedLaudo.impressao, 4);
+  if (parsedLaudo.recomendacoes?.length) pushBulletSection(items, "RECOMENDAÇÕES:", parsedLaudo.recomendacoes, 8);
 
   if (parsedLaudo.observacoes?.length) {
     items.push({
