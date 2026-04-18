@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { SPECIALTY_LABELS } from "@/lib/templates";
 import { Laudo, LaudoImage, ParsedLaudo, Pet, Clinic } from "@/shared/models";
 import { SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared/constants";
@@ -81,11 +80,12 @@ export default function LaudoDetail({
   images: LaudoImage[];
   isEditing: boolean;
 }) {
-  const router = useRouter();
   const initialParsed = parseLaudoContent(laudo.edited_content);
 
-  const [saving, setSaving] = useState(false);
+  const [printing, setPrinting] = useState(false);
+  const [locked, setLocked] = useState(false);
   const [error, setError] = useState("");
+  const editing = isEditing && !locked;
   const [editedParsed, setEditedParsed] = useState<ParsedLaudo>(initialParsed);
   const [fields, setFields] = useState({
     patientName: laudo.patient_name,
@@ -161,33 +161,15 @@ export default function LaudoDetail({
     setFields((f) => ({ ...f, responsibleVet: name }));
   }
 
-  function revertFields() {
-    setEditedParsed(initialParsed);
-    setFields({
-      patientName: laudo.patient_name,
-      species: laudo.species,
-      breed: laudo.breed,
-      age: laudo.age,
-      sex: laudo.sex,
-      neutered: laudo.neutered,
-      ownerName: laudo.owner_name,
-      clinicName: laudo.clinic_name,
-      responsibleVet: laudo.responsible_vet,
-      examDate: laudo.exam_date,
-    });
-    setSelectedPetId("");
-    setSelectedClinicId("");
-    setSelectedVetId("");
-    setError("");
-  }
-
-  async function handleSave() {
-    setSaving(true);
+  async function handleImprimir() {
+    setPrinting(true);
     setError("");
     try {
+      const headers = { "Content-Type": "application/json", ...(await getAuthHeaders()) };
+
       const res = await fetch(`/api/laudos/${laudo.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
+        headers,
         body: JSON.stringify({
           generatedContent: editedParsed,
           patientFields: {
@@ -208,11 +190,34 @@ export default function LaudoDetail({
         } satisfies UpdateLaudoRequest),
       });
       if (!res.ok) throw new Error((await res.json()).error || "Erro ao salvar.");
-      router.refresh();
+
+      await fetch(`/api/laudos/${laudo.id}/lock`, { method: "POST", headers: await getAuthHeaders() });
+
+      const tab = window.open("", "_blank");
+      if (tab) {
+        tab.document.write(
+          [
+            "<!DOCTYPE html><html><head><title>Laudai</title><style>",
+            "*{margin:0;padding:0;box-sizing:border-box}",
+            "body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f9fafb;font-family:system-ui,-apple-system,sans-serif}",
+            ".c{text-align:center;animation:fadeIn .4s ease-out}",
+            ".s{width:40px;height:40px;border:3px solid #e5e7eb;border-top-color:#2563eb;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}",
+            "h1{font-size:18px;font-weight:600;color:#111827;margin-bottom:6px}",
+            "p{font-size:14px;color:#6b7280;animation:pulse 2s ease-in-out infinite}",
+            "@keyframes spin{to{transform:rotate(360deg)}}",
+            "@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}",
+            "@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}",
+            '</style></head><body><div class="c"><div class="s"></div><h1>Laudai</h1><p>Preparando PDF...</p></div></body></html>',
+          ].join(""),
+        );
+        tab.location.href = `/api/laudos/${laudo.id}/pdf`;
+      }
+
+      setLocked(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao salvar.");
+      setError(err instanceof Error ? err.message : "Erro ao imprimir.");
     } finally {
-      setSaving(false);
+      setPrinting(false);
     }
   }
 
@@ -256,23 +261,21 @@ export default function LaudoDetail({
           </div>
         </div>
         <div className="flex items-center gap-2 mt-1">
-          {isEditing ? (
-            <>
-              <button
-                onClick={revertFields}
-                disabled={saving}
-                className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 rounded-lg border border-gray-300"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-              >
-                {saving ? "Salvando..." : "Salvar"}
-              </button>
-            </>
+          {editing ? (
+            <button
+              onClick={handleImprimir}
+              disabled={printing}
+              className="inline-flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18.75 7.131s0 0 0 0"
+                />
+              </svg>
+              {printing ? "Imprimindo..." : "Imprimir"}
+            </button>
           ) : (
             <>
               <DeleteLaudoButton laudoId={laudo.id} />
@@ -284,7 +287,7 @@ export default function LaudoDetail({
 
       {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
-      {isEditing && (
+      {editing && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2 mb-4 text-sm text-yellow-700 animate-[fadeIn_0.2s_ease-out]">
           Este laudo foi gerado por inteligência artificial e pode conter imprecisões. Revise todas as informações com
           atenção antes de salvar.
@@ -292,7 +295,7 @@ export default function LaudoDetail({
       )}
 
       {/* Patient info */}
-      {isEditing ? (
+      {editing ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Paciente</h3>
@@ -433,7 +436,7 @@ export default function LaudoDetail({
           </h2>
         </div>
         <div className="p-6">
-          {isEditing ? (
+          {editing ? (
             <div className="text-sm text-gray-800 leading-relaxed space-y-3">
               {editedParsed.sections.map((section, i) => (
                 <div key={i}>
@@ -495,7 +498,7 @@ export default function LaudoDetail({
 
       {/* Images */}
       <div className="animate-[fadeIn_0.6s_ease-out]">
-        <ImageManager initialImages={images} laudoId={laudo.id} editable={isEditing} />
+        <ImageManager initialImages={images} laudoId={laudo.id} editable={editing} />
       </div>
     </main>
   );
