@@ -46,7 +46,7 @@ All authenticated pages live inside `app/(auth)/`. The route group layout handle
 - `edited_content` — always the latest version. Starts equal to `generated_content`, updated on vet edits. All reads use `edited_content`.
 - `raw_input` — original vet findings, immutable.
 - `locked_at` — set on the first page load without `?review=1`. Once set, the laudo is permanently immutable; the PATCH route rejects requests with a 403.
-- Laudos are historical documents. All patient, clinic, and vet data is stored as a snapshot on the laudo row itself — no FK references to `pets`, `clinics`, or `clinic_vets` for display. The review window (`?review=1`) is the one opportunity to edit; saving also writes back to the source entity if an ID was provided by the UI.
+- Laudos are historical documents. All patient, clinic, and vet data is stored as snapshot text on the laudo row — display always reads from these snapshot columns, never from joined tables. `laudos` also has silent reference FK columns (`pet_id`, `clinic_id`, `vet_id`) that are stored at generation time and persisted on save, used exclusively to write updates back to the source entities (`pets`, `clinics`, `clinic_vets`) during the review window — never for display. The review window (`?review=1`) is the one opportunity to edit; Imprimir saves the snapshot, writes back to source entities via the stored IDs, then locks the laudo.
 - Profile fields `cpf`, `crmv`, `crmv_state` are immutable after first profile creation.
 - All patient/laudo fields (`breed`, `age`, `sex`, `neutered`, `clinicName`, `responsibleVet`, `examDate`) are required — never nullable.
 - Dropdown options (`SPECIES_OPTIONS`, `SEX_OPTIONS`, `sexLabel`) centralized in `shared/constants.ts`.

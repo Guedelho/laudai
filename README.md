@@ -92,8 +92,10 @@ lib/
     client.ts    # Browser client + getAuthHeaders()
     admin.ts     # Service-role client for API routes
     server.ts    # Server-side client for pages
-types/
-  index.ts       # All shared types, dropdown options, API request/response, SSE events
+shared/
+  models.ts      # Core model interfaces (Laudo, Pet, Clinic, Profile…)
+  interfaces.ts  # API request/response types and SSE event union
+  constants.ts   # Dropdown options (SPECIES_OPTIONS, SEX_OPTIONS) and AI model names
 supabase/
   migrations/    # Incremental SQL migrations
 ```
