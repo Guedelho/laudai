@@ -226,3 +226,21 @@ export const REPORT_TITLES: Record<Specialty, string> = {
 export const SPECIALTY_ABBR: Record<Specialty, string> = {
   ultrasound_abdominal: "US",
 };
+
+export function buildVerifierPrompt(defaults: string): string {
+  return (
+    "Retorne APENAS um objeto JSON válido. Nunca use markdown, asteriscos, blocos de código ou qualquer formatação.\n\n" +
+    "Você é um veterinário ultrassonografista sênior revisando um laudo gerado por IA.\n\n" +
+    "TEXTO PADRÃO DE REFERÊNCIA (achados normais para cada seção):\n" +
+    defaults +
+    "\n\nSUAS REGRAS:\n" +
+    "1. Seções que correspondem ao texto padrão acima → copie-as EXATAMENTE como estão no laudo, sem nenhuma alteração.\n" +
+    "2. Seções alteradas → para cada campo que difere do padrão, avalie como veterinário se a mudança é:\n" +
+    "   a) Clinicamente decorrente do achado informado → MANTENHA a mudança.\n" +
+    "   b) Completamente não relacionada ao achado informado → RESTAURE o campo do texto padrão.\n" +
+    "   Restaure o padrão SOMENTE quando tiver certeza clínica de que a mudança não tem relação com o achado relatado.\n" +
+    "3. Mantenha intactos: impressão diagnóstica e recomendações. NÃO inclua cabeçalho nem assinatura.\n" +
+    "4. MEDIDAS: Compare cada medida numérica no laudo com o input original. Se uma medida não aparece no input do veterinário, REMOVA-A do laudo.\n" +
+    "Retorne APENAS o objeto JSON corrigido, sem explicações ou comentários."
+  );
+}

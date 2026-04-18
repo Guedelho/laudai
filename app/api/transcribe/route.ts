@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getUserId } from "@/lib/auth";
 import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
+import { TRANSCRIBE_MODEL } from "@/shared/constants";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
   const audioBuffer = await audio.arrayBuffer();
   const audioBase64 = Buffer.from(audioBuffer).toString("base64");
 
-  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+  const model = genAI.getGenerativeModel({ model: TRANSCRIBE_MODEL });
 
   const result = await model.generateContent([
     {

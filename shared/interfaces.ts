@@ -103,6 +103,15 @@ export type SseEvent =
   | { status: "error"; message: string }
   | { status: "done"; laudo: { id: string } };
 
+// ─── Generation ──────────────────────────────────────────────────────────────
+
+export interface GenerateParams extends PatientFields {
+  specialty: Specialty;
+  rawInput: string;
+  onStatus?: (status: "generating" | "reviewing" | "retrying") => void;
+  onChunk?: (text: string) => void;
+}
+
 // ─── PDF ─────────────────────────────────────────────────────────────────────
 
 export interface PdfData extends PatientFields {
