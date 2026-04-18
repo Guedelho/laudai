@@ -462,16 +462,17 @@ export default function NewLaudoPage() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Castrado(a)</label>
-              <select
-                value={neutered ? "true" : "false"}
-                onChange={(e) => setNeutered(e.target.value === "true")}
-                className={inputCls}
-              >
-                <option value="false">Não</option>
-                <option value="true">Sim</option>
-              </select>
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                id="neutered"
+                type="checkbox"
+                checked={neutered}
+                onChange={(e) => setNeutered(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <label htmlFor="neutered" className="text-sm text-gray-700">
+                Castrado(a)
+              </label>
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Raça</label>
