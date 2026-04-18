@@ -3,13 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { SPECIALTY_LABELS } from "@/lib/templates";
-import { Laudo, LaudoImage, ParsedLaudo, Pet, Clinic } from "@/shared/models";
-import { SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared/constants";
+import { Laudo, LaudoImage, ParsedLaudo } from "@/shared/models";
 import { sexLabel } from "@/lib/utils";
 import { parseLaudoContent } from "@/lib/parseLaudo";
 import { getAuthHeaders } from "@/lib/supabase/client";
-import { PetsResponse, ClinicsResponse, UpdateLaudoRequest } from "@/shared/interfaces";
-import Typeahead from "@/components/Typeahead";
+import { UpdateLaudoRequest } from "@/shared/interfaces";
 import DownloadPDFButton from "./DownloadPDFButton";
 import DeleteLaudoButton from "./DeleteLaudoButton";
 import ImageManager from "./ImageManager";
@@ -100,82 +98,11 @@ export default function LaudoDetail({
     examDate: laudo.exam_date,
   });
 
-  // Source entity IDs — tracked in UI only, not persisted on the laudo
-  const [pets, setPets] = useState<Pet[]>([]);
-  const [clinics, setClinics] = useState<Clinic[]>([]);
-  const [selectedPetId, setSelectedPetId] = useState("");
-  const [selectedClinicId, setSelectedClinicId] = useState("");
-  const [selectedVetId, setSelectedVetId] = useState("");
-
   useEffect(() => {
-    if (isEditing) {
-      async function loadData() {
-        const headers = await getAuthHeaders();
-        const [petsRes, clinicsRes] = await Promise.all([
-          fetch("/api/pets", { headers }),
-          fetch("/api/clinics", { headers }),
-        ]);
-        if (petsRes.ok) {
-          const loadedPets = ((await petsRes.json()) as PetsResponse).pets ?? [];
-          setPets(loadedPets);
-          const matchedPet = loadedPets.find((p) => p.name.toLowerCase() === laudo.patient_name.toLowerCase());
-          if (matchedPet) setSelectedPetId(matchedPet.id);
-        }
-        if (clinicsRes.ok) {
-          const loadedClinics = ((await clinicsRes.json()) as ClinicsResponse).clinics ?? [];
-          setClinics(loadedClinics);
-          const matchedClinic = loadedClinics.find((c) => c.name.toLowerCase() === laudo.clinic_name.toLowerCase());
-          if (matchedClinic) {
-            setSelectedClinicId(matchedClinic.id);
-            const matchedVet = matchedClinic.clinic_vets?.find(
-              (v) => v.name.toLowerCase() === laudo.responsible_vet.toLowerCase(),
-            );
-            if (matchedVet) setSelectedVetId(matchedVet.id);
-          }
-        }
-      }
-      loadData();
-    } else if (!laudo.locked_at) {
+    if (!isEditing && !laudo.locked_at) {
       getAuthHeaders().then((headers) => fetch(`/api/laudos/${laudo.id}/lock`, { method: "POST", headers }));
     }
   }, [isEditing, laudo.id, laudo.locked_at]);
-
-  const selectedClinic = clinics.find((c) => c.id === selectedClinicId);
-  const vets = selectedClinic?.clinic_vets ?? [];
-  const breedSuggestions = [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
-
-  function handlePetChange(name: string) {
-    const match = pets.find((p) => p.name.toLowerCase() === name.toLowerCase());
-    if (match) {
-      setSelectedPetId(match.id);
-      setFields((f) => ({
-        ...f,
-        patientName: match.name,
-        species: match.species,
-        breed: match.breed,
-        age: match.age,
-        sex: match.sex,
-        neutered: match.neutered,
-        ownerName: match.owner_name,
-      }));
-    } else {
-      setSelectedPetId("");
-      setFields((f) => ({ ...f, patientName: name }));
-    }
-  }
-
-  function handleClinicChange(name: string) {
-    const match = clinics.find((c) => c.name.toLowerCase() === name.toLowerCase());
-    setSelectedClinicId(match?.id ?? "");
-    setSelectedVetId("");
-    setFields((f) => ({ ...f, clinicName: name, responsibleVet: "" }));
-  }
-
-  function handleVetChange(name: string) {
-    const match = vets.find((v) => v.name.toLowerCase() === name.toLowerCase());
-    setSelectedVetId(match?.id ?? "");
-    setFields((f) => ({ ...f, responsibleVet: name }));
-  }
 
   async function handleImprimir() {
     setPrinting(true);
@@ -200,9 +127,9 @@ export default function LaudoDetail({
             responsible_vet: fields.responsibleVet,
             exam_date: fields.examDate,
           },
-          petId: selectedPetId || undefined,
-          clinicId: selectedClinicId || undefined,
-          vetId: selectedVetId || undefined,
+          petId: laudo.pet_id ?? undefined,
+          clinicId: laudo.clinic_id ?? undefined,
+          vetId: laudo.vet_id ?? undefined,
         } satisfies UpdateLaudoRequest),
       });
       if (!res.ok) throw new Error((await res.json()).error || "Erro ao salvar.");
@@ -317,34 +244,25 @@ export default function LaudoDetail({
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Paciente</h3>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Nome</label>
-              <Typeahead
+              <input
                 value={fields.patientName}
-                onChange={handlePetChange}
-                suggestions={pets.map((p) => p.name)}
-                placeholder="Nome do paciente"
+                onChange={(e) => setFields({ ...fields, patientName: e.target.value })}
                 className={inputCls}
               />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Espécie</label>
-              <select
+              <input
                 value={fields.species}
                 onChange={(e) => setFields({ ...fields, species: e.target.value })}
                 className={inputCls}
-              >
-                {SPECIES_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Raça</label>
-              <Typeahead
+              <input
                 value={fields.breed}
-                onChange={(v) => setFields({ ...fields, breed: v })}
-                suggestions={breedSuggestions}
+                onChange={(e) => setFields({ ...fields, breed: e.target.value })}
                 className={inputCls}
               />
             </div>
@@ -358,28 +276,23 @@ export default function LaudoDetail({
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Sexo</label>
-              <select
+              <input
                 value={fields.sex}
                 onChange={(e) => setFields({ ...fields, sex: e.target.value })}
                 className={inputCls}
-              >
-                {SEX_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Castrado(a)</label>
-              <select
-                value={fields.neutered ? "true" : "false"}
-                onChange={(e) => setFields({ ...fields, neutered: e.target.value === "true" })}
-                className={inputCls}
-              >
-                <option value="false">Não</option>
-                <option value="true">Sim</option>
-              </select>
+            <div className="flex items-center gap-2">
+              <input
+                id="neutered"
+                type="checkbox"
+                checked={fields.neutered}
+                onChange={(e) => setFields({ ...fields, neutered: e.target.checked })}
+                className="rounded border-gray-300"
+              />
+              <label htmlFor="neutered" className="text-sm text-gray-700">
+                Castrado(a)
+              </label>
             </div>
           </div>
           <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
@@ -394,21 +307,17 @@ export default function LaudoDetail({
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Clínica</label>
-              <Typeahead
+              <input
                 value={fields.clinicName}
-                onChange={handleClinicChange}
-                suggestions={clinics.map((c) => c.name)}
-                placeholder="Nome da clínica"
+                onChange={(e) => setFields({ ...fields, clinicName: e.target.value })}
                 className={inputCls}
               />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Médico Responsável</label>
-              <Typeahead
+              <input
                 value={fields.responsibleVet}
-                onChange={handleVetChange}
-                suggestions={vets.map((v) => v.name)}
-                placeholder="Nome do responsável"
+                onChange={(e) => setFields({ ...fields, responsibleVet: e.target.value })}
                 className={inputCls}
               />
             </div>

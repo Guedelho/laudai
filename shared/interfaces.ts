@@ -15,6 +15,9 @@ import type {
 export interface GenerateRequest extends LaudoFields {
   specialty: Specialty;
   rawInput: string;
+  petId?: string;
+  clinicId?: string;
+  vetId?: string;
 }
 
 export interface PetRequest {

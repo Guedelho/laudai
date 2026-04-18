@@ -223,6 +223,9 @@ export default function NewLaudoPage() {
 
       let resolvedClinicName = clinicName;
       let resolvedVetName = responsibleVet;
+      let resolvedPetId = selectedPetId || undefined;
+      let resolvedClinicId = selectedClinicId || undefined;
+      let resolvedVetId = selectedVetId || undefined;
 
       if (!selectedClinicId && newClinicName.trim()) {
         const res = await fetch("/api/clinics", {
@@ -234,7 +237,11 @@ export default function NewLaudoPage() {
           const data: ClinicResponse = await res.json();
           setClinics((prev) => [...prev, data.clinic]);
           resolvedClinicName = data.clinic.name;
-          if (data.clinic.clinic_vets?.[0]) resolvedVetName = data.clinic.clinic_vets[0].name;
+          resolvedClinicId = data.clinic.id;
+          if (data.clinic.clinic_vets?.[0]) {
+            resolvedVetName = data.clinic.clinic_vets[0].name;
+            resolvedVetId = data.clinic.clinic_vets[0].id;
+          }
         }
       } else if (selectedClinicId && !selectedVetId && newVetName.trim()) {
         const res = await fetch(`/api/clinics/${selectedClinicId}/vets`, {
@@ -248,6 +255,7 @@ export default function NewLaudoPage() {
             prev.map((c) => (c.id === selectedClinicId ? { ...c, clinic_vets: [...c.clinic_vets, data.vet] } : c)),
           );
           resolvedVetName = data.vet.name;
+          resolvedVetId = data.vet.id;
         }
       }
 
@@ -264,6 +272,9 @@ export default function NewLaudoPage() {
         clinicName: resolvedClinicName,
         responsibleVet: resolvedVetName,
         examDate,
+        petId: resolvedPetId,
+        clinicId: resolvedClinicId,
+        vetId: resolvedVetId,
       });
 
       let laudoId: string | null = null;

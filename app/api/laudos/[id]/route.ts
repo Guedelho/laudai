@@ -26,6 +26,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       edited_content: JSON.stringify(generatedContent),
       ...patientFields,
       pdf_storage_path: null,
+      ...(petId !== undefined ? { pet_id: petId } : {}),
+      ...(clinicId !== undefined ? { clinic_id: clinicId } : {}),
+      ...(vetId !== undefined ? { vet_id: vetId } : {}),
     })
     .eq("id", id)
     .eq("user_id", userId)

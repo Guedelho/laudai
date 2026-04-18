@@ -3,6 +3,7 @@ import { generateLaudo } from "@/lib/gemini";
 import { getUserId, getProfile } from "@/lib/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { GenerateRequest } from "@/shared/interfaces";
+import { findOrCreatePet } from "@/lib/db";
 import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
 
 export const maxDuration = 30;
@@ -54,6 +55,9 @@ export async function POST(req: NextRequest) {
     clinicName,
     responsibleVet,
     examDate,
+    petId,
+    clinicId,
+    vetId,
   } = body;
 
   const required: [string, string][] = [
@@ -76,20 +80,34 @@ export async function POST(req: NextRequest) {
 
   return sseStream(async (send) => {
     let generatedContent: string;
+    let resolvedPetId: string | null = petId ?? null;
     try {
-      generatedContent = await generateLaudo({
-        specialty,
-        rawInput,
-        patientName,
-        species,
-        breed,
-        age,
-        sex,
-        neutered,
-        ownerName,
-        onStatus: (status) => send({ status }),
-        onChunk: (text) => send({ status: "chunk", text }),
-      });
+      const [content, pet] = await Promise.all([
+        generateLaudo({
+          specialty,
+          rawInput,
+          patientName,
+          species,
+          breed,
+          age,
+          sex,
+          neutered,
+          ownerName,
+          onStatus: (status) => send({ status }),
+          onChunk: (text) => send({ status: "chunk", text }),
+        }),
+        !petId
+          ? findOrCreatePet(supabase, userId, patientName.trim(), ownerName.trim(), {
+              species,
+              breed,
+              age,
+              sex,
+              neutered,
+            })
+          : Promise.resolve(null),
+      ]);
+      generatedContent = content;
+      if (pet?.id) resolvedPetId = pet.id;
     } catch (err) {
       console.error("Gemini generation error:", err);
       send({ status: "error", message: "Erro ao gerar laudo. Tente novamente." });
@@ -116,6 +134,9 @@ export async function POST(req: NextRequest) {
         clinic_name: clinicName,
         responsible_vet: responsibleVet,
         exam_date: examDate,
+        pet_id: resolvedPetId,
+        clinic_id: clinicId ?? null,
+        vet_id: vetId ?? null,
       })
       .select()
       .single();
