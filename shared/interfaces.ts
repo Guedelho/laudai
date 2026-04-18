@@ -85,10 +85,6 @@ export interface VetResponse extends ApiResponse {
   vet: ClinicVet;
 }
 
-export interface LaudoResponse extends ApiResponse {
-  laudo: Laudo;
-}
-
 export interface ImagesResponse extends ApiResponse {
   images: LaudoImage[];
 }

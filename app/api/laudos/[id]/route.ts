@@ -20,7 +20,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { generatedContent, patientFields, petId, clinicId, vetId }: UpdateLaudoRequest = await req.json();
 
-  const { data: updated, error } = await admin
+  const { error } = await admin
     .from("laudos")
     .update({
       edited_content: JSON.stringify(generatedContent),
@@ -31,9 +31,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(vetId !== undefined ? { vet_id: vetId } : {}),
     })
     .eq("id", id)
-    .eq("user_id", userId)
-    .select()
-    .single();
+    .eq("user_id", userId);
 
   if (error) {
     console.error("Laudo update error:", error);
@@ -64,7 +62,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   );
 
   revalidateTag(`laudo-${id}`, "default");
-  return NextResponse.json({ laudo: updated });
+  return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
