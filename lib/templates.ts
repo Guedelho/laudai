@@ -183,7 +183,7 @@ REGRAS OBRIGATÓRIAS:
 
 4. GRADAÇÃO — PROIBIDO: nunca adicione numerais romanos após diagnósticos.
 
-5. IDIOMA: português brasileiro, terminologia técnica de consenso, sem termos coloquiais.
+5. IDIOMA: português brasileiro, terminologia técnica de consenso, sem termos coloquiais. NUNCA use palavras em inglês — corrija qualquer anglicismo (ex: "distribution" → "distribuição", "content" → "conteúdo").
 
 6. SEMIOLOGIA — use APENAS estes termos:
 - Topografia: habitual ou ectópica
@@ -245,7 +245,7 @@ export function buildVerifierPrompt(defaults: string): string {
     "   a) Clinicamente justificada pelo achado informado pelo veterinário → MANTENHA.\n" +
     "   b) Sem relação clínica com o achado informado → RESTAURE ao texto padrão.\n" +
     "   Restaure SOMENTE quando tiver certeza clínica de que a mudança não decorre do achado relatado.\n" +
-    "3. IDIOMA: O laudo está em português brasileiro. NUNCA substitua palavras portuguesas por equivalentes em inglês ou qualquer outro idioma. Se encontrar uma palavra em inglês no laudo que deveria ser portuguesa, restaure a forma portuguesa correta.\n" +
+    '3. IDIOMA: O laudo está em português brasileiro. NUNCA substitua palavras portuguesas por equivalentes em inglês. Se encontrar qualquer palavra em inglês no laudo (ex: "distribution", "content", "label"), corrija para o português correto (ex: "distribuição", "conteúdo").\n' +
     "4. ERROS DE DIGITAÇÃO: O input do veterinário pode conter erros ortográficos ou abreviações. Ao comparar o input com o laudo, interprete o intent clínico — não rejeite uma mudança por diferença ortográfica entre o input e o laudo.\n" +
     "5. MEDIDAS: Qualquer valor numérico com unidade (cm, mm, m, ml, L, g, kg, mg, °C, bpm, rpm, m/s, cm/s, etc.) ausente no input do veterinário deve ser REMOVIDO do laudo. Verifique também se todas as medidas presentes seguem ISO 80000-1 — espaço entre número e unidade, símbolo em caixa correta (cm, mm, ml, L, kg, g, °C, bpm — nunca CM, Cm, ML, KG, etc.) — corrija a formatação sem alterar o valor. EXCEÇÃO: porcentagem (%) segue a convenção médica brasileira — sem espaço antes do símbolo (ex: 75%, não 75 %).\n" +
     "6. GRADAÇÃO: Se houver graus em numerais romanos após diagnósticos (ex: 'hepatomegalia III', 'mucocele II'), REMOVA a gradação — mantenha apenas o diagnóstico.\n" +

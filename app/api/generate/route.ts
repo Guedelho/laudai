@@ -6,7 +6,7 @@ import { GenerateRequest } from "@/shared/interfaces";
 import { findOrCreatePet } from "@/lib/db";
 import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
 
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 function sseStream(handler: (send: (data: object) => void) => Promise<void>): NextResponse {
   const encoder = new TextEncoder();
