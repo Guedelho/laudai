@@ -6,17 +6,12 @@ import Typeahead from "@/components/Typeahead";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Pet, Clinic } from "@/shared/models";
-import {
-  SseEvent,
-  ApiResponse,
-  PetsResponse,
-  ClinicsResponse,
-  ClinicResponse,
-  VetResponse,
-  TranscribeResponse,
-} from "@/shared/interfaces";
+import { SseEvent, ApiResponse } from "@/shared/interfaces";
 import { SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared/constants";
-import { getAuthHeaders } from "@/lib/supabase/client";
+import { listPets } from "@/lib/api/pets";
+import { listClinics, createClinic, addVet } from "@/lib/api/clinics";
+import { uploadImages } from "@/lib/api/laudos";
+import { transcribeAudio as transcribe } from "@/lib/api/transcribe";
 
 export default function NewLaudoPage() {
   const router = useRouter();
@@ -72,13 +67,9 @@ export default function NewLaudoPage() {
 
   useEffect(() => {
     async function loadData() {
-      const headers = await getAuthHeaders();
-      const [petsRes, clinicsRes] = await Promise.all([
-        fetch("/api/pets", { headers }),
-        fetch("/api/clinics", { headers }),
-      ]);
-      if (petsRes.ok) setPets(((await petsRes.json()) as PetsResponse).pets ?? []);
-      if (clinicsRes.ok) setClinics(((await clinicsRes.json()) as ClinicsResponse).clinics ?? []);
+      const [p, c] = await Promise.all([listPets(), listClinics()]);
+      setPets(p);
+      setClinics(c);
     }
     loadData();
   }, []);
@@ -182,15 +173,8 @@ export default function NewLaudoPage() {
   async function transcribeAudio(blob: Blob) {
     setTranscribing(true);
     try {
-      const formData = new FormData();
-      formData.append("audio", blob, "recording.webm");
-      const res = await fetch("/api/transcribe", {
-        method: "POST",
-        headers: await getAuthHeaders(),
-        body: formData,
-      });
-      const data: TranscribeResponse = await res.json();
-      setRawInput((prev) => prev + (prev ? " " : "") + data.text);
+      const text = await transcribe(blob);
+      setRawInput((prev) => prev + (prev ? " " : "") + text);
     } catch {
       setError("Erro ao transcrever áudio.");
     } finally {
@@ -219,7 +203,7 @@ export default function NewLaudoPage() {
     setGeneratingStatus("Gerando laudo...");
 
     try {
-      const headers = { "Content-Type": "application/json", ...(await getAuthHeaders()) };
+      const headers = { "Content-Type": "application/json" };
 
       let resolvedClinicName = clinicName;
       let resolvedVetName = responsibleVet;
@@ -228,34 +212,28 @@ export default function NewLaudoPage() {
       let resolvedVetId = selectedVetId || undefined;
 
       if (!selectedClinicId && newClinicName.trim()) {
-        const res = await fetch("/api/clinics", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ name: newClinicName.trim(), vetName: newVetName.trim() }),
-        });
-        if (res.ok) {
-          const data: ClinicResponse = await res.json();
-          setClinics((prev) => [...prev, data.clinic]);
-          resolvedClinicName = data.clinic.name;
-          resolvedClinicId = data.clinic.id;
-          if (data.clinic.clinic_vets?.[0]) {
-            resolvedVetName = data.clinic.clinic_vets[0].name;
-            resolvedVetId = data.clinic.clinic_vets[0].id;
+        try {
+          const { clinic, vet } = await createClinic(newClinicName.trim(), newVetName.trim());
+          setClinics((prev) => [...prev, clinic]);
+          resolvedClinicName = clinic.name;
+          resolvedClinicId = clinic.id;
+          if (vet) {
+            resolvedVetName = vet.name;
+            resolvedVetId = vet.id;
           }
+        } catch {
+          /* non-blocking — continue with typed names */
         }
       } else if (selectedClinicId && !selectedVetId && newVetName.trim()) {
-        const res = await fetch(`/api/clinics/${selectedClinicId}/vets`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ name: newVetName.trim() }),
-        });
-        if (res.ok) {
-          const data: VetResponse = await res.json();
+        try {
+          const vet = await addVet(selectedClinicId, newVetName.trim());
           setClinics((prev) =>
-            prev.map((c) => (c.id === selectedClinicId ? { ...c, clinic_vets: [...c.clinic_vets, data.vet] } : c)),
+            prev.map((c) => (c.id === selectedClinicId ? { ...c, clinic_vets: [...c.clinic_vets, vet] } : c)),
           );
-          resolvedVetName = data.vet.name;
-          resolvedVetId = data.vet.id;
+          resolvedVetName = vet.name;
+          resolvedVetId = vet.id;
+        } catch {
+          /* non-blocking — continue with typed names */
         }
       }
 
@@ -333,22 +311,7 @@ export default function NewLaudoPage() {
 
       if (selectedFiles.length > 0) {
         setGeneratingStatus("Enviando imagens...");
-        const formData = new FormData();
-        selectedFiles.forEach((f) => formData.append("images", f));
-        const imgRes = await fetch(`/api/laudos/${laudoId}/images`, {
-          method: "POST",
-          headers: await getAuthHeaders(),
-          body: formData,
-        });
-        if (!imgRes.ok) {
-          let imgData: ApiResponse = {};
-          try {
-            imgData = await imgRes.json();
-          } catch {
-            /* ignore */
-          }
-          throw new Error(imgData.error || "Erro ao enviar imagens.");
-        }
+        await uploadImages(laudoId, selectedFiles);
       }
 
       setGeneratingStatus("Redirecionando...");

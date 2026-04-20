@@ -1,7 +1,11 @@
 import { Specialty } from "@/shared/models";
 
-export const SPECIALTY_LABELS: Record<Specialty, string> = {
-  ultrasound_abdominal: "Ultrassonografia Abdominal",
+export const SPECIALTIES: Record<Specialty, { label: string; reportTitle: string; abbr: string }> = {
+  ultrasound_abdominal: {
+    label: "Ultrassonografia Abdominal",
+    reportTitle: "RELATÓRIO ULTRASSONOGRÁFICO",
+    abbr: "US",
+  },
 };
 
 const DEFAULTS_BASE_ABDOMINAL = `BEXIGA: Bexiga de repleção líquida adequada, formato habitual, paredes normoespessas, conteúdo anecogênico e homogêneo.
@@ -44,7 +48,7 @@ const DEFAULTS_FEMALE_NEUTERED_ABDOMINAL = `ÚTERO: Não visualizado, com histó
 
 OVÁRIOS: Não visualizados, com histórico de castração.`;
 
-export function buildDefaults(sex?: string | null, neutered?: boolean | null): string {
+export function buildDefaults(sex: string, neutered: boolean): string {
   const base = DEFAULTS_BASE_ABDOMINAL;
   if (sex === "M") return `${base}\n\n${neutered ? DEFAULTS_MALE_NEUTERED_ABDOMINAL : DEFAULTS_MALE_ABDOMINAL}`;
   if (sex === "F") return `${base}\n\n${neutered ? DEFAULTS_FEMALE_NEUTERED_ABDOMINAL : DEFAULTS_FEMALE_ABDOMINAL}`;
@@ -208,11 +212,3 @@ ${FULL_NOMENCLATURE}
 TEXTO PADRÃO (achados normais):
 ${defaults}`;
 }
-
-export const REPORT_TITLES: Record<Specialty, string> = {
-  ultrasound_abdominal: "RELATÓRIO ULTRASSONOGRÁFICO",
-};
-
-export const SPECIALTY_ABBR: Record<Specialty, string> = {
-  ultrasound_abdominal: "US",
-};

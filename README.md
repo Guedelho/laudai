@@ -82,20 +82,23 @@ components/
   Typeahead.tsx    # Autocomplete input from existing values
   LoadingSkeleton.tsx
 lib/
-  ai.ts          # Gemini API call (single-call streaming generation + retry)
-  templates.ts   # Specialty templates, defaults, nomenclature (from Mapa do Laudo Memorável)
-  generatePdf.ts # pdfmake PDF builder
-  parseLaudo.ts  # Parse Gemini JSON output
-  rateLimit.ts   # Shared sliding-window rate limiter
-  db.ts          # find-or-create helpers (clinics, vets, pets)
+  api/           # Client-side typed fetch services (pets, clinics, laudos, profile, transcribe)
+  laudo/
+    generate.ts  # Gemini single-call streaming generation + retry
+    pdf.ts       # pdfmake PDF builder
+    templates.ts # Prompts, defaults, specialty config
   supabase/
-    client.ts    # Browser client + getAuthHeaders()
-    admin.ts     # Service-role client for API routes
-    server.ts    # Server-side client for pages
+    admin.ts     # Service-role client
+    client.ts    # Browser client
+    server.ts    # Server-side client
+    auth.ts      # getUserId, getProfile
+    db.ts        # find-or-create helpers (clinics, vets, pets)
+  utils.ts       # Client-safe helpers (sexLabel, parseLaudoContent)
+  server-utils.ts # Server-only helpers (parseProfileImage, rateLimit)
 shared/
   models.ts      # Core model interfaces (Laudo, Pet, Clinic, Profile…)
   interfaces.ts  # API request/response types and SSE event union
-  constants.ts   # Dropdown options (SPECIES_OPTIONS, SEX_OPTIONS) and AI model names
+  constants.ts   # Dropdown options and AI model names
 supabase/
   migrations/    # Incremental SQL migrations
 ```

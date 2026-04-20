@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserId } from "@/lib/auth";
+import { getUserId } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
-import { findOrCreateClinic, findOrCreateVet } from "@/lib/db";
+import { findOrCreateClinic, findOrCreateVet } from "@/lib/supabase/db";
 
 export async function GET(req: NextRequest) {
-  const userId = await getUserId(req);
+  const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdmin();
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const userId = await getUserId(req);
+  const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { name, vetName } = await req.json();

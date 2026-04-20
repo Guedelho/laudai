@@ -7,13 +7,13 @@
 ## Stack
 
 - **Next.js 16 App Router** — Tailwind 4 (PostCSS-based, no `tailwind.config.*`), Supabase SSR via `@supabase/ssr`
-- **AI**: `lib/ai.ts` makes a single Gemini call per laudo (`gemini-3-flash-preview`) with a combined system prompt (sections + conclusion + verifier constraints). Streaming via `generateContentStream` with `responseMimeType: "application/json"`. Retry with exponential backoff on transient errors. Generation uses `temperature: 0`.
+- **AI**: `lib/laudo/generate.ts` makes a single Gemini call per laudo (`gemini-3-flash-preview`) with a combined system prompt (sections + conclusion + verifier constraints). Streaming via `generateContentStream` with `responseMimeType: "application/json"`. Retry with exponential backoff on transient errors. Generation uses `temperature: 0`.
 - **Transcription**: `app/api/transcribe/route.ts` uses `gemini-3-flash-preview` for audio → text.
-- **PDF**: `lib/generatePdf.ts` (pdfmake). Fonts fetched from CDN and cached module-level. Generated PDFs are cached in the `laudo-pdfs` bucket — cleared on laudo edit or image changes.
+- **PDF**: `lib/laudo/pdf.ts` (pdfmake). Fonts fetched from CDN and cached module-level. Generated PDFs are cached in the `laudo-pdfs` bucket — cleared on laudo edit or image changes.
 - **Formatting**: Prettier with pre-commit hook via lint-staged. Run `npm run format` to format all files.
 - **Database**: Supabase Postgres (project `rgemiayidnumeotplozm`, region `sa-east-1`). RLS on every table with `(select auth.uid()) = user_id` scoped to `authenticated` role. All FK and user_id columns are indexed.
 - **Storage**: Three private buckets — `laudo-images` (exam images), `laudo-pdfs` (cached PDFs), `profile-logos` (logos + signatures). All have RLS policies scoping access to `auth.uid() = folder name`. All access via service role in API routes.
-- **Auth**: Supabase Auth via cookies (SSR). `proxy.ts` (middleware) syncs session and redirects unauthenticated users to `/login`. API routes use `getUserId()` from `@/lib/auth` which accepts both cookie session and `Authorization: Bearer <token>`.
+- **Auth**: Supabase Auth via cookies (SSR). `proxy.ts` (middleware) syncs session and redirects unauthenticated users to `/login`. API routes use `getUserId()` from `@/lib/supabase/auth` — cookie-only, no manual Bearer tokens.
 - **Deployment**: Vercel. Git auto-deploy may be disconnected — use `vercel --prod` to deploy manually. Push via HTTPS as `guedelho`.
 
 ## Page structure
@@ -28,17 +28,18 @@ All authenticated pages live inside `app/(auth)/`. The route group layout handle
 
 ## API route conventions
 
-- Auth: `getUserId()` from `@/lib/auth` — never from `@/lib/ai`.
+- Auth: `getUserId()` from `@/lib/supabase/auth`.
 - Data: `createAdmin()` — never the anon client.
-- Rate limiting: `checkRateLimit` + `recordRateLimit` from `@/lib/rateLimit` — never inline `Map<string, number[]>`.
+- Rate limiting: `checkRateLimit` + `recordRateLimit` from `@/lib/server-utils` — never inline `Map<string, number[]>`.
 - Image validation: Server-side via `sharp` magic-byte detection (not `file.type`).
 - Errors: Log with `console.error`, return generic Portuguese message to client. Never leak internal details.
 - Cache invalidation: `revalidateTag(\`laudo-${id}\`, "default")` — Next.js 16 requires the second argument.
 
 ## Client-side conventions
 
-- Auth headers: `getAuthHeaders()` from `@/lib/supabase/client` — never inline `createClient().auth.getSession()`.
-- JSON requests: add `"Content-Type": "application/json"` alongside `getAuthHeaders()`. FormData requests use `getAuthHeaders()` alone (browser sets multipart boundary).
+- Auth is handled via cookies (`@supabase/ssr`) — no manual auth headers needed on fetch calls.
+- API calls: use typed functions from `lib/api/` (pets, clinics, laudos, profile, transcribe) — never inline `fetch()` in components.
+- JSON requests: add `"Content-Type": "application/json"`. FormData requests need no extra headers (browser sets multipart boundary).
 
 ## Data model
 

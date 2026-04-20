@@ -183,15 +183,15 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
   const leftCol = [
     row("Paciente: ", patientName),
     row("Espécie: ", species),
-    ...(breed ? [row("Raça: ", breed)] : []),
-    ...(age ? [row("Idade: ", age)] : []),
-    ...(sex ? [row("Sexo: ", sex === "M" ? "Macho" : "Fêmea")] : []),
-    ...(neutered != null ? [row("Castrado(a): ", neutered ? "Sim" : "Não")] : []),
+    row("Raça: ", breed),
+    row("Idade: ", age),
+    row("Sexo: ", sex === "M" ? "Macho" : "Fêmea"),
+    row("Castrado(a): ", neutered ? "Sim" : "Não"),
   ];
 
   const rightCol = [
-    ...(clinicName ? [row("Clínica: ", clinicName)] : []),
-    ...(responsibleVet ? [row("Médico Responsável: ", responsibleVet)] : []),
+    row("Clínica: ", clinicName),
+    row("Médico Responsável: ", responsibleVet),
     row("Responsável: ", ownerName),
     row("Data: ", date),
   ];

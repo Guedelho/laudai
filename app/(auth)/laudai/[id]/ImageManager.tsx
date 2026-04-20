@@ -3,8 +3,7 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
 import { LaudoImage } from "@/shared/models";
-import { ImagesResponse, ApiResponse } from "@/shared/interfaces";
-import { getAuthHeaders } from "@/lib/supabase/client";
+import { uploadImages, deleteImage } from "@/lib/api/laudos";
 import ImageLightbox from "@/components/ImageLightbox";
 
 export default function ImageManager({
@@ -28,13 +27,8 @@ export default function ImageManager({
     setUploading(true);
     setError("");
     try {
-      const headers = await getAuthHeaders();
-      const formData = new FormData();
-      files.forEach((f) => formData.append("images", f));
-      const res = await fetch(`/api/laudos/${laudoId}/images`, { method: "POST", headers, body: formData });
-      const data: ImagesResponse = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erro ao enviar imagens.");
-      setImages((prev) => [...prev, ...(data.images ?? [])]);
+      const newImages = await uploadImages(laudoId, files);
+      setImages((prev) => [...prev, ...newImages]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao enviar imagens.");
     } finally {
@@ -46,17 +40,7 @@ export default function ImageManager({
   async function handleDelete(imageId: string) {
     setError("");
     try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(`/api/laudos/${laudoId}/images/${imageId}`, { method: "DELETE", headers });
-      if (!res.ok) {
-        let data: ApiResponse = {};
-        try {
-          data = await res.json();
-        } catch {
-          /* ignore */
-        }
-        throw new Error(data.error || "Erro ao remover imagem.");
-      }
+      await deleteImage(laudoId, imageId);
       setImages((prev) => prev.filter((img) => img.id !== imageId));
       setSelectedIndex((prev) => {
         if (prev === null) return null;

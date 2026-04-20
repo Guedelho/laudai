@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateLaudo } from "@/lib/ai";
-import { getUserId, getProfile } from "@/lib/auth";
+import { generateLaudo } from "@/lib/laudo/generate";
+import { getUserId, getProfile } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { GenerateRequest } from "@/shared/interfaces";
-import { findOrCreatePet } from "@/lib/db";
-import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
+import { findOrCreatePet } from "@/lib/supabase/db";
+import { checkRateLimit, recordRateLimit } from "@/lib/server-utils";
 
 export const maxDuration = 180;
 
@@ -32,7 +32,7 @@ function sseStream(handler: (send: (data: object) => void) => Promise<void>): Ne
 }
 
 export async function POST(req: NextRequest) {
-  const userId = await getUserId(req);
+  const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (!checkRateLimit("generate", userId, 5))

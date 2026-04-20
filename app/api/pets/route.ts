@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserId } from "@/lib/auth";
+import { getUserId } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
-import { findOrCreatePet } from "@/lib/db";
+import { findOrCreatePet } from "@/lib/supabase/db";
 import { PetRequest } from "@/shared/interfaces";
 
 export async function GET(req: NextRequest) {
-  const userId = await getUserId(req);
+  const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdmin();
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const userId = await getUserId(req);
+  const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { name, species, breed, age, sex, neutered, ownerName }: PetRequest = await req.json();

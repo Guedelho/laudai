@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GENERATE_MODEL } from "@/shared/constants";
-import { buildDefaults, buildSingleCallPrompt } from "@/lib/templates";
+import { buildDefaults, buildSingleCallPrompt } from "@/lib/laudo/templates";
 import type { GenerateParams } from "@/shared/interfaces";
 
 export const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);

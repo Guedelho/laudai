@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { Pet } from "@/shared/models";
-import { PetResponse, ApiResponse } from "@/shared/interfaces";
 import { SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared/constants";
 import { sexLabel } from "@/lib/utils";
-import { getAuthHeaders } from "@/lib/supabase/client";
+import * as api from "@/lib/api/pets";
 import Typeahead from "@/components/Typeahead";
 
 export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
@@ -49,26 +48,17 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
     setEditError("");
 
     try {
-      const res = await fetch(`/api/pets/${editingId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
-        body: JSON.stringify({
-          name: editFields.name,
-          species: editFields.species,
-          breed: editFields.breed,
-          age: editFields.age,
-          ownerName: editFields.owner_name,
-          sex: editFields.sex,
-          neutered: editFields.neutered,
-        }),
+      const pet = await api.updatePet(editingId, {
+        name: editFields.name!,
+        species: editFields.species!,
+        breed: editFields.breed!,
+        age: editFields.age!,
+        ownerName: editFields.owner_name!,
+        sex: editFields.sex!,
+        neutered: editFields.neutered!,
       });
 
-      const data: PetResponse = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      setPets((prev) =>
-        prev.map((p) => (p.id === editingId ? data.pet : p)).sort((a, b) => a.name.localeCompare(b.name)),
-      );
+      setPets((prev) => prev.map((p) => (p.id === editingId ? pet : p)).sort((a, b) => a.name.localeCompare(b.name)));
       setEditingId(null);
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Erro ao salvar paciente.");
@@ -81,11 +71,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
     setDeletingId(id);
     setDeleteError("");
     try {
-      const res = await fetch(`/api/pets/${id}`, { method: "DELETE", headers: await getAuthHeaders() });
-      if (!res.ok) {
-        const data: ApiResponse = await res.json();
-        throw new Error(data.error);
-      }
+      await api.deletePet(id);
       setPets((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : "Erro ao excluir paciente.");
@@ -100,16 +86,9 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
     setError("");
 
     try {
-      const res = await fetch("/api/pets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
-        body: JSON.stringify({ name, species, breed, age, ownerName }),
-      });
+      const pet = await api.createPet({ name, species, breed, age, ownerName, sex: "", neutered: false });
 
-      const data: PetResponse = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      setPets((prev) => [...prev, data.pet].sort((a, b) => a.name.localeCompare(b.name)));
+      setPets((prev) => [...prev, pet].sort((a, b) => a.name.localeCompare(b.name)));
       setName("");
       setSpecies("Canina");
       setBreed("");
@@ -313,9 +292,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                 <div>
                   <p className="font-medium text-gray-900">{pet.name}</p>
                   <p className="text-sm text-gray-500">
-                    {pet.species}
-                    {pet.breed ? ` · ${pet.breed}` : ""}
-                    {pet.age ? ` · ${pet.age}` : ""}· {sexLabel(pet.sex)}
+                    {pet.species} · {pet.breed} · {pet.age} · {sexLabel(pet.sex)}
                     {pet.neutered ? " · Castrado(a)" : ""}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">Responsável: {pet.owner_name}</p>

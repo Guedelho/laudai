@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserId } from "@/lib/auth";
-import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
-import { genAI } from "@/lib/ai";
+import { getUserId } from "@/lib/supabase/auth";
+import { checkRateLimit, recordRateLimit } from "@/lib/server-utils";
+import { genAI } from "@/lib/laudo/generate";
 import { TRANSCRIBE_MODEL } from "@/shared/constants";
 
 export async function POST(req: NextRequest) {
-  const userId = await getUserId(req);
+  const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (!checkRateLimit("transcribe", userId, 10))

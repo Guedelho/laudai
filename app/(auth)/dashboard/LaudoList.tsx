@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { SPECIALTY_LABELS } from "@/lib/templates";
+import { SPECIALTIES } from "@/lib/laudo/templates";
 import { Specialty } from "@/shared/models";
 
 interface LaudoSummary {
@@ -60,7 +60,7 @@ export default function LaudoList({ laudos }: { laudos: LaudoSummary[] }) {
                   {laudo.patient_name} · {laudo.owner_name}
                 </p>
                 <p className="text-sm text-gray-500">
-                  {SPECIALTY_LABELS[laudo.specialty]} · {laudo.clinic_name}
+                  {SPECIALTIES[laudo.specialty].label} · {laudo.clinic_name}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
                   Criado: {new Date(laudo.created_at).toLocaleDateString("pt-BR")}

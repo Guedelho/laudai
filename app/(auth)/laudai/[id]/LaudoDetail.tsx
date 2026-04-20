@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { SPECIALTY_LABELS } from "@/lib/templates";
+import { SPECIALTIES } from "@/lib/laudo/templates";
 import { Laudo, LaudoImage, ParsedLaudo } from "@/shared/models";
 import { SEX_OPTIONS } from "@/shared/constants";
-import { sexLabel } from "@/lib/utils";
-import { parseLaudoContent } from "@/lib/parseLaudo";
-import { getAuthHeaders } from "@/lib/supabase/client";
+import { sexLabel, parseLaudoContent } from "@/lib/utils";
 import { UpdateLaudoRequest } from "@/shared/interfaces";
+import { updateLaudo, lockLaudo, uploadImages } from "@/lib/api/laudos";
 import DownloadPDFButton from "./DownloadPDFButton";
 import DeleteLaudoButton from "./DeleteLaudoButton";
 import ImageManager from "./ImageManager";
@@ -101,7 +100,7 @@ export default function LaudoDetail({
 
   useEffect(() => {
     if (!isEditing && !laudo.locked_at) {
-      getAuthHeaders().then((headers) => fetch(`/api/laudos/${laudo.id}/lock`, { method: "POST", headers }));
+      lockLaudo(laudo.id);
     }
   }, [isEditing, laudo.id, laudo.locked_at]);
 
@@ -109,33 +108,26 @@ export default function LaudoDetail({
     setPrinting(true);
     setError("");
     try {
-      const headers = { "Content-Type": "application/json", ...(await getAuthHeaders()) };
-
-      const res = await fetch(`/api/laudos/${laudo.id}`, {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify({
-          generatedContent: editedParsed,
-          patientFields: {
-            patient_name: fields.patientName,
-            species: fields.species,
-            breed: fields.breed,
-            age: fields.age,
-            sex: fields.sex,
-            neutered: fields.neutered,
-            owner_name: fields.ownerName,
-            clinic_name: fields.clinicName,
-            responsible_vet: fields.responsibleVet,
-            exam_date: fields.examDate,
-          },
-          petId: laudo.pet_id ?? undefined,
-          clinicId: laudo.clinic_id ?? undefined,
-          vetId: laudo.vet_id ?? undefined,
-        } satisfies UpdateLaudoRequest),
+      await updateLaudo(laudo.id, {
+        generatedContent: editedParsed,
+        patientFields: {
+          patient_name: fields.patientName,
+          species: fields.species,
+          breed: fields.breed,
+          age: fields.age,
+          sex: fields.sex,
+          neutered: fields.neutered,
+          owner_name: fields.ownerName,
+          clinic_name: fields.clinicName,
+          responsible_vet: fields.responsibleVet,
+          exam_date: fields.examDate,
+        },
+        petId: laudo.pet_id ?? undefined,
+        clinicId: laudo.clinic_id ?? undefined,
+        vetId: laudo.vet_id ?? undefined,
       });
-      if (!res.ok) throw new Error((await res.json()).error || "Erro ao salvar.");
 
-      await fetch(`/api/laudos/${laudo.id}/lock`, { method: "POST", headers: await getAuthHeaders() });
+      await lockLaudo(laudo.id);
 
       const tab = window.open("", "_blank");
       if (tab) {
@@ -199,7 +191,7 @@ export default function LaudoDetail({
           <h1 className="text-xl font-bold text-gray-900 mt-2">{fields.patientName}</h1>
           <div className="flex items-center gap-2 mt-1">
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-              {SPECIALTY_LABELS[laudo.specialty]}
+              {SPECIALTIES[laudo.specialty].label}
             </span>
             <span className="text-xs text-gray-400">{displayDate}</span>
           </div>
@@ -364,7 +356,7 @@ export default function LaudoDetail({
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden animate-[fadeIn_0.5s_ease-out]">
         <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
           <h2 className="text-sm font-semibold text-gray-700 text-center uppercase tracking-wide">
-            {SPECIALTY_LABELS[laudo.specialty]}
+            {SPECIALTIES[laudo.specialty].label}
           </h2>
         </div>
         <div className="p-6">

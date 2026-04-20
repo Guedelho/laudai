@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAuthHeaders } from "@/lib/supabase/client";
+import { deleteLaudo } from "@/lib/api/laudos";
 
 export default function DeleteLaudoButton({ laudoId }: { laudoId: string }) {
   const [confirming, setConfirming] = useState(false);
@@ -13,9 +13,7 @@ export default function DeleteLaudoButton({ laudoId }: { laudoId: string }) {
   async function handleDelete() {
     setDeleting(true);
     try {
-      const res = await fetch(`/api/laudos/${laudoId}`, { method: "DELETE", headers: await getAuthHeaders() });
-      if (!res.ok) throw new Error();
-
+      await deleteLaudo(laudoId);
       router.push("/dashboard");
     } catch {
       console.error("Delete laudo error");

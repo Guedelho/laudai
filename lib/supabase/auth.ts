@@ -1,17 +1,8 @@
-import { NextRequest } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { Profile } from "@/shared/models";
 
-export async function getUserId(req: NextRequest): Promise<string | null> {
-  const authHeader = req.headers.get("Authorization");
-  if (authHeader?.startsWith("Bearer ")) {
-    const admin = createAdmin();
-    const {
-      data: { user },
-    } = await admin.auth.getUser(authHeader.slice(7));
-    if (user?.id) return user.id;
-  }
+export async function getUserId(): Promise<string | null> {
   const supabase = await createServerClient();
   const {
     data: { user },

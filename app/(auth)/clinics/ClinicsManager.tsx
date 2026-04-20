@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Clinic, ClinicVet } from "@/shared/models";
-import { ClinicResponse, VetResponse, ApiResponse } from "@/shared/interfaces";
-import { getAuthHeaders } from "@/lib/supabase/client";
+import * as api from "@/lib/api/clinics";
 
 export default function ClinicsManager({ initialClinics }: { initialClinics: Clinic[] }) {
   const [clinics, setClinics] = useState<Clinic[]>(initialClinics);
@@ -37,17 +36,10 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     setEditError("");
 
     try {
-      const res = await fetch(`/api/clinics/${editingId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
-        body: JSON.stringify({ name: editName }),
-      });
-      const data: ClinicResponse = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
+      const clinic = await api.renameClinic(editingId, editName);
       setClinics((prev) =>
         prev
-          .map((c) => (c.id === editingId ? { ...c, name: data.clinic.name } : c))
+          .map((c) => (c.id === editingId ? { ...c, name: clinic.name } : c))
           .sort((a, b) => a.name.localeCompare(b.name)),
       );
     } catch (err) {
@@ -64,17 +56,8 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     setEditError("");
 
     try {
-      const res = await fetch(`/api/clinics/${editingId}/vets`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
-        body: JSON.stringify({ name: newVetName }),
-      });
-      const data: VetResponse = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      setClinics((prev) =>
-        prev.map((c) => (c.id === editingId ? { ...c, clinic_vets: [...c.clinic_vets, data.vet] } : c)),
-      );
+      const vet = await api.addVet(editingId, newVetName);
+      setClinics((prev) => prev.map((c) => (c.id === editingId ? { ...c, clinic_vets: [...c.clinic_vets, vet] } : c)));
       setNewVetName("");
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Erro ao adicionar médico.");
@@ -88,15 +71,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     setEditError("");
 
     try {
-      const res = await fetch(`/api/clinics/${clinicId}/vets/${vetId}`, {
-        method: "DELETE",
-        headers: await getAuthHeaders(),
-      });
-      if (!res.ok) {
-        const data: ApiResponse = await res.json();
-        throw new Error(data.error);
-      }
-
+      await api.removeVet(clinicId, vetId);
       setClinics((prev) =>
         prev.map((c) => (c.id === clinicId ? { ...c, clinic_vets: c.clinic_vets.filter((v) => v.id !== vetId) } : c)),
       );
@@ -113,16 +88,8 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     setError("");
 
     try {
-      const res = await fetch("/api/clinics", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
-        body: JSON.stringify({ name, vetName }),
-      });
-
-      const data: ClinicResponse = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      setClinics((prev) => [...prev, data.clinic].sort((a, b) => a.name.localeCompare(b.name)));
+      const { clinic } = await api.createClinic(name, vetName);
+      setClinics((prev) => [...prev, clinic].sort((a, b) => a.name.localeCompare(b.name)));
       setName("");
       setVetName("");
       setShowForm(false);
@@ -137,11 +104,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     setDeletingId(id);
     setDeleteError("");
     try {
-      const res = await fetch(`/api/clinics/${id}`, { method: "DELETE", headers: await getAuthHeaders() });
-      if (!res.ok) {
-        const data: ApiResponse = await res.json();
-        throw new Error(data.error);
-      }
+      await api.deleteClinic(id);
       setClinics((prev) => prev.filter((c) => c.id !== id));
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : "Erro ao excluir clínica.");

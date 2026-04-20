@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAuthHeaders } from "@/lib/supabase/client";
+import * as profileApi from "@/lib/api/profile";
 
 function validateCpf(value: string): boolean {
   const digits = value.replace(/\D/g, "");
@@ -91,14 +91,7 @@ export default function ProfileForm({
       const formData = new FormData();
       formData.append("logo", file);
 
-      const res = await fetch("/api/profile/logo", {
-        method: "POST",
-        headers: await getAuthHeaders(),
-        body: formData,
-      });
-
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Erro ao enviar logo");
+      await profileApi.uploadLogo(file);
       setLogoVersion(Date.now());
     } catch (err) {
       setLogoError(err instanceof Error ? err.message : "Erro ao enviar logo");
@@ -118,14 +111,7 @@ export default function ProfileForm({
       const formData = new FormData();
       formData.append("signature", file);
 
-      const res = await fetch("/api/profile/signature", {
-        method: "POST",
-        headers: await getAuthHeaders(),
-        body: formData,
-      });
-
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Erro ao enviar assinatura");
+      await profileApi.uploadSignature(file);
       setSigVersion(Date.now());
       setSignatureFont("");
     } catch (err) {
@@ -139,11 +125,7 @@ export default function ProfileForm({
   async function handleRemoveSignatureImage() {
     setSigError("");
     try {
-      const res = await fetch("/api/profile/signature", {
-        method: "DELETE",
-        headers: await getAuthHeaders(),
-      });
-      if (!res.ok) throw new Error();
+      await profileApi.removeSignature();
       setSigVersion(0);
     } catch {
       setSigError("Erro ao remover assinatura.");
@@ -158,16 +140,11 @@ export default function ProfileForm({
     const controller = new AbortController();
     fontAbortRef.current = controller;
     try {
-      const res = await fetch("/api/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(await getAuthHeaders()),
-        },
-        body: JSON.stringify({ full_name: fullName, cpf, signature_font: next, signature, signature_image_url: null }),
-        signal: controller.signal,
-      });
-      if (res.ok && next !== "") {
+      await profileApi.updateProfile(
+        { full_name: fullName, cpf, signature_font: next, signature, signature_image_url: null },
+        controller.signal,
+      );
+      if (next !== "") {
         // Eagerly remove stored signature image path from DB — already done server-side,
         // but also delete the file preview locally
       }
@@ -202,23 +179,14 @@ export default function ProfileForm({
     }
     setCpfError("");
     try {
-      const res = await fetch("/api/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(await getAuthHeaders()),
-        },
-        body: JSON.stringify({
-          full_name: fullName,
-          crmv,
-          cpf,
-          crmv_state: crmvState,
-          signature_font: signatureFont,
-          signature,
-        }),
+      await profileApi.updateProfile({
+        full_name: fullName,
+        crmv,
+        cpf,
+        crmv_state: crmvState,
+        signature_font: signatureFont,
+        signature,
       });
-
-      if (!res.ok) throw new Error("Erro ao salvar");
       setSaved(true);
       setSaveError("");
       setTimeout(() => setSaved(false), 3000);

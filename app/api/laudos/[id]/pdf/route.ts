@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserId, getProfile } from "@/lib/auth";
+import { getUserId, getProfile } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
-import { parseLaudoContent } from "@/lib/parseLaudo";
-import { generatePdfBuffer } from "@/lib/generatePdf";
+import { parseLaudoContent } from "@/lib/utils";
+import { generatePdfBuffer } from "@/lib/laudo/pdf";
 import { PdfData } from "@/shared/interfaces";
 import { Specialty } from "@/shared/models";
-import { REPORT_TITLES, SPECIALTY_ABBR } from "@/lib/templates";
-import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
+import { SPECIALTIES } from "@/lib/laudo/templates";
+import { checkRateLimit, recordRateLimit } from "@/lib/server-utils";
 import sharp from "sharp";
 
 const IMAGES_BUCKET = "laudo-images";
@@ -57,7 +57,7 @@ function buildFilename(laudo: {
   return (
     [
       "Laudo",
-      SPECIALTY_ABBR[laudo.specialty as Specialty],
+      SPECIALTIES[laudo.specialty as Specialty].abbr,
       slugify(laudo.patient_name),
       slugify(laudo.owner_name),
       dateShort,
@@ -67,7 +67,7 @@ function buildFilename(laudo: {
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const userId = await getUserId(req);
+  const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (!checkRateLimit("pdf", userId, 5))
@@ -173,7 +173,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     clinicName: laudo.clinic_name,
     responsibleVet: laudo.responsible_vet,
     date,
-    reportTitle: REPORT_TITLES[specialty],
+    reportTitle: SPECIALTIES[specialty].reportTitle,
     vetName: profile.full_name,
     signatureText: profile.signature || profile.full_name,
     crmv: profile.crmv,
