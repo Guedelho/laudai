@@ -98,14 +98,14 @@ export default function NewReportPage() {
     }
   }
 
-  const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
     const valid = files.filter((f) => {
       if (f.size > MAX_IMAGE_SIZE) {
-        setError(`Imagem "${f.name}" excede 10 MB.`);
+        setError(`Imagem "${f.name}" excede 5 MB.`);
         return false;
       }
       return true;

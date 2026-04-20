@@ -5,7 +5,7 @@ import { createAdmin } from "@/lib/supabase/admin";
 import sharp from "sharp";
 
 const BUCKET = "report-images";
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_FILES = 30;
 
 const SHARP_FORMAT_TO_MIME: Record<string, string> = {
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const fileData = await Promise.all(
     files.map(async (file) => {
       if (file.size > MAX_FILE_SIZE) {
-        return { validationError: `Arquivo muito grande (máx 20MB): ${file.name}` } as const;
+        return { validationError: `Arquivo muito grande (máx 5MB): ${file.name}` } as const;
       }
       const buf = Buffer.from(await file.arrayBuffer());
       const detected = await detectImageFormat(buf);
