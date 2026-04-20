@@ -1,10 +1,16 @@
 import { GoogleGenerativeAI, type GenerationConfig } from "@google/generative-ai";
-import { TEMPLATES, buildDefaults, NOMENCLATURE, FRASES_SALVADORAS, buildVerifierPrompt } from "@/lib/templates";
-import { extractJson } from "@/lib/parseLaudo";
-import { DRAFT_MODEL, VERIFIER_MODEL, MEASUREMENT_RE, CLASSIFICATION_LABELS } from "@/shared/constants";
+import {
+  SECTION_TEMPLATES,
+  buildDefaults,
+  NOMENCLATURE,
+  FRASES_SALVADORAS,
+  buildConclusionPrompt,
+  buildVerifierPrompt,
+} from "@/lib/templates";
+import { SECTION_MODEL, CONCLUSION_MODEL, VERIFIER_MODEL } from "@/shared/constants";
 import type { GenerateParams } from "@/shared/interfaces";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
+export const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
 const generationConfig: GenerationConfig = {
   responseMimeType: "application/json",
@@ -27,20 +33,59 @@ function getModel(modelId: string, systemInstruction: string) {
 
 const FULL_NOMENCLATURE = `REFERÊNCIA DE ACHADOS POR ÓRGÃO:\n\n${Object.values(NOMENCLATURE).join("\n\n")}\n\n${FRASES_SALVADORAS}`;
 
-function scrubMeasurements(json: string, rawInput: string): string {
-  const inputMeasurements = new Set((rawInput.match(MEASUREMENT_RE) ?? []).map((m) => m.replace(/\s+/g, "")));
-  return json.replace(MEASUREMENT_RE, (match) => {
-    const normalized = match.replace(/\s+/g, "");
-    return inputMeasurements.has(normalized) ? match : "";
-  });
+const SECTION_TO_NOMENCLATURE_KEY: Record<string, keyof typeof NOMENCLATURE> = {
+  FÍGADO: "liver",
+  "VESÍCULA BILIAR": "gallbladder",
+  BAÇO: "spleen",
+  PÂNCREAS: "pancreas",
+  ADRENAIS: "adrenals",
+  ESTÔMAGO: "stomach",
+  "ALÇAS INTESTINAIS": "intestines",
+  "RIM ESQUERDO": "kidneys",
+  "RIM DIREITO": "kidneys",
+  BEXIGA: "bladder",
+  ÚTERO: "uterus",
+  OVÁRIOS: "ovaries",
+  PRÓSTATA: "prostate",
+  "TESTÍCULO DIREITO": "testicles",
+  "TESTÍCULO ESQUERDO": "testicles",
+  LINFONODOS: "lymphnodes",
+};
+
+function parseDefaultsToMap(defaults: string): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const block of defaults.split(/\n\n+/)) {
+    const colon = block.indexOf(":");
+    if (colon === -1) continue;
+    map.set(block.slice(0, colon).trim(), block.slice(colon + 1).trim());
+  }
+  return map;
 }
 
-function scrubClassificationLabels(json: string): string {
-  let result = json;
-  for (const re of CLASSIFICATION_LABELS) {
-    result = result.replace(re, "");
+function buildFilteredNomenclature(sectionsJson: string, defaults: string): string {
+  let sections: Array<{ label: string; content: string }>;
+  try {
+    sections = JSON.parse(sectionsJson).sections ?? [];
+  } catch {
+    return FULL_NOMENCLATURE;
   }
-  return result.replace(/ {2,}/g, " ");
+
+  const defaultsMap = parseDefaultsToMap(defaults);
+  const seenKeys = new Set<keyof typeof NOMENCLATURE>();
+
+  for (const section of sections) {
+    const defaultContent = defaultsMap.get(section.label);
+    if (defaultContent !== undefined && section.content.trim() === defaultContent.trim()) continue;
+    const key = SECTION_TO_NOMENCLATURE_KEY[section.label];
+    if (key) seenKeys.add(key);
+  }
+
+  if (seenKeys.size === 0) return FRASES_SALVADORAS;
+
+  const parts = ["REFERÊNCIA DE ACHADOS POR ÓRGÃO:\n"];
+  for (const key of seenKeys) parts.push(NOMENCLATURE[key]);
+  parts.push("\n" + FRASES_SALVADORAS);
+  return parts.join("\n\n");
 }
 
 function isRetryable(err: unknown): boolean {
@@ -58,35 +103,42 @@ function isRetryable(err: unknown): boolean {
 }
 
 async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2, onRetry?: () => void): Promise<T> {
+  let lastErr: unknown;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
     } catch (err) {
-      if (attempt === maxRetries || !isRetryable(err)) throw err;
+      if (!isRetryable(err) || attempt === maxRetries) throw err;
+      lastErr = err;
       onRetry?.();
       await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
     }
   }
-  throw new Error("unreachable");
+  throw lastErr;
 }
 
-export async function generateLaudo(params: GenerateParams): Promise<string> {
-  const { specialty, rawInput, patientName, species, breed, age, sex, neutered, ownerName, onStatus, onChunk } = params;
+async function generateSections(
+  rawInput: string,
+  defaults: string,
+  patientName: string,
+  species: string,
+  breed: string,
+  age: string,
+  sex: string,
+  neutered: boolean,
+  ownerName: string,
+  onChunk?: (chunk: string) => void,
+  onRetry?: () => void,
+): Promise<string> {
+  const model = getModel(SECTION_MODEL, SECTION_TEMPLATES["ultrasound_abdominal"](defaults));
 
-  const resolvedDefaults = buildDefaults(sex, neutered);
+  const userMessage =
+    `Achados do exame:\n${rawInput}\n\n` +
+    `Dados do paciente: ${patientName}, ${species}, ${breed}, ${age}, ` +
+    `${sex === "M" ? "Macho" : "Fêmea"}, ${neutered ? "castrado(a)" : "não castrado(a)"}, ` +
+    `responsável: ${ownerName}.\n\nGere o array de sections.`;
 
-  const systemPrompt = TEMPLATES[specialty]
-    .replace(/{nomenclature}/g, FULL_NOMENCLATURE)
-    .replace(/{defaults}/g, resolvedDefaults)
-    .replace(/{especie}/g, species);
-
-  const model = getModel(DRAFT_MODEL, systemPrompt);
-
-  const userMessage = `Alterações encontradas no exame:\n\n${rawInput}\n\nDados do paciente: ${patientName}, ${species}, ${breed}, ${age}, ${sex === "M" ? "Macho" : "Fêmea"}, ${neutered ? "castrado(a)" : "não castrado(a)"}, responsável: ${ownerName}.\n\nGere o laudo completo. Mantenha o texto padrão para todas as seções não mencionadas. Para as seções mencionadas, aplique as alterações informadas.`;
-
-  onStatus?.("generating");
-
-  const draft = await withRetry(
+  return withRetry(
     async () => {
       const stream = await model.generateContentStream({
         contents: [{ role: "user", parts: [{ text: userMessage }] }],
@@ -103,13 +155,68 @@ export async function generateLaudo(params: GenerateParams): Promise<string> {
       return text;
     },
     2,
+    onRetry,
+  );
+}
+
+async function generateConclusion(
+  rawInput: string,
+  sectionsJson: string,
+  species: string,
+  nomenclature: string,
+): Promise<string> {
+  const model = getModel(CONCLUSION_MODEL, buildConclusionPrompt(nomenclature, species));
+
+  const userMessage =
+    `Achados do veterinário:\n${rawInput}\n\n` +
+    `Seções geradas:\n${sectionsJson}\n\n` +
+    `Gere conclusion, impression e recommendations.`;
+
+  return withRetry(async () => {
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: userMessage }] }],
+      generationConfig,
+    });
+    return result.response.text();
+  });
+}
+
+export async function generateLaudo(params: GenerateParams): Promise<string> {
+  const { rawInput, patientName, species, breed, age, sex, neutered, ownerName, onStatus, onChunk } = params;
+
+  const resolvedDefaults = buildDefaults(sex, neutered);
+
+  // Stage 1: generate sections (streaming)
+  onStatus?.("generating");
+  const sectionsRaw = await generateSections(
+    rawInput,
+    resolvedDefaults,
+    patientName,
+    species,
+    breed,
+    age,
+    sex,
+    neutered ?? false,
+    ownerName,
+    onChunk,
     () => onStatus?.("retrying"),
   );
 
-  let verified = draft;
+  // Stage 2: generate conclusion (with nomenclature filtered to altered organs only)
+  onStatus?.("concluding");
+  const filteredNomenclature = buildFilteredNomenclature(sectionsRaw, resolvedDefaults);
+  const conclusionRaw = await generateConclusion(rawInput, sectionsRaw, species, filteredNomenclature);
 
+  // Merge sections + conclusion into full laudo
+  const mergedJson = JSON.stringify({
+    ...JSON.parse(sectionsRaw.trim()),
+    ...JSON.parse(conclusionRaw.trim()),
+  });
+
+  let verified = mergedJson;
+
+  // Stage 3: verify
   onStatus?.("reviewing");
-
   try {
     const verifier = getModel(VERIFIER_MODEL, buildVerifierPrompt(resolvedDefaults));
     verified = await withRetry(async () => {
@@ -119,7 +226,7 @@ export async function generateLaudo(params: GenerateParams): Promise<string> {
             role: "user",
             parts: [
               {
-                text: `INPUT ORIGINAL DO VETERINÁRIO:\n${rawInput}\n\nLAUDO GERADO (JSON):\n${draft}\n\nRetorne o objeto JSON corrigido.`,
+                text: `INPUT ORIGINAL DO VETERINÁRIO:\n${rawInput}\n\nLAUDO GERADO (JSON):\n${mergedJson}\n\nRetorne o objeto JSON corrigido.`,
               },
             ],
           },
@@ -129,15 +236,14 @@ export async function generateLaudo(params: GenerateParams): Promise<string> {
       return result.response.text();
     });
   } catch (err) {
-    console.error("Verifier failed, using draft:", err);
-    verified = draft;
+    console.error("Verifier failed, using merged:", err);
   }
 
   try {
-    const raw = extractJson(verified);
-    let cleaned = scrubMeasurements(raw, rawInput);
-    cleaned = scrubClassificationLabels(cleaned);
-    const parsed = JSON.parse(cleaned);
+    const parsed = JSON.parse(verified.trim());
+    if (parsed.conclusion) {
+      parsed.conclusion = parsed.conclusion.replace(/\n*(?:Assinatura|CRMV|Médico Veterinário)[^\n]*/gi, "").trim();
+    }
     return JSON.stringify(parsed);
   } catch {
     return verified;

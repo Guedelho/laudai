@@ -171,17 +171,17 @@ export default function LaudoDetail({
     setEditedParsed({ ...editedParsed, sections });
   }
 
-  function updateList(key: "impressao" | "recomendacoes" | "observacoes", i: number, value: string) {
+  function updateList(key: "impression" | "recommendations" | "observations", i: number, value: string) {
     const list = [...(editedParsed[key] ?? [])];
     list[i] = value;
     setEditedParsed({ ...editedParsed, [key]: list });
   }
 
-  function addToList(key: "impressao" | "recomendacoes" | "observacoes") {
+  function addToList(key: "impression" | "recommendations" | "observations") {
     setEditedParsed({ ...editedParsed, [key]: [...(editedParsed[key] ?? []), ""] });
   }
 
-  function removeFromList(key: "impressao" | "recomendacoes" | "observacoes", i: number) {
+  function removeFromList(key: "impression" | "recommendations" | "observations", i: number) {
     const list = (editedParsed[key] ?? []).filter((_, idx) => idx !== i);
     setEditedParsed({ ...editedParsed, [key]: list.length ? list : undefined });
   }
@@ -382,13 +382,13 @@ export default function LaudoDetail({
                 </div>
               ))}
 
-              {(editedParsed.conclusion || editedParsed.impressao?.length) && (
+              {(editedParsed.conclusion || editedParsed.impression?.length) && (
                 <div className="border-t border-gray-100 pt-4 mt-4">
                   <h3 className="font-bold text-gray-900 text-sm mb-3">CONCLUSÃO</h3>
                 </div>
               )}
 
-              {editedParsed.conclusion && !editedParsed.impressao?.length && (
+              {editedParsed.conclusion && !editedParsed.impression?.length && (
                 <textarea
                   value={editedParsed.conclusion}
                   onChange={(e) => setEditedParsed({ ...editedParsed, conclusion: e.target.value })}
@@ -398,28 +398,28 @@ export default function LaudoDetail({
               )}
 
               <EditableList
-                listKey="impressao"
+                listKey="impression"
                 title="IMPRESSÃO DIAGNÓSTICA:"
-                items={editedParsed.impressao ?? []}
-                onUpdate={(i, v) => updateList("impressao", i, v)}
-                onAdd={() => addToList("impressao")}
-                onRemove={(i) => removeFromList("impressao", i)}
+                items={editedParsed.impression ?? []}
+                onUpdate={(i, v) => updateList("impression", i, v)}
+                onAdd={() => addToList("impression")}
+                onRemove={(i) => removeFromList("impression", i)}
               />
               <EditableList
-                listKey="recomendacoes"
+                listKey="recommendations"
                 title="RECOMENDAÇÕES:"
-                items={editedParsed.recomendacoes ?? []}
-                onUpdate={(i, v) => updateList("recomendacoes", i, v)}
-                onAdd={() => addToList("recomendacoes")}
-                onRemove={(i) => removeFromList("recomendacoes", i)}
+                items={editedParsed.recommendations ?? []}
+                onUpdate={(i, v) => updateList("recommendations", i, v)}
+                onAdd={() => addToList("recommendations")}
+                onRemove={(i) => removeFromList("recommendations", i)}
               />
               <EditableList
-                listKey="observacoes"
+                listKey="observations"
                 title="OBS:"
-                items={editedParsed.observacoes ?? []}
-                onUpdate={(i, v) => updateList("observacoes", i, v)}
-                onAdd={() => addToList("observacoes")}
-                onRemove={(i) => removeFromList("observacoes", i)}
+                items={editedParsed.observations ?? []}
+                onUpdate={(i, v) => updateList("observations", i, v)}
+                onAdd={() => addToList("observations")}
+                onRemove={(i) => removeFromList("observations", i)}
               />
             </div>
           ) : (

@@ -97,6 +97,7 @@ export interface TranscribeResponse extends ApiResponse {
 
 export type SseEvent =
   | { status: "generating" }
+  | { status: "concluding" }
   | { status: "reviewing" }
   | { status: "retrying" }
   | { status: "saving" }
@@ -107,9 +108,8 @@ export type SseEvent =
 // ─── Generation ──────────────────────────────────────────────────────────────
 
 export interface GenerateParams extends PatientFields {
-  specialty: Specialty;
   rawInput: string;
-  onStatus?: (status: "generating" | "reviewing" | "retrying") => void;
+  onStatus?: (status: "generating" | "concluding" | "reviewing" | "retrying") => void;
   onChunk?: (text: string) => void;
 }
 

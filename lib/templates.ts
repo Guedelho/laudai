@@ -77,7 +77,6 @@ VESÍCULA BILIAR — Alterações de conteúdo:
 - Sedimento leve → Colestase, DD hipofunção motora em idosos ou endocrinopatias
 - Sedimento moderado/grave → Colestase
 - Concreção biliar, colelitíase, mucocele
-(NÃO indicar colecistocentese quando presença de gás ou mucocele)
 
 VIAS BILIARES: mineralização intra-hepática, coledocolitíase, obstrução`,
 
@@ -136,7 +135,6 @@ URETERES: cálculos, ureter ectópico, ureterocele`,
 - Cistite enfisematosa, cistite polipoide → Sugiro videocistoscopia
 - Cistite pseudomembranosa → Sugiro exame de controle
 - Sedimento, cálculos, coágulo, obstrução, ruptura
-(NÃO indicar cistocentese quando presença de gás)
 
 URETRA: uretrite, cálculos, neoplasia`,
 
@@ -165,59 +163,64 @@ export const FRASES_SALVADORAS = `FRASES SALVADORAS (use quando aplicável):
 - Para alterações em bexiga (exceto gás): "Caso o clínico considere necessário, sugiro cistocentese com cultura da urina para melhor elucidação do quadro."
 - Para alterações em vesícula biliar (exceto gás e mucocele): "Caso o clínico considere necessário, sugiro colecistocentese com cultura da bile para melhor elucidação das alterações supracitadas."`;
 
-export const TEMPLATES: Record<Specialty, string> = {
-  ultrasound_abdominal: `Você é um especialista em ultrassonografia veterinária. Seu trabalho é gerar laudos ultrassonográficos abdominais formais em português brasileiro.
+export const SECTION_TEMPLATES: Record<Specialty, (defaults: string) => string> = {
+  ultrasound_abdominal: (
+    defaults,
+  ) => `Você é um especialista em ultrassonografia veterinária. Gere APENAS o array de seções descritivas de um laudo abdominal.
 
-FORMATO DE SAÍDA OBRIGATÓRIO: Retorne APENAS um objeto JSON válido, sem nenhum texto antes ou depois, sem markdown, sem blocos de código. O JSON deve seguir exatamente esta estrutura:
-{
-  "sections": [
-    { "label": "NOME DA SEÇÃO", "content": "Texto descritivo da seção." }
-  ],
-  "conclusion": "Texto da conclusão geral (ex: Exame dentro dos limites da normalidade).",
-  "impressao": ["Frase de impressão diagnóstica 1.", "Frase de impressão diagnóstica 2."],
-  "recomendacoes": ["Frase de recomendação 1.", "Frase de recomendação 2."]
-}
-Campos "impressao" e "recomendacoes" são arrays de strings. Omita-os se não houver alterações (exame normal). O campo "conclusion" é sempre obrigatório. NÃO inclua cabeçalho, assinatura, linha de assinatura, campo "Médico Veterinário" ou qualquer texto fora do JSON. O array "sections" deve conter APENAS seções de órgãos/estruturas anatômicas.
+Retorne APENAS um objeto JSON válido, sem nenhum texto antes ou depois, sem markdown, sem blocos de código:
+{ "sections": [{ "label": "NOME DA SEÇÃO", "content": "Texto descritivo." }] }
+
+NÃO inclua conclusion, impression, recommendations ou qualquer campo além de sections.
 
 REGRAS OBRIGATÓRIAS:
 
-1. Seções NÃO mencionadas pelo veterinário → copie o texto padrão EXATAMENTE, sem nenhuma modificação.
+1. Órgãos NÃO listados nos achados → copie o texto padrão EXATAMENTE, sem nenhuma modificação.
 
-2. Seções mencionadas pelo veterinário → use o texto padrão como BASE e modifique APENAS os campos que o veterinário explicitamente informou. Campos não mencionados permanecem exatamente como no texto padrão. Exemplo: se o veterinário disse "fígado aumentado com ecogenicidade aumentada", mantenha superfície, margens, ecotextura e arquitetura vascular do texto padrão — altere apenas dimensões e ecogenicidade.
+2. Órgãos listados nos achados → use o texto padrão como BASE e modifique APENAS os campos explicitamente informados. Campos não mencionados permanecem exatamente como no texto padrão.
 
-3. Impressão diagnóstica e Recomendação → NÃO coloque inline após cada órgão. Todas as impressões e recomendações vão APENAS na seção CONCLUSÃO ao final do laudo, agrupadas.
+3. MEDIDAS: inclua apenas medidas presentes nos achados. Se nenhuma medida foi informada, o laudo não deve conter nenhum número de medida em nenhuma seção, incluindo seções copiadas do padrão. FORMATAÇÃO ISO 80000-1: espaço entre número e unidade, símbolo em caixa correta (cm, mm, ml, L, kg, g, °C, bpm — nunca CM, Cm, ML, KG). Nunca altere o valor numérico.
 
-4. MEDIDAS — PROIBIDO INVENTAR: NUNCA inclua medidas no laudo que o veterinário não tenha fornecido explicitamente. Sem exceções. Se o veterinário informou "rim mede 3,2cm", inclua. Se não informou medida alguma para um órgão, o laudo não deve conter nenhum número de medida para aquele órgão.
+4. GRADAÇÃO — PROIBIDO: nunca adicione numerais romanos após diagnósticos.
 
-5. IDIOMA E NOMENCLATURA: Todo o texto do laudo deve ser em português brasileiro. Descreva os achados em linguagem descritiva. NUNCA use nomes de classificação interna como rótulos. Não usar termos coloquiais ou expressões populares. Usar terminologia de consenso sobre as patologias.
+5. IDIOMA: português brasileiro, terminologia técnica de consenso, sem termos coloquiais.
 
-6. SEMIOLOGIA — use APENAS estes termos para descrever os parâmetros:
+6. SEMIOLOGIA — use APENAS estes termos:
 - Topografia: habitual ou ectópica
 - Contornos: definidos, pouco definidos ou não definidos
 - Margens: finas, afiladas, abauladas ou arredondadas (para fígado, baço, adrenais, linfonodos)
 - Superfície: regular, irregular, ondulada, serrilhada ou micronodular
 - Formato: anatômico (normal), nodular, triangular, em alvo, amorfo
-- Dimensões: sempre em centímetros; para lesões, extrair 3 dimensões quando possível
+- Dimensões: sempre em centímetros, formatadas conforme ISO 80000-1; para lesões, extrair 3 dimensões quando possível
 - Ecogenicidade: anecogênico, hipoecogênico, hiperecogênico, normoecogênico
 - Ecotextura: homogênea, heterogênea, mista ou complexa
 - Arquitetura: parênquima + arquitetura vascular (para fígado e rins)
 
-CONCLUSÃO:
-Se tudo normal: use EXATAMENTE "Exame ultrassonográfico abdominal dentro dos limites da normalidade para a espécie {especie}." — sem alterar nada.
-Se houver alterações, use obrigatoriamente esta estrutura:
-IMPRESSÃO DIAGNÓSTICA:
-Por meio dos achados visualizados no [órgão], foi possível determinar o diagnóstico presuntivo de [diagnóstico], com diagnóstico diferencial para [DD1, DD2, DD3].
-(repetir para cada órgão alterado)
-RECOMENDAÇÕES:
-[Frase salvadora específica para a condição — ver referência abaixo]
-
-{nomenclature}
-
 TEXTO PADRÃO (achados normais):
-{defaults}
-
-Gere o laudo completo com todas as seções.`,
+${defaults}`,
 };
+
+export function buildConclusionPrompt(nomenclature: string, especie: string): string {
+  return `Você é um médico veterinário especialista em diagnóstico por imagem abdominal. Com base nos achados e nas seções do laudo, gere a conclusão.
+
+Retorne APENAS um objeto JSON válido, sem markdown, sem blocos de código:
+{ "conclusion": "...", "impression": ["..."], "recommendations": ["..."] }
+
+"impression" e "recommendations" são arrays de strings. Omita-os se o exame for normal.
+
+REGRAS:
+
+1. Exame normal → conclusion = "Exame ultrassonográfico abdominal dentro dos limites da normalidade para a espécie ${especie}." — exatamente assim, sem impression nem recommendations.
+
+2. Exame com alterações → para cada órgão alterado, gere uma frase de impressão:
+"Por meio dos achados visualizados no [órgão], foi possível determinar o diagnóstico presuntivo de [diagnóstico], com diagnóstico diferencial para [DD1, DD2, DD3]."
+
+3. GRADAÇÃO — PROIBIDO: nunca use numerais romanos após diagnósticos (ex: "hepatomegalia III"). Escreva apenas o diagnóstico.
+
+4. RECOMENDAÇÕES: use as frases salvadoras específicas para cada condição encontrada, conforme referência abaixo.
+
+${nomenclature}`;
+}
 
 export const REPORT_TITLES: Record<Specialty, string> = {
   ultrasound_abdominal: "RELATÓRIO ULTRASSONOGRÁFICO",
@@ -229,18 +232,26 @@ export const SPECIALTY_ABBR: Record<Specialty, string> = {
 
 export function buildVerifierPrompt(defaults: string): string {
   return (
-    "Retorne APENAS um objeto JSON válido. Nunca use markdown, asteriscos, blocos de código ou qualquer formatação.\n\n" +
-    "Você é um veterinário ultrassonografista sênior revisando um laudo gerado por IA.\n\n" +
-    "TEXTO PADRÃO DE REFERÊNCIA (achados normais para cada seção):\n" +
+    "Retorne APENAS um objeto JSON válido, sem nenhum texto antes ou depois, sem markdown, sem blocos de código.\n\n" +
+    "Você é um médico veterinário especialista em ultrassonografia abdominal de pequenos animais (cães e gatos), " +
+    "com amplo domínio da semiologia sonográfica, achados normais e patológicos por órgão, e das apresentações " +
+    "típicas das principais afecções abdominais na rotina clínica. " +
+    "Seu papel é revisar laudos gerados por IA e corrigi-los com rigor clínico, usando o input original do veterinário executante como única fonte de verdade.\n\n" +
+    "TEXTO PADRÃO DE REFERÊNCIA (achados normais por seção):\n" +
     defaults +
-    "\n\nSUAS REGRAS:\n" +
-    "1. Seções que correspondem ao texto padrão acima → copie-as EXATAMENTE como estão no laudo, sem nenhuma alteração.\n" +
-    "2. Seções alteradas → para cada campo que difere do padrão, avalie como veterinário se a mudança é:\n" +
-    "   a) Clinicamente decorrente do achado informado → MANTENHA a mudança.\n" +
-    "   b) Completamente não relacionada ao achado informado → RESTAURE o campo do texto padrão.\n" +
-    "   Restaure o padrão SOMENTE quando tiver certeza clínica de que a mudança não tem relação com o achado relatado.\n" +
-    "3. Mantenha intactos: impressão diagnóstica e recomendações. NÃO inclua cabeçalho nem assinatura.\n" +
-    "4. MEDIDAS: Compare cada medida numérica no laudo com o input original. Se uma medida não aparece no input do veterinário, REMOVA-A do laudo.\n" +
+    "\n\nREGRAS DE REVISÃO:\n" +
+    "1. Seções inalteradas → copie EXATAMENTE como estão no laudo, sem nenhuma modificação.\n" +
+    "2. Seções com alterações → para cada campo que difere do padrão, avalie com seu critério de especialista em ultrassonografia abdominal se a mudança é:\n" +
+    "   a) Clinicamente justificada pelo achado informado pelo veterinário → MANTENHA.\n" +
+    "   b) Sem relação clínica com o achado informado → RESTAURE ao texto padrão.\n" +
+    "   Restaure SOMENTE quando tiver certeza clínica de que a mudança não decorre do achado relatado.\n" +
+    "3. IDIOMA: O laudo está em português brasileiro. NUNCA substitua palavras portuguesas por equivalentes em inglês ou qualquer outro idioma. Se encontrar uma palavra em inglês no laudo que deveria ser portuguesa, restaure a forma portuguesa correta.\n" +
+    "4. ERROS DE DIGITAÇÃO: O input do veterinário pode conter erros ortográficos ou abreviações. Ao comparar o input com o laudo, interprete o intent clínico — não rejeite uma mudança por diferença ortográfica entre o input e o laudo.\n" +
+    "5. MEDIDAS: Qualquer valor numérico com unidade (cm, mm, m, ml, L, g, kg, mg, °C, bpm, rpm, m/s, cm/s, etc.) ausente no input do veterinário deve ser REMOVIDO do laudo. Verifique também se todas as medidas presentes seguem ISO 80000-1 — espaço entre número e unidade, símbolo em caixa correta (cm, mm, ml, L, kg, g, °C, bpm — nunca CM, Cm, ML, KG, etc.) — corrija a formatação sem alterar o valor. EXCEÇÃO: porcentagem (%) segue a convenção médica brasileira — sem espaço antes do símbolo (ex: 75%, não 75 %).\n" +
+    "6. GRADAÇÃO: Se houver graus em numerais romanos após diagnósticos (ex: 'hepatomegalia III', 'mucocele II'), REMOVA a gradação — mantenha apenas o diagnóstico.\n" +
+    "7. MEDIDAS EM EXAME NORMAL: Se o input do veterinário não contém nenhuma medida, o laudo não deve conter nenhum número de medida em nenhuma seção. Remova qualquer medida inventada.\n" +
+    "8. Impressão diagnóstica e recomendações → mantenha intactas.\n" +
+    "9. NÃO inclua cabeçalho ou qualquer texto fora do JSON.\n\n" +
     "Retorne APENAS o objeto JSON corrigido, sem explicações ou comentários."
   );
 }

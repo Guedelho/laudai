@@ -6,7 +6,7 @@ import { GenerateRequest } from "@/shared/interfaces";
 import { findOrCreatePet } from "@/lib/db";
 import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 function sseStream(handler: (send: (data: object) => void) => Promise<void>): NextResponse {
   const encoder = new TextEncoder();
@@ -84,7 +84,6 @@ export async function POST(req: NextRequest) {
     try {
       const [content, pet] = await Promise.all([
         generateLaudo({
-          specialty,
           rawInput,
           patientName,
           species,

@@ -59,7 +59,7 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
     });
   }
 
-  if (parsedLaudo.conclusion || parsedLaudo.impressao?.length) {
+  if (parsedLaudo.conclusion || parsedLaudo.impression?.length) {
     items.push({
       text: "CONCLUSÃO",
       bold: true,
@@ -70,7 +70,7 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
     });
   }
 
-  if (parsedLaudo.conclusion && !parsedLaudo.impressao?.length) {
+  if (parsedLaudo.conclusion && !parsedLaudo.impression?.length) {
     items.push({
       text: parsedLaudo.conclusion,
       alignment: "justify",
@@ -79,10 +79,10 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
     });
   }
 
-  if (parsedLaudo.impressao?.length) pushBulletSection(items, "IMPRESSÃO DIAGNÓSTICA:", parsedLaudo.impressao, 4);
-  if (parsedLaudo.recomendacoes?.length) pushBulletSection(items, "RECOMENDAÇÕES:", parsedLaudo.recomendacoes, 8);
+  if (parsedLaudo.impression?.length) pushBulletSection(items, "IMPRESSÃO DIAGNÓSTICA:", parsedLaudo.impression, 4);
+  if (parsedLaudo.recommendations?.length) pushBulletSection(items, "RECOMENDAÇÕES:", parsedLaudo.recommendations, 8);
 
-  if (parsedLaudo.observacoes?.length) {
+  if (parsedLaudo.observations?.length) {
     items.push({
       text: "OBS:",
       bold: true,
@@ -90,7 +90,7 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
       margin: [0, 8, 0, 4],
       fontSize: 12,
     });
-    for (const line of parsedLaudo.observacoes) {
+    for (const line of parsedLaudo.observations) {
       items.push({
         text: line,
         alignment: "justify",

@@ -28,28 +28,28 @@ export default function LaudoContent({ parsedLaudo }: { parsedLaudo: ParsedLaudo
         </div>
       ))}
 
-      {(parsedLaudo.conclusion || parsedLaudo.impressao?.length) && (
+      {(parsedLaudo.conclusion || parsedLaudo.impression?.length) && (
         <div className="border-t border-gray-100 pt-4 mt-4">
           <h3 className="font-bold text-gray-900 text-sm mb-3">CONCLUSÃO</h3>
         </div>
       )}
 
-      {parsedLaudo.conclusion && !parsedLaudo.impressao?.length && (
+      {parsedLaudo.conclusion && !parsedLaudo.impression?.length && (
         <p className="text-justify">{parsedLaudo.conclusion}</p>
       )}
 
-      {parsedLaudo.impressao?.length ? (
-        <BulletList title="IMPRESSÃO DIAGNÓSTICA:" items={parsedLaudo.impressao} />
+      {parsedLaudo.impression?.length ? (
+        <BulletList title="IMPRESSÃO DIAGNÓSTICA:" items={parsedLaudo.impression} />
       ) : null}
 
-      {parsedLaudo.recomendacoes?.length ? (
-        <BulletList title="RECOMENDAÇÕES:" items={parsedLaudo.recomendacoes} className="mt-3" />
+      {parsedLaudo.recommendations?.length ? (
+        <BulletList title="RECOMENDAÇÕES:" items={parsedLaudo.recommendations} className="mt-3" />
       ) : null}
 
-      {parsedLaudo.observacoes?.length ? (
+      {parsedLaudo.observations?.length ? (
         <div className="mt-3">
           <h4 className="font-semibold text-gray-900 text-sm mb-2">OBS:</h4>
-          {parsedLaudo.observacoes.map((line, i) => (
+          {parsedLaudo.observations.map((line, i) => (
             <p key={i} className="mb-1 text-justify">
               {line}
             </p>

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getUserId } from "@/lib/auth";
 import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
+import { genAI } from "@/lib/gemini";
 import { TRANSCRIBE_MODEL } from "@/shared/constants";
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
 export async function POST(req: NextRequest) {
   const userId = await getUserId(req);

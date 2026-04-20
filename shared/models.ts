@@ -8,9 +8,9 @@ export interface LaudoSection {
 export interface ParsedLaudo {
   sections: LaudoSection[];
   conclusion?: string;
-  impressao?: string[];
-  recomendacoes?: string[];
-  observacoes?: string[];
+  impression?: string[];
+  recommendations?: string[];
+  observations?: string[];
   raw?: string;
 }
 
