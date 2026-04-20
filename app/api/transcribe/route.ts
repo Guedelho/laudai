@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/supabase/auth";
 import { checkRateLimit, recordRateLimit } from "@/lib/server-utils";
-import { genAI } from "@/lib/laudo/generate";
+import { genAI } from "@/lib/report/generate";
 import { TRANSCRIBE_MODEL } from "@/shared/constants";
 
 export async function POST(req: NextRequest) {

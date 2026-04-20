@@ -1,4 +1,4 @@
-import { ParsedLaudo } from "@/shared/models";
+import { ParsedReport } from "@/shared/models";
 import { PdfData } from "@/shared/interfaces";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfmake = require("pdfmake");
@@ -47,10 +47,10 @@ function pushBulletSection(items: Content[], title: string, lines: string[], top
   }
 }
 
-function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
+function buildBodyFromParsed(parsedReport: ParsedReport): Content[] {
   const items: Content[] = [];
 
-  for (const section of parsedLaudo.sections) {
+  for (const section of parsedReport.sections) {
     items.push({
       text: [{ text: section.label + ": ", bold: true, font: "Roboto" }, { text: section.content }],
       margin: [0, 2, 0, 5],
@@ -59,7 +59,7 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
     });
   }
 
-  if (parsedLaudo.conclusion || parsedLaudo.impression?.length) {
+  if (parsedReport.conclusion || parsedReport.impression?.length) {
     items.push({
       text: "CONCLUSÃO",
       bold: true,
@@ -70,19 +70,19 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
     });
   }
 
-  if (parsedLaudo.conclusion && !parsedLaudo.impression?.length) {
+  if (parsedReport.conclusion && !parsedReport.impression?.length) {
     items.push({
-      text: parsedLaudo.conclusion,
+      text: parsedReport.conclusion,
       alignment: "justify",
       margin: [0, 0, 0, 5],
       fontSize: 12,
     });
   }
 
-  if (parsedLaudo.impression?.length) pushBulletSection(items, "IMPRESSÃO DIAGNÓSTICA:", parsedLaudo.impression, 4);
-  if (parsedLaudo.recommendations?.length) pushBulletSection(items, "RECOMENDAÇÕES:", parsedLaudo.recommendations, 8);
+  if (parsedReport.impression?.length) pushBulletSection(items, "IMPRESSÃO DIAGNÓSTICA:", parsedReport.impression, 4);
+  if (parsedReport.recommendations?.length) pushBulletSection(items, "RECOMENDAÇÕES:", parsedReport.recommendations, 8);
 
-  if (parsedLaudo.observations?.length) {
+  if (parsedReport.observations?.length) {
     items.push({
       text: "OBS:",
       bold: true,
@@ -90,7 +90,7 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
       margin: [0, 8, 0, 4],
       fontSize: 12,
     });
-    for (const line of parsedLaudo.observations) {
+    for (const line of parsedReport.observations) {
       items.push({
         text: line,
         alignment: "justify",
@@ -101,9 +101,9 @@ function buildBodyFromParsed(parsedLaudo: ParsedLaudo): Content[] {
   }
 
   // Fallback: if raw plain text from old records, render as paragraph
-  if (!parsedLaudo.sections.length && parsedLaudo.raw) {
+  if (!parsedReport.sections.length && parsedReport.raw) {
     items.push({
-      text: parsedLaudo.raw,
+      text: parsedReport.raw,
       alignment: "justify",
       fontSize: 12,
       margin: [0, 0, 0, 5],
@@ -129,7 +129,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
     vetName,
     signatureText,
     crmv,
-    parsedLaudo,
+    parsedReport,
     imageBase64List,
     logoBase64,
     signatureFont,
@@ -264,7 +264,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
         decoration: "underline",
         margin: [0, 0, 0, 12],
       },
-      ...buildBodyFromParsed(parsedLaudo),
+      ...buildBodyFromParsed(parsedReport),
       ...(imageContent.length > 0 ? [{ text: "", pageBreak: "before" }, ...imageContent] : []),
     ],
 

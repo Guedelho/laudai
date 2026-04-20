@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { SPECIALTIES } from "@/lib/laudo/templates";
+import { SPECIALTIES } from "@/lib/report/templates";
 import { Specialty } from "@/shared/models";
 
-interface LaudoSummary {
+interface ReportSummary {
   id: string;
   patient_name: string;
   owner_name: string;
@@ -15,17 +15,17 @@ interface LaudoSummary {
   exam_date?: string;
 }
 
-export default function LaudoList({ laudos }: { laudos: LaudoSummary[] }) {
+export default function ReportList({ reports }: { reports: ReportSummary[] }) {
   const [query, setQuery] = useState("");
 
   const filtered = query.trim()
-    ? laudos.filter(
+    ? reports.filter(
         (l) =>
           l.patient_name.toLowerCase().includes(query.toLowerCase()) ||
           l.owner_name.toLowerCase().includes(query.toLowerCase()) ||
           l.clinic_name.toLowerCase().includes(query.toLowerCase()),
       )
-    : laudos;
+    : reports;
 
   return (
     <div className="space-y-4">
@@ -37,7 +37,7 @@ export default function LaudoList({ laudos }: { laudos: LaudoSummary[] }) {
         className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
       />
 
-      {!laudos.length ? (
+      {!reports.length ? (
         <div className="text-center py-16 text-gray-400">
           <p className="text-lg mb-2">Nenhum laudo gerado ainda</p>
           <Link href="/new" className="text-blue-600 text-sm hover:underline">
@@ -50,26 +50,26 @@ export default function LaudoList({ laudos }: { laudos: LaudoSummary[] }) {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((laudo) => (
+          {filtered.map((report) => (
             <div
-              key={laudo.id}
+              key={report.id}
               className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between"
             >
               <div>
                 <p className="font-medium text-gray-900">
-                  {laudo.patient_name} · {laudo.owner_name}
+                  {report.patient_name} · {report.owner_name}
                 </p>
                 <p className="text-sm text-gray-500">
-                  {SPECIALTIES[laudo.specialty].label} · {laudo.clinic_name}
+                  {SPECIALTIES[report.specialty].label} · {report.clinic_name}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  Criado: {new Date(laudo.created_at).toLocaleDateString("pt-BR")}
-                  {laudo.exam_date && (
-                    <> · Exame: {new Date(laudo.exam_date + "T12:00:00").toLocaleDateString("pt-BR")}</>
+                  Criado: {new Date(report.created_at).toLocaleDateString("pt-BR")}
+                  {report.exam_date && (
+                    <> · Exame: {new Date(report.exam_date + "T12:00:00").toLocaleDateString("pt-BR")}</>
                   )}
                 </p>
               </div>
-              <Link href={`/laudai/${laudo.id}`} className="text-sm text-blue-600 hover:underline">
+              <Link href={`/report/${report.id}`} className="text-sm text-blue-600 hover:underline">
                 Ver laudo
               </Link>
             </div>

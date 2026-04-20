@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { deleteLaudo } from "@/lib/api/laudos";
+import { deleteReport } from "@/lib/api/reports";
 
-export default function DeleteLaudoButton({ laudoId }: { laudoId: string }) {
+export default function DeleteReportButton({ reportId }: { reportId: string }) {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -13,10 +13,10 @@ export default function DeleteLaudoButton({ laudoId }: { laudoId: string }) {
   async function handleDelete() {
     setDeleting(true);
     try {
-      await deleteLaudo(laudoId);
+      await deleteReport(reportId);
       router.push("/dashboard");
     } catch {
-      console.error("Delete laudo error");
+      console.error("Delete report error");
       setDeleting(false);
       setConfirming(false);
       setDeleteError("Erro ao excluir laudo. Tente novamente.");

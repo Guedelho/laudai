@@ -1,6 +1,6 @@
 "use client";
 
-export default function DownloadPDFButton({ laudoId }: { laudoId: string }) {
+export default function DownloadPDFButton({ reportId }: { reportId: string }) {
   function handleClick() {
     const tab = window.open("", "_blank");
     if (tab) {
@@ -20,7 +20,7 @@ export default function DownloadPDFButton({ laudoId }: { laudoId: string }) {
           '</style></head><body><div class="c"><div class="s"></div><h1>Laudai</h1><p>Preparando PDF...</p></div></body></html>',
         ].join(""),
       );
-      tab.location.href = `/api/laudos/${laudoId}/pdf`;
+      tab.location.href = `/api/reports/${reportId}/pdf`;
     }
   }
 

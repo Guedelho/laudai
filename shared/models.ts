@@ -1,12 +1,12 @@
 export type Specialty = "ultrasound_abdominal";
 
-export interface LaudoSection {
+export interface ReportSection {
   label: string;
   content: string;
 }
 
-export interface ParsedLaudo {
-  sections: LaudoSection[];
+export interface ParsedReport {
+  sections: ReportSection[];
   conclusion?: string;
   impression?: string[];
   recommendations?: string[];
@@ -24,7 +24,7 @@ export interface PatientFields {
   ownerName: string;
 }
 
-export interface LaudoFields extends PatientFields {
+export interface ReportFields extends PatientFields {
   clinicName: string;
   responsibleVet: string;
   examDate: string;
@@ -72,7 +72,7 @@ export interface Clinic {
   clinic_vets: ClinicVet[];
 }
 
-export interface Laudo {
+export interface Report {
   id: string;
   user_id: string;
   specialty: Specialty;
@@ -97,7 +97,7 @@ export interface Laudo {
   updated_at?: string;
 }
 
-export interface LaudoImage {
+export interface ReportImage {
   id: string;
   file_name: string;
   url: string;

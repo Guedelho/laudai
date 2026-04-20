@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateLaudo } from "@/lib/laudo/generate";
+import { generateReport } from "@/lib/report/generate";
 import { getUserId, getProfile } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { GenerateRequest } from "@/shared/interfaces";
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     let resolvedPetId: string | null = petId ?? null;
     try {
       const [content, pet] = await Promise.all([
-        generateLaudo({
+        generateReport({
           rawInput,
           patientName,
           species,
@@ -115,8 +115,8 @@ export async function POST(req: NextRequest) {
 
     send({ status: "saving" });
 
-    const { data: laudo, error } = await supabase
-      .from("laudos")
+    const { data: report, error } = await supabase
+      .from("reports")
       .insert({
         user_id: userId,
         specialty,
@@ -147,6 +147,6 @@ export async function POST(req: NextRequest) {
     }
 
     recordRateLimit("generate", userId);
-    send({ status: "done", laudo: { id: laudo.id } });
+    send({ status: "done", report: { id: report.id } });
   });
 }

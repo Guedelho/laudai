@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { getUserId } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
-import { UpdateLaudoRequest } from "@/shared/interfaces";
+import { UpdateReportRequest } from "@/shared/interfaces";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -12,16 +12,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const admin = createAdmin();
 
-  const { data: existing } = await admin.from("laudos").select("locked_at").eq("id", id).eq("user_id", userId).single();
+  const { data: existing } = await admin
+    .from("reports")
+    .select("locked_at")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .single();
 
   if (!existing) return NextResponse.json({ error: "Laudo não encontrado." }, { status: 404 });
   if (existing.locked_at)
     return NextResponse.json({ error: "Laudo bloqueado e não pode ser editado." }, { status: 403 });
 
-  const { generatedContent, patientFields, petId, clinicId, vetId }: UpdateLaudoRequest = await req.json();
+  const { generatedContent, patientFields, petId, clinicId, vetId }: UpdateReportRequest = await req.json();
 
   const { error } = await admin
-    .from("laudos")
+    .from("reports")
     .update({
       edited_content: JSON.stringify(generatedContent),
       ...patientFields,
@@ -34,7 +39,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .eq("user_id", userId);
 
   if (error) {
-    console.error("Laudo update error:", error);
+    console.error("Report update error:", error);
     return NextResponse.json({ error: "Erro ao salvar laudo." }, { status: 500 });
   }
 
@@ -61,7 +66,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     ].filter(Boolean),
   );
 
-  revalidateTag(`laudo-${id}`, "default");
+  revalidateTag(`report-${id}`, "default");
   return NextResponse.json({ ok: true });
 }
 
@@ -74,16 +79,16 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const admin = createAdmin();
 
   const { error } = await admin
-    .from("laudos")
+    .from("reports")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id)
     .eq("user_id", userId);
 
   if (error) {
-    console.error("Laudo delete error:", error);
+    console.error("Report delete error:", error);
     return NextResponse.json({ error: "Erro ao excluir laudo." }, { status: 500 });
   }
 
-  revalidateTag(`laudo-${id}`, "default");
+  revalidateTag(`report-${id}`, "default");
   return NextResponse.json({ ok: true });
 }

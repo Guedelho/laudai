@@ -12,7 +12,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const admin = createAdmin();
 
   const { error } = await admin
-    .from("laudos")
+    .from("reports")
     .update({ locked_at: new Date().toISOString() })
     .eq("id", id)
     .eq("user_id", userId)
@@ -23,6 +23,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Erro ao bloquear laudo." }, { status: 500 });
   }
 
-  revalidateTag(`laudo-${id}`, "default");
+  revalidateTag(`report-${id}`, "default");
   return NextResponse.json({ ok: true });
 }

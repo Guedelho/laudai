@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { SPECIALTIES } from "@/lib/laudo/templates";
-import { Laudo, LaudoImage, ParsedLaudo } from "@/shared/models";
+import { SPECIALTIES } from "@/lib/report/templates";
+import { Report, ReportImage, ParsedReport } from "@/shared/models";
 import { SEX_OPTIONS } from "@/shared/constants";
-import { sexLabel, parseLaudoContent } from "@/lib/utils";
-import { UpdateLaudoRequest } from "@/shared/interfaces";
-import { updateLaudo, lockLaudo, uploadImages } from "@/lib/api/laudos";
+import { sexLabel, parseReportContent } from "@/lib/utils";
+import { UpdateReportRequest } from "@/shared/interfaces";
+import { updateReport, lockReport, uploadReportImages } from "@/lib/api/reports";
 import DownloadPDFButton from "./DownloadPDFButton";
-import DeleteLaudoButton from "./DeleteLaudoButton";
+import DeleteReportButton from "./DeleteReportButton";
 import ImageManager from "./ImageManager";
-import LaudoContent from "./LaudoContent";
+import ReportContent from "./ReportContent";
 
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
@@ -69,46 +69,46 @@ const inputCls =
 const textareaCls =
   "w-full border border-blue-200 rounded px-2 py-1 text-sm text-gray-800 resize-none focus:outline-none focus:ring-1 focus:ring-blue-400";
 
-export default function LaudoDetail({
-  laudo,
+export default function ReportDetail({
+  report,
   images,
   isEditing,
 }: {
-  laudo: Laudo;
-  images: LaudoImage[];
+  report: Report;
+  images: ReportImage[];
   isEditing: boolean;
 }) {
-  const initialParsed = parseLaudoContent(laudo.edited_content);
+  const initialParsed = parseReportContent(report.edited_content);
 
   const [printing, setPrinting] = useState(false);
   const [locked, setLocked] = useState(false);
   const [error, setError] = useState("");
   const editing = isEditing && !locked;
-  const [editedParsed, setEditedParsed] = useState<ParsedLaudo>(initialParsed);
+  const [editedParsed, setEditedParsed] = useState<ParsedReport>(initialParsed);
   const [fields, setFields] = useState({
-    patientName: laudo.patient_name,
-    species: laudo.species,
-    breed: laudo.breed,
-    age: laudo.age,
-    sex: laudo.sex,
-    neutered: laudo.neutered,
-    ownerName: laudo.owner_name,
-    clinicName: laudo.clinic_name,
-    responsibleVet: laudo.responsible_vet,
-    examDate: laudo.exam_date,
+    patientName: report.patient_name,
+    species: report.species,
+    breed: report.breed,
+    age: report.age,
+    sex: report.sex,
+    neutered: report.neutered,
+    ownerName: report.owner_name,
+    clinicName: report.clinic_name,
+    responsibleVet: report.responsible_vet,
+    examDate: report.exam_date,
   });
 
   useEffect(() => {
-    if (!isEditing && !laudo.locked_at) {
-      lockLaudo(laudo.id);
+    if (!isEditing && !report.locked_at) {
+      lockReport(report.id);
     }
-  }, [isEditing, laudo.id, laudo.locked_at]);
+  }, [isEditing, report.id, report.locked_at]);
 
   async function handleImprimir() {
     setPrinting(true);
     setError("");
     try {
-      await updateLaudo(laudo.id, {
+      await updateReport(report.id, {
         generatedContent: editedParsed,
         patientFields: {
           patient_name: fields.patientName,
@@ -122,12 +122,12 @@ export default function LaudoDetail({
           responsible_vet: fields.responsibleVet,
           exam_date: fields.examDate,
         },
-        petId: laudo.pet_id ?? undefined,
-        clinicId: laudo.clinic_id ?? undefined,
-        vetId: laudo.vet_id ?? undefined,
+        petId: report.pet_id ?? undefined,
+        clinicId: report.clinic_id ?? undefined,
+        vetId: report.vet_id ?? undefined,
       });
 
-      await lockLaudo(laudo.id);
+      await lockReport(report.id);
 
       const tab = window.open("", "_blank");
       if (tab) {
@@ -146,7 +146,7 @@ export default function LaudoDetail({
             '</style></head><body><div class="c"><div class="s"></div><h1>Laudai</h1><p>Preparando PDF...</p></div></body></html>',
           ].join(""),
         );
-        tab.location.href = `/api/laudos/${laudo.id}/pdf`;
+        tab.location.href = `/api/reports/${report.id}/pdf`;
       }
 
       setLocked(true);
@@ -191,7 +191,7 @@ export default function LaudoDetail({
           <h1 className="text-xl font-bold text-gray-900 mt-2">{fields.patientName}</h1>
           <div className="flex items-center gap-2 mt-1">
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-              {SPECIALTIES[laudo.specialty].label}
+              {SPECIALTIES[report.specialty].label}
             </span>
             <span className="text-xs text-gray-400">{displayDate}</span>
           </div>
@@ -214,8 +214,8 @@ export default function LaudoDetail({
             </button>
           ) : (
             <>
-              <DeleteLaudoButton laudoId={laudo.id} />
-              <DownloadPDFButton laudoId={laudo.id} />
+              <DeleteReportButton reportId={report.id} />
+              <DownloadPDFButton reportId={report.id} />
             </>
           )}
         </div>
@@ -356,7 +356,7 @@ export default function LaudoDetail({
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden animate-[fadeIn_0.5s_ease-out]">
         <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
           <h2 className="text-sm font-semibold text-gray-700 text-center uppercase tracking-wide">
-            {SPECIALTIES[laudo.specialty].label}
+            {SPECIALTIES[report.specialty].label}
           </h2>
         </div>
         <div className="p-6">
@@ -415,14 +415,14 @@ export default function LaudoDetail({
               />
             </div>
           ) : (
-            <LaudoContent parsedLaudo={editedParsed} />
+            <ReportContent parsedReport={editedParsed} />
           )}
         </div>
       </div>
 
       {/* Images */}
       <div className="animate-[fadeIn_0.6s_ease-out]">
-        <ImageManager initialImages={images} laudoId={laudo.id} editable={editing} />
+        <ImageManager initialImages={images} reportId={report.id} editable={editing} />
       </div>
     </main>
   );

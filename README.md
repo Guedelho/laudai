@@ -36,7 +36,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 
 3. **Set up Supabase**
    - Open your project's SQL Editor and run the full contents of `supabase/schema.sql`
-   - Go to **Storage** → create three private buckets: `laudo-images`, `laudo-pdfs`, and `profile-logos`
+   - Go to **Storage** → create three private buckets: `report-images`, `report-pdfs`, and `profile-logos`
    - RLS policies are applied via migrations — all buckets scope access to `auth.uid() = first folder in path`
 
 4. **Run the dev server**
@@ -49,9 +49,9 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 
 | Route          | Purpose                             |
 | -------------- | ----------------------------------- |
-| `/new`         | Create a new laudo                  |
-| `/dashboard`   | List recent laudos                  |
-| `/laudai/[id]` | View / edit / download a laudo      |
+| `/new`         | Create a new report                 |
+| `/dashboard`   | List recent reports                 |
+| `/report/[id]` | View / edit / download a report     |
 | `/profile`     | Vet profile (name, CRMV)            |
 | `/pets`        | Manage patients                     |
 | `/clinics`     | Manage clinics and responsible vets |
@@ -68,13 +68,13 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 ```
 app/
   (auth)/        # Route group — shared layout with auth check + AppHeader
-    dashboard/   # Recent laudos list
-    new/         # New laudo form
-    laudai/[id]/ # View / edit / print laudo (unified page)
+    dashboard/   # Recent reports list
+    new/         # New report form
+    report/[id]/ # View / edit / print report (unified page)
     profile/     # Vet profile editor
     pets/        # Pet management
     clinics/     # Clinic management
-  api/           # Route handlers (generate, transcribe, laudos, pets, clinics, profile)
+  api/           # Route handlers (generate, transcribe, reports, pets, clinics, profile)
   login/         # Public login page
 components/
   AppHeader.tsx    # Navigation (auto-detects active route)
@@ -82,8 +82,8 @@ components/
   Typeahead.tsx    # Autocomplete input from existing values
   LoadingSkeleton.tsx
 lib/
-  api/           # Client-side typed fetch services (pets, clinics, laudos, profile, transcribe)
-  laudo/
+  api/           # Client-side typed fetch services (pets, clinics, reports, profile, transcribe)
+  report/
     generate.ts  # Gemini single-call streaming generation + retry
     pdf.ts       # pdfmake PDF builder
     templates.ts # Prompts, defaults, specialty config
@@ -93,10 +93,10 @@ lib/
     server.ts    # Server-side client
     auth.ts      # getUserId, getProfile
     db.ts        # find-or-create helpers (clinics, vets, pets)
-  utils.ts       # Client-safe helpers (sexLabel, parseLaudoContent)
+  utils.ts       # Client-safe helpers (sexLabel, parseReportContent)
   server-utils.ts # Server-only helpers (parseProfileImage, rateLimit)
 shared/
-  models.ts      # Core model interfaces (Laudo, Pet, Clinic, Profile…)
+  models.ts      # Core model interfaces (Report, Pet, Clinic, Profile…)
   interfaces.ts  # API request/response types and SSE event union
   constants.ts   # Dropdown options and AI model names
 supabase/

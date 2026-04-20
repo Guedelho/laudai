@@ -72,9 +72,9 @@ create policy "Users manage their own clinic vets"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- ─── laudos ──────────────────────────────────────────────────────────────────
+-- ─── reports ─────────────────────────────────────────────────────────────────
 
-create table if not exists laudos (
+create table if not exists reports (
   id                uuid default gen_random_uuid() primary key,
   user_id           uuid references auth.users(id) on delete cascade not null,
   specialty         text not null,
@@ -94,32 +94,32 @@ create table if not exists laudos (
   updated_at        timestamptz default now() not null
 );
 
-alter table laudos enable row level security;
+alter table reports enable row level security;
 
-create policy "Users manage their own laudos"
-  on laudos for all
+create policy "Users manage their own reports"
+  on reports for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- ─── laudo_images ─────────────────────────────────────────────────────────────
+-- ─── report_images ────────────────────────────────────────────────────────────
 
-create table if not exists laudo_images (
+create table if not exists report_images (
   id           uuid default gen_random_uuid() primary key,
-  laudo_id     uuid references laudos(id) on delete cascade not null,
+  report_id    uuid references reports(id) on delete cascade not null,
   user_id      uuid references auth.users(id) on delete cascade not null,
   storage_path text not null,
   file_name    text,
   created_at   timestamptz default now() not null
 );
 
-alter table laudo_images enable row level security;
+alter table report_images enable row level security;
 
-create policy "Users manage their own laudo images"
-  on laudo_images for all
+create policy "Users manage their own report images"
+  on report_images for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- ─── Trigger: keep laudos.updated_at current ─────────────────────────────────
+-- ─── Trigger: keep reports.updated_at current ────────────────────────────────
 
 create or replace function update_updated_at()
 returns trigger language plpgsql as $$
@@ -129,6 +129,6 @@ begin
 end;
 $$;
 
-create or replace trigger laudos_updated_at
-  before update on laudos
+create or replace trigger reports_updated_at
+  before update on reports
   for each row execute procedure update_updated_at();

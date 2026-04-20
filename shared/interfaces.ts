@@ -1,17 +1,17 @@
 import type {
-  ParsedLaudo,
+  ParsedReport,
   PatientFields,
-  LaudoFields,
+  ReportFields,
   Pet,
   Clinic,
   ClinicVet,
-  Laudo,
-  LaudoImage,
+  Report,
+  ReportImage,
   Specialty,
 } from "./models";
 // ─── Request types ───────────────────────────────────────────────────────────
 
-export interface GenerateRequest extends LaudoFields {
+export interface GenerateRequest extends ReportFields {
   specialty: Specialty;
   rawInput: string;
   petId?: string;
@@ -29,8 +29,8 @@ export interface PetRequest {
   ownerName: string;
 }
 
-export interface UpdateLaudoRequest {
-  generatedContent: ParsedLaudo;
+export interface UpdateReportRequest {
+  generatedContent: ParsedReport;
   petId?: string;
   clinicId?: string;
   vetId?: string;
@@ -85,7 +85,7 @@ export interface VetResponse extends ApiResponse {
 }
 
 export interface ImagesResponse extends ApiResponse {
-  images: LaudoImage[];
+  images: ReportImage[];
 }
 
 export interface TranscribeResponse extends ApiResponse {
@@ -100,7 +100,7 @@ export type SseEvent =
   | { status: "saving" }
   | { status: "chunk"; text: string }
   | { status: "error"; message: string }
-  | { status: "done"; laudo: { id: string } };
+  | { status: "done"; report: { id: string } };
 
 // ─── Generation ──────────────────────────────────────────────────────────────
 
@@ -121,7 +121,7 @@ export interface PdfData extends PatientFields {
   signatureText: string;
   crmv: string;
   crmvState?: string;
-  parsedLaudo: ParsedLaudo;
+  parsedReport: ParsedReport;
   imageBase64List: string[];
   logoBase64?: string;
   signatureFont?: string;

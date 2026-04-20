@@ -2,21 +2,21 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
-import { Laudo } from "@/shared/models";
-import LaudoDetail from "./LaudoDetail";
+import { Report } from "@/shared/models";
+import ReportDetail from "./ReportDetail";
 
-const BUCKET = "laudo-images";
+const BUCKET = "report-images";
 
-function getLaudoData(id: string, userId: string) {
+function getReportData(id: string, userId: string) {
   return unstable_cache(
     async () => {
       const admin = createAdmin();
-      const [{ data: laudo }, { data: rawImages }] = await Promise.all([
-        admin.from("laudos").select("*").eq("id", id).eq("user_id", userId).is("deleted_at", null).single(),
+      const [{ data: report }, { data: rawImages }] = await Promise.all([
+        admin.from("reports").select("*").eq("id", id).eq("user_id", userId).is("deleted_at", null).single(),
         admin
-          .from("laudo_images")
+          .from("report_images")
           .select("*")
-          .eq("laudo_id", id)
+          .eq("report_id", id)
           .eq("user_id", userId)
           .order("created_at", { ascending: true }),
       ]);
@@ -31,14 +31,14 @@ function getLaudoData(id: string, userId: string) {
         )
       ).filter((img): img is { id: string; file_name: string; url: string } => img !== null);
 
-      return { laudo, images };
+      return { report, images };
     },
-    [`laudo-${id}-${userId}`],
-    { tags: [`laudo-${id}`], revalidate: 7200 },
+    [`report-${id}-${userId}`],
+    { tags: [`report-${id}`], revalidate: 7200 },
   )();
 }
 
-export default async function LaudoPage({
+export default async function ReportPage({
   params,
   searchParams,
 }: {
@@ -52,10 +52,10 @@ export default async function LaudoPage({
   } = await (await createClient()).auth.getUser();
   if (!user) return null;
 
-  const { laudo, images } = await getLaudoData(id, user.id);
-  if (!laudo) notFound();
+  const { report, images } = await getReportData(id, user.id);
+  if (!report) notFound();
 
-  const isEditing = review === "1" && !laudo.locked_at;
+  const isEditing = review === "1" && !report.locked_at;
 
-  return <LaudoDetail laudo={laudo as Laudo} images={images} isEditing={isEditing} />;
+  return <ReportDetail report={report as Report} images={images} isEditing={isEditing} />;
 }

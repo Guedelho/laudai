@@ -1,5 +1,5 @@
-import NewLaudoForm from "./NewLaudoForm";
+import NewReportForm from "./NewReportForm";
 
 export default function NewPage() {
-  return <NewLaudoForm />;
+  return <NewReportForm />;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { ParsedLaudo } from "@/shared/models";
+import { ParsedReport } from "@/shared/models";
 
 function BulletList({ title, items, className }: { title: string; items: string[]; className?: string }) {
   return (
@@ -18,38 +18,38 @@ function BulletList({ title, items, className }: { title: string; items: string[
   );
 }
 
-export default function LaudoContent({ parsedLaudo }: { parsedLaudo: ParsedLaudo }) {
+export default function ReportContent({ parsedReport }: { parsedReport: ParsedReport }) {
   return (
     <div className="text-sm text-gray-800 leading-relaxed space-y-2">
-      {parsedLaudo.sections.map((section, i) => (
+      {parsedReport.sections.map((section, i) => (
         <div key={i} className="text-justify">
           <span className="font-semibold text-gray-900">{section.label}:</span>
           {section.content ? " " + section.content : ""}
         </div>
       ))}
 
-      {(parsedLaudo.conclusion || parsedLaudo.impression?.length) && (
+      {(parsedReport.conclusion || parsedReport.impression?.length) && (
         <div className="border-t border-gray-100 pt-4 mt-4">
           <h3 className="font-bold text-gray-900 text-sm mb-3">CONCLUSÃO</h3>
         </div>
       )}
 
-      {parsedLaudo.conclusion && !parsedLaudo.impression?.length && (
-        <p className="text-justify">{parsedLaudo.conclusion}</p>
+      {parsedReport.conclusion && !parsedReport.impression?.length && (
+        <p className="text-justify">{parsedReport.conclusion}</p>
       )}
 
-      {parsedLaudo.impression?.length ? (
-        <BulletList title="IMPRESSÃO DIAGNÓSTICA:" items={parsedLaudo.impression} />
+      {parsedReport.impression?.length ? (
+        <BulletList title="IMPRESSÃO DIAGNÓSTICA:" items={parsedReport.impression} />
       ) : null}
 
-      {parsedLaudo.recommendations?.length ? (
-        <BulletList title="RECOMENDAÇÕES:" items={parsedLaudo.recommendations} className="mt-3" />
+      {parsedReport.recommendations?.length ? (
+        <BulletList title="RECOMENDAÇÕES:" items={parsedReport.recommendations} className="mt-3" />
       ) : null}
 
-      {parsedLaudo.observations?.length ? (
+      {parsedReport.observations?.length ? (
         <div className="mt-3">
           <h4 className="font-semibold text-gray-900 text-sm mb-2">OBS:</h4>
-          {parsedLaudo.observations.map((line, i) => (
+          {parsedReport.observations.map((line, i) => (
             <p key={i} className="mb-1 text-justify">
               {line}
             </p>
@@ -57,7 +57,9 @@ export default function LaudoContent({ parsedLaudo }: { parsedLaudo: ParsedLaudo
         </div>
       ) : null}
 
-      {!parsedLaudo.sections.length && parsedLaudo.raw && <div className="whitespace-pre-wrap">{parsedLaudo.raw}</div>}
+      {!parsedReport.sections.length && parsedReport.raw && (
+        <div className="whitespace-pre-wrap">{parsedReport.raw}</div>
+      )}
     </div>
   );
 }

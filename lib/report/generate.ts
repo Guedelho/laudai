@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GENERATE_MODEL } from "@/shared/constants";
-import { buildDefaults, buildSingleCallPrompt } from "@/lib/laudo/templates";
+import { buildDefaults, buildSingleCallPrompt } from "@/lib/report/templates";
 import type { GenerateParams } from "@/shared/interfaces";
 
 export const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
@@ -34,7 +34,7 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2, onRetry?: () =
   throw lastErr;
 }
 
-export async function generateLaudo(params: GenerateParams): Promise<string> {
+export async function generateReport(params: GenerateParams): Promise<string> {
   const { rawInput, patientName, species, breed, age, sex, neutered, ownerName, onStatus, onChunk } = params;
 
   const resolvedDefaults = buildDefaults(sex, neutered);

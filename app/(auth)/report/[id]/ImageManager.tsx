@@ -2,20 +2,20 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { LaudoImage } from "@/shared/models";
-import { uploadImages, deleteImage } from "@/lib/api/laudos";
+import { ReportImage } from "@/shared/models";
+import { uploadReportImages, deleteReportImage } from "@/lib/api/reports";
 import ImageLightbox from "@/components/ImageLightbox";
 
 export default function ImageManager({
   initialImages,
-  laudoId,
+  reportId,
   editable = false,
 }: {
-  initialImages: LaudoImage[];
-  laudoId: string;
+  initialImages: ReportImage[];
+  reportId: string;
   editable?: boolean;
 }) {
-  const [images, setImages] = useState<LaudoImage[]>(initialImages);
+  const [images, setImages] = useState<ReportImage[]>(initialImages);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -27,7 +27,7 @@ export default function ImageManager({
     setUploading(true);
     setError("");
     try {
-      const newImages = await uploadImages(laudoId, files);
+      const newImages = await uploadReportImages(reportId, files);
       setImages((prev) => [...prev, ...newImages]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao enviar imagens.");
@@ -40,7 +40,7 @@ export default function ImageManager({
   async function handleDelete(imageId: string) {
     setError("");
     try {
-      await deleteImage(laudoId, imageId);
+      await deleteReportImage(reportId, imageId);
       setImages((prev) => prev.filter((img) => img.id !== imageId));
       setSelectedIndex((prev) => {
         if (prev === null) return null;

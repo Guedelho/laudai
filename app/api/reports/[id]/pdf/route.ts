@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserId, getProfile } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
-import { parseLaudoContent } from "@/lib/utils";
-import { generatePdfBuffer } from "@/lib/laudo/pdf";
+import { parseReportContent } from "@/lib/utils";
+import { generatePdfBuffer } from "@/lib/report/pdf";
 import { PdfData } from "@/shared/interfaces";
 import { Specialty } from "@/shared/models";
-import { SPECIALTIES } from "@/lib/laudo/templates";
+import { SPECIALTIES } from "@/lib/report/templates";
 import { checkRateLimit, recordRateLimit } from "@/lib/server-utils";
 import sharp from "sharp";
 
-const IMAGES_BUCKET = "laudo-images";
-const PDF_BUCKET = "laudo-pdfs";
+const IMAGES_BUCKET = "report-images";
+const PDF_BUCKET = "report-pdfs";
 const SUPPORTED_MIME = new Set(["image/jpeg", "image/jpg", "image/png"]);
 
 function slugify(s: string) {
@@ -41,14 +41,14 @@ async function fetchAsBase64(url: string, maxWidth?: number, maxHeight?: number)
   return `data:${finalMime};base64,${buf.toString("base64")}`;
 }
 
-function buildFilename(laudo: {
+function buildFilename(report: {
   patient_name: string;
   owner_name: string;
   specialty: string;
   exam_date?: string;
   created_at: string;
 }) {
-  const dateSource = laudo.exam_date ? new Date(laudo.exam_date + "T12:00:00") : new Date(laudo.created_at);
+  const dateSource = report.exam_date ? new Date(report.exam_date + "T12:00:00") : new Date(report.created_at);
   const dateShort = [
     String(dateSource.getDate()).padStart(2, "0"),
     String(dateSource.getMonth() + 1).padStart(2, "0"),
@@ -57,9 +57,9 @@ function buildFilename(laudo: {
   return (
     [
       "Laudo",
-      SPECIALTIES[laudo.specialty as Specialty].abbr,
-      slugify(laudo.patient_name),
-      slugify(laudo.owner_name),
+      SPECIALTIES[report.specialty as Specialty].abbr,
+      slugify(report.patient_name),
+      slugify(report.owner_name),
       dateShort,
     ].join(".") + ".pdf"
   );
@@ -76,8 +76,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const admin = createAdmin();
 
-  const { data: laudo } = await admin
-    .from("laudos")
+  const { data: report } = await admin
+    .from("reports")
     .select(
       "patient_name, species, breed, age, sex, neutered, owner_name, clinic_name, responsible_vet, specialty, exam_date, created_at, edited_content, pdf_storage_path",
     )
@@ -85,14 +85,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     .eq("user_id", userId)
     .single();
 
-  if (!laudo) return NextResponse.json({ error: "Laudo not found" }, { status: 404 });
+  if (!report) return NextResponse.json({ error: "Laudo não encontrado." }, { status: 404 });
 
-  const filename = buildFilename(laudo);
+  const filename = buildFilename(report);
 
   // Serve cached PDF if available
-  if (laudo.pdf_storage_path) {
+  if (report.pdf_storage_path) {
     try {
-      const { data: signed } = await admin.storage.from(PDF_BUCKET).createSignedUrl(laudo.pdf_storage_path, 300);
+      const { data: signed } = await admin.storage.from(PDF_BUCKET).createSignedUrl(report.pdf_storage_path, 300);
       if (signed?.signedUrl) {
         const cached = await fetch(signed.signedUrl);
         if (cached.ok) {
@@ -115,14 +115,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado." }, { status: 400 });
 
   const { data: rawImages } = await admin
-    .from("laudo_images")
+    .from("report_images")
     .select("storage_path")
-    .eq("laudo_id", id)
+    .eq("report_id", id)
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
 
-  const specialty = laudo.specialty as Specialty;
-  const dateSource = laudo.exam_date ? new Date(laudo.exam_date + "T12:00:00") : new Date(laudo.created_at);
+  const specialty = report.specialty as Specialty;
+  const dateSource = report.exam_date ? new Date(report.exam_date + "T12:00:00") : new Date(report.created_at);
   const date = dateSource.toLocaleDateString("pt-BR");
 
   const imageResults = await Promise.all(
@@ -132,7 +132,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         if (!data) return null;
         return await fetchAsBase64(data.signedUrl);
       } catch (err) {
-        console.error("Failed to load laudo image:", img.storage_path, err);
+        console.error("Failed to load report image:", img.storage_path, err);
         return null;
       }
     }),
@@ -163,21 +163,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   const pdfData: PdfData = {
-    patientName: laudo.patient_name,
-    species: laudo.species,
-    breed: laudo.breed,
-    age: laudo.age,
-    ownerName: laudo.owner_name,
-    sex: laudo.sex,
-    neutered: laudo.neutered,
-    clinicName: laudo.clinic_name,
-    responsibleVet: laudo.responsible_vet,
+    patientName: report.patient_name,
+    species: report.species,
+    breed: report.breed,
+    age: report.age,
+    ownerName: report.owner_name,
+    sex: report.sex,
+    neutered: report.neutered,
+    clinicName: report.clinic_name,
+    responsibleVet: report.responsible_vet,
     date,
     reportTitle: SPECIALTIES[specialty].reportTitle,
     vetName: profile.full_name,
     signatureText: profile.signature || profile.full_name,
     crmv: profile.crmv,
-    parsedLaudo: parseLaudoContent(laudo.edited_content),
+    parsedReport: parseReportContent(report.edited_content),
     imageBase64List,
     logoBase64,
     signatureFont: profile.signature_font,
@@ -194,7 +194,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       contentType: "application/pdf",
       upsert: true,
     });
-    await admin.from("laudos").update({ pdf_storage_path: storagePath }).eq("id", id).eq("user_id", userId);
+    await admin.from("reports").update({ pdf_storage_path: storagePath }).eq("id", id).eq("user_id", userId);
   } catch (err) {
     console.error("Failed to cache PDF:", err);
   }

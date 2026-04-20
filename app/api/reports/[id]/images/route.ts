@@ -4,7 +4,7 @@ import { getUserId } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import sharp from "sharp";
 
-const BUCKET = "laudo-images";
+const BUCKET = "report-images";
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const MAX_FILES = 30;
 
@@ -45,14 +45,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const admin = createAdmin();
 
   const { data: images, error } = await admin
-    .from("laudo_images")
+    .from("report_images")
     .select("*")
-    .eq("laudo_id", id)
+    .eq("report_id", id)
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
 
   if (error) {
-    console.error("Laudo images fetch error:", error);
+    console.error("Report images fetch error:", error);
     return NextResponse.json({ error: "Erro ao buscar imagens." }, { status: 500 });
   }
 
@@ -74,9 +74,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const admin = createAdmin();
   await ensureBucket(admin);
 
-  // Verify laudo belongs to user
-  const { data: laudo } = await admin.from("laudos").select("id").eq("id", id).eq("user_id", userId).single();
-  if (!laudo) return NextResponse.json({ error: "Laudo not found" }, { status: 404 });
+  // Verify report belongs to user
+  const { data: report } = await admin.from("reports").select("id").eq("id", id).eq("user_id", userId).single();
+  if (!report) return NextResponse.json({ error: "Laudo não encontrado." }, { status: 404 });
 
   const formData = await req.formData();
   const files = formData.getAll("images") as File[];
@@ -121,8 +121,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         }
 
         const { data: record, error: dbError } = await admin
-          .from("laudo_images")
-          .insert({ laudo_id: id, user_id: userId, storage_path: storagePath, file_name: name })
+          .from("report_images")
+          .insert({ report_id: id, user_id: userId, storage_path: storagePath, file_name: name })
           .select()
           .single();
 
@@ -136,8 +136,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }),
     );
 
-    revalidateTag(`laudo-${id}`, "default");
-    await admin.from("laudos").update({ pdf_storage_path: null }).eq("id", id).eq("user_id", userId);
+    revalidateTag(`report-${id}`, "default");
+    await admin.from("reports").update({ pdf_storage_path: null }).eq("id", id).eq("user_id", userId);
     return NextResponse.json({ images: results });
   } catch (err) {
     console.error("Image upload error:", err);

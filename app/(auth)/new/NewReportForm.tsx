@@ -10,10 +10,10 @@ import { SseEvent, ApiResponse } from "@/shared/interfaces";
 import { SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared/constants";
 import { listPets } from "@/lib/api/pets";
 import { listClinics, createClinic, addVet } from "@/lib/api/clinics";
-import { uploadImages } from "@/lib/api/laudos";
+import { uploadReportImages } from "@/lib/api/reports";
 import { transcribeAudio as transcribe } from "@/lib/api/transcribe";
 
-export default function NewLaudoPage() {
+export default function NewReportPage() {
   const router = useRouter();
   const specialty = "ultrasound_abdominal" as const;
 
@@ -255,7 +255,7 @@ export default function NewLaudoPage() {
         vetId: resolvedVetId,
       });
 
-      let laudoId: string | null = null;
+      let reportId: string | null = null;
       const maxAttempts = 3;
 
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -293,13 +293,13 @@ export default function NewLaudoPage() {
                 /* streaming preview */
               } else if (event.status === "error") throw new Error(event.message || "Erro ao gerar laudo.");
               else if (event.status === "done") {
-                laudoId = event.laudo.id;
+                reportId = event.report.id;
                 break outer;
               }
             }
           }
 
-          if (laudoId) break;
+          if (reportId) break;
           throw new Error("Resposta incompleta do servidor.");
         } catch (err) {
           if (attempt === maxAttempts) throw err;
@@ -307,15 +307,15 @@ export default function NewLaudoPage() {
         }
       }
 
-      if (!laudoId) throw new Error("Erro ao gerar laudo. Tente novamente.");
+      if (!reportId) throw new Error("Erro ao gerar laudo. Tente novamente.");
 
       if (selectedFiles.length > 0) {
         setGeneratingStatus("Enviando imagens...");
-        await uploadImages(laudoId, selectedFiles);
+        await uploadReportImages(reportId, selectedFiles);
       }
 
       setGeneratingStatus("Redirecionando...");
-      router.push(`/laudai/${laudoId}?review=1`);
+      router.push(`/report/${reportId}?review=1`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar laudo.");
       setGenerating(false);
