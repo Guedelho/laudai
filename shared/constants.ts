@@ -10,9 +10,7 @@ export const SEX_OPTIONS = [
   { value: "F", label: "Fêmea" },
 ] as const;
 
-// ─── Gemini ──────────────────────────────────────────────────────────────────
+// ─── AI models ──────────────────────────────────────────────────────────────
 
-export const SECTION_MODEL = "gemini-3.1-pro-preview";
-export const CONCLUSION_MODEL = "gemini-3-flash-preview";
-export const VERIFIER_MODEL = "gemini-3-flash-preview";
+export const GENERATE_MODEL = "gemini-3-flash-preview";
 export const TRANSCRIBE_MODEL = "gemini-3-flash-preview";

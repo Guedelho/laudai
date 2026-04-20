@@ -7,7 +7,7 @@
 ## Stack
 
 - **Next.js 16 App Router** — Tailwind 4 (PostCSS-based, no `tailwind.config.*`), Supabase SSR via `@supabase/ssr`
-- **AI**: `lib/gemini.ts` makes two Gemini calls per laudo — draft (`gemini-3.1-pro-preview`) + verification (`gemini-3-flash-preview`). Streaming via `generateContentStream`. Retry with exponential backoff on transient errors. Post-processing scrubbers strip hallucinated measurements and classification labels. Generation uses `temperature: 0` to minimize hallucinations.
+- **AI**: `lib/ai.ts` makes a single Gemini call per laudo (`gemini-3-flash-preview`) with a combined system prompt (sections + conclusion + verifier constraints). Streaming via `generateContentStream` with `responseMimeType: "application/json"`. Retry with exponential backoff on transient errors. Generation uses `temperature: 0`.
 - **Transcription**: `app/api/transcribe/route.ts` uses `gemini-3-flash-preview` for audio → text.
 - **PDF**: `lib/generatePdf.ts` (pdfmake). Fonts fetched from CDN and cached module-level. Generated PDFs are cached in the `laudo-pdfs` bucket — cleared on laudo edit or image changes.
 - **Formatting**: Prettier with pre-commit hook via lint-staged. Run `npm run format` to format all files.
@@ -28,7 +28,7 @@ All authenticated pages live inside `app/(auth)/`. The route group layout handle
 
 ## API route conventions
 
-- Auth: `getUserId()` from `@/lib/auth` — never from `@/lib/gemini`.
+- Auth: `getUserId()` from `@/lib/auth` — never from `@/lib/ai`.
 - Data: `createAdmin()` — never the anon client.
 - Rate limiting: `checkRateLimit` + `recordRateLimit` from `@/lib/rateLimit` — never inline `Map<string, number[]>`.
 - Image validation: Server-side via `sharp` magic-byte detection (not `file.type`).

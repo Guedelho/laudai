@@ -7,7 +7,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 - **Next.js 16** (App Router) · **React 19** · **TypeScript**
 - **Tailwind CSS 4**
 - **Supabase** — auth, Postgres, storage
-- **Google Gemini AI** — `gemini-3.1-pro-preview` (report draft), `gemini-3-flash-preview` (verification + transcription)
+- **Google Gemini AI** — `gemini-3-flash-preview` (single-call report generation + transcription)
 - **pdfmake** — server-side PDF generation (cached in storage)
 - **Prettier** — code formatting with pre-commit hook
 
@@ -82,7 +82,7 @@ components/
   Typeahead.tsx    # Autocomplete input from existing values
   LoadingSkeleton.tsx
 lib/
-  gemini.ts      # Gemini API calls (streaming draft + verification + retry + scrubbers)
+  ai.ts          # Gemini API call (single-call streaming generation + retry)
   templates.ts   # Specialty templates, defaults, nomenclature (from Mapa do Laudo Memorável)
   generatePdf.ts # pdfmake PDF builder
   parseLaudo.ts  # Parse Gemini JSON output

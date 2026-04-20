@@ -9,7 +9,6 @@ import type {
   LaudoImage,
   Specialty,
 } from "./models";
-
 // ─── Request types ───────────────────────────────────────────────────────────
 
 export interface GenerateRequest extends LaudoFields {
@@ -97,8 +96,6 @@ export interface TranscribeResponse extends ApiResponse {
 
 export type SseEvent =
   | { status: "generating" }
-  | { status: "concluding" }
-  | { status: "reviewing" }
   | { status: "retrying" }
   | { status: "saving" }
   | { status: "chunk"; text: string }
@@ -109,7 +106,7 @@ export type SseEvent =
 
 export interface GenerateParams extends PatientFields {
   rawInput: string;
-  onStatus?: (status: "generating" | "concluding" | "reviewing" | "retrying") => void;
+  onStatus?: (status: "generating" | "retrying") => void;
   onChunk?: (text: string) => void;
 }
 

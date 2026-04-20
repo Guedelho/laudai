@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { checkRateLimit, recordRateLimit } from "@/lib/rateLimit";
-import { genAI } from "@/lib/gemini";
+import { genAI } from "@/lib/ai";
 import { TRANSCRIBE_MODEL } from "@/shared/constants";
 
 export async function POST(req: NextRequest) {

@@ -51,9 +51,7 @@ export function buildDefaults(sex?: string | null, neutered?: boolean | null): s
   return `${base}\n\n${DEFAULTS_MALE_ABDOMINAL}\n\n${DEFAULTS_FEMALE_ABDOMINAL}`;
 }
 
-// ─── Nomenclature sections (organ-keyed, no classification labels) ───────────
-
-export const NOMENCLATURE: Record<string, string> = {
+const NOMENCLATURE: Record<string, string> = {
   liver: `FÍGADO — Alterações difusas (descrição → impressão → recomendação):
 - Dimensões fora do gradil, superfície regular, margens finas, ecogenicidade e ecotextura normais, vasos preservados → Hepatomegalia pouco específica, podendo indicar processo inflamatório → Sugiro pesquisa de hepatopatias. Em filhotes: hepatomegalia é condição normalmente encontrada até oito meses.
 - Dimensões fora do gradil, superfície irregular, margens abauladas, ecogenicidade e ecotextura normais, vasos preservados → Alterações correlacionadas com processo inflamatório → Sugiro correlação com achados clínicos e demais exames laboratoriais.
@@ -156,34 +154,34 @@ EFUSÃO PERITONEAL: líquido livre
 PERITONITE: focal, difusa`,
 };
 
-export const FRASES_SALVADORAS = `FRASES SALVADORAS (use quando aplicável):
+const FRASES_SALVADORAS = `FRASES SALVADORAS (use quando aplicável):
 - Para alterações em órgãos com possível comprometimento funcional: "Sugiro correlação com achados clínicos e demais exames laboratoriais para maiores conclusões."
 - Para lesões pequenas ou formações médias a grandes: "É recomendado acompanhamento ultrassonográfico da lesão, bem como a associação com o exame de punção guiada por agulha fina."
 - Para formações grandes: "É indicada a correlação com exame de tomografia computadorizada/laparotomia exploratória para maiores esclarecimentos."
 - Para alterações em bexiga (exceto gás): "Caso o clínico considere necessário, sugiro cistocentese com cultura da urina para melhor elucidação do quadro."
 - Para alterações em vesícula biliar (exceto gás e mucocele): "Caso o clínico considere necessário, sugiro colecistocentese com cultura da bile para melhor elucidação das alterações supracitadas."`;
 
-export const SECTION_TEMPLATES: Record<Specialty, (defaults: string) => string> = {
-  ultrasound_abdominal: (
-    defaults,
-  ) => `Você é um especialista em ultrassonografia veterinária. Gere APENAS o array de seções descritivas de um laudo abdominal.
+const FULL_NOMENCLATURE = `REFERÊNCIA DE ACHADOS POR ÓRGÃO:\n\n${Object.values(NOMENCLATURE).join("\n\n")}\n\n${FRASES_SALVADORAS}`;
 
-Retorne APENAS um objeto JSON válido, sem nenhum texto antes ou depois, sem markdown, sem blocos de código:
-{ "sections": [{ "label": "NOME DA SEÇÃO", "content": "Texto descritivo." }] }
+export function buildSingleCallPrompt(defaults: string, especie: string): string {
+  return `Você é um médico veterinário especialista em ultrassonografia abdominal de pequenos animais (cães e gatos), com amplo domínio da semiologia sonográfica, achados normais e patológicos por órgão, e das apresentações típicas das principais afecções abdominais na rotina clínica.
 
-NÃO inclua conclusion, impression, recommendations ou qualquer campo além de sections.
+Gere um laudo ultrassonográfico abdominal completo com base nos achados informados. Retorne APENAS um objeto JSON válido, sem nenhum texto antes ou depois, sem markdown, sem blocos de código:
+{ "sections": [{ "label": "NOME DA SEÇÃO", "content": "Texto descritivo." }], "conclusion": "...", "impression": ["..."], "recommendations": ["..."] }
 
-REGRAS OBRIGATÓRIAS:
+Omita "impression" e "recommendations" se o exame for normal.
+
+REGRAS OBRIGATÓRIAS — SEÇÕES:
 
 1. Órgãos NÃO listados nos achados → copie o texto padrão EXATAMENTE, sem nenhuma modificação.
 
 2. Órgãos listados nos achados → use o texto padrão como BASE e modifique APENAS os campos explicitamente informados. Campos não mencionados permanecem exatamente como no texto padrão.
 
-3. MEDIDAS: inclua apenas medidas presentes nos achados. Se nenhuma medida foi informada, o laudo não deve conter nenhum número de medida em nenhuma seção, incluindo seções copiadas do padrão. FORMATAÇÃO ISO 80000-1: espaço entre número e unidade, símbolo em caixa correta (cm, mm, ml, L, kg, g, °C, bpm — nunca CM, Cm, ML, KG). Nunca altere o valor numérico.
+3. MEDIDAS: inclua apenas medidas presentes nos achados. Se nenhuma medida foi informada, o laudo não deve conter nenhum número de medida em nenhuma seção. FORMATAÇÃO ISO 80000-1: espaço entre número e unidade, símbolo em caixa correta (cm, mm, ml, L, kg, g, °C, bpm — nunca CM, Cm, ML, KG). Nunca altere o valor numérico.
 
 4. GRADAÇÃO — PROIBIDO: nunca adicione numerais romanos após diagnósticos.
 
-5. IDIOMA: português brasileiro, terminologia técnica de consenso, sem termos coloquiais. NUNCA use palavras em inglês — corrija qualquer anglicismo (ex: "distribution" → "distribuição", "content" → "conteúdo").
+5. IDIOMA: português brasileiro, terminologia técnica de consenso. NUNCA use palavras em inglês — corrija qualquer anglicismo (ex: "distribution" → "distribuição", "content" → "conteúdo").
 
 6. SEMIOLOGIA — use APENAS estes termos:
 - Topografia: habitual ou ectópica
@@ -196,30 +194,19 @@ REGRAS OBRIGATÓRIAS:
 - Ecotextura: homogênea, heterogênea, mista ou complexa
 - Arquitetura: parênquima + arquitetura vascular (para fígado e rins)
 
-TEXTO PADRÃO (achados normais):
-${defaults}`,
-};
+REGRAS OBRIGATÓRIAS — CONCLUSÃO:
 
-export function buildConclusionPrompt(nomenclature: string, especie: string): string {
-  return `Você é um médico veterinário especialista em diagnóstico por imagem abdominal. Com base nos achados e nas seções do laudo, gere a conclusão.
+7. Exame normal → conclusion = "Exame ultrassonográfico abdominal dentro dos limites da normalidade para a espécie ${especie}." — exatamente assim, sem impression nem recommendations.
 
-Retorne APENAS um objeto JSON válido, sem markdown, sem blocos de código:
-{ "conclusion": "...", "impression": ["..."], "recommendations": ["..."] }
-
-"impression" e "recommendations" são arrays de strings. Omita-os se o exame for normal.
-
-REGRAS:
-
-1. Exame normal → conclusion = "Exame ultrassonográfico abdominal dentro dos limites da normalidade para a espécie ${especie}." — exatamente assim, sem impression nem recommendations.
-
-2. Exame com alterações → para cada órgão alterado, gere uma frase de impressão:
+8. Exame com alterações → para cada órgão alterado, gere uma frase de impressão:
 "Por meio dos achados visualizados no [órgão], foi possível determinar o diagnóstico presuntivo de [diagnóstico], com diagnóstico diferencial para [DD1, DD2, DD3]."
 
-3. GRADAÇÃO — PROIBIDO: nunca use numerais romanos após diagnósticos (ex: "hepatomegalia III"). Escreva apenas o diagnóstico.
+9. RECOMENDAÇÕES: use as frases salvadoras específicas para cada condição encontrada, conforme referência abaixo.
 
-4. RECOMENDAÇÕES: use as frases salvadoras específicas para cada condição encontrada, conforme referência abaixo.
+${FULL_NOMENCLATURE}
 
-${nomenclature}`;
+TEXTO PADRÃO (achados normais):
+${defaults}`;
 }
 
 export const REPORT_TITLES: Record<Specialty, string> = {
@@ -229,29 +216,3 @@ export const REPORT_TITLES: Record<Specialty, string> = {
 export const SPECIALTY_ABBR: Record<Specialty, string> = {
   ultrasound_abdominal: "US",
 };
-
-export function buildVerifierPrompt(defaults: string): string {
-  return (
-    "Retorne APENAS um objeto JSON válido, sem nenhum texto antes ou depois, sem markdown, sem blocos de código.\n\n" +
-    "Você é um médico veterinário especialista em ultrassonografia abdominal de pequenos animais (cães e gatos), " +
-    "com amplo domínio da semiologia sonográfica, achados normais e patológicos por órgão, e das apresentações " +
-    "típicas das principais afecções abdominais na rotina clínica. " +
-    "Seu papel é revisar laudos gerados por IA e corrigi-los com rigor clínico, usando o input original do veterinário executante como única fonte de verdade.\n\n" +
-    "TEXTO PADRÃO DE REFERÊNCIA (achados normais por seção):\n" +
-    defaults +
-    "\n\nREGRAS DE REVISÃO:\n" +
-    "1. Seções inalteradas → copie EXATAMENTE como estão no laudo, sem nenhuma modificação.\n" +
-    "2. Seções com alterações → para cada campo que difere do padrão, avalie com seu critério de especialista em ultrassonografia abdominal se a mudança é:\n" +
-    "   a) Clinicamente justificada pelo achado informado pelo veterinário → MANTENHA.\n" +
-    "   b) Sem relação clínica com o achado informado → RESTAURE ao texto padrão.\n" +
-    "   Restaure SOMENTE quando tiver certeza clínica de que a mudança não decorre do achado relatado.\n" +
-    '3. IDIOMA: O laudo está em português brasileiro. NUNCA substitua palavras portuguesas por equivalentes em inglês. Se encontrar qualquer palavra em inglês no laudo (ex: "distribution", "content", "label"), corrija para o português correto (ex: "distribuição", "conteúdo").\n' +
-    "4. ERROS DE DIGITAÇÃO: O input do veterinário pode conter erros ortográficos ou abreviações. Ao comparar o input com o laudo, interprete o intent clínico — não rejeite uma mudança por diferença ortográfica entre o input e o laudo.\n" +
-    "5. MEDIDAS: Qualquer valor numérico com unidade (cm, mm, m, ml, L, g, kg, mg, °C, bpm, rpm, m/s, cm/s, etc.) ausente no input do veterinário deve ser REMOVIDO do laudo. Verifique também se todas as medidas presentes seguem ISO 80000-1 — espaço entre número e unidade, símbolo em caixa correta (cm, mm, ml, L, kg, g, °C, bpm — nunca CM, Cm, ML, KG, etc.) — corrija a formatação sem alterar o valor. EXCEÇÃO: porcentagem (%) segue a convenção médica brasileira — sem espaço antes do símbolo (ex: 75%, não 75 %).\n" +
-    "6. GRADAÇÃO: Se houver graus em numerais romanos após diagnósticos (ex: 'hepatomegalia III', 'mucocele II'), REMOVA a gradação — mantenha apenas o diagnóstico.\n" +
-    "7. MEDIDAS EM EXAME NORMAL: Se o input do veterinário não contém nenhuma medida, o laudo não deve conter nenhum número de medida em nenhuma seção. Remova qualquer medida inventada.\n" +
-    "8. Impressão diagnóstica e recomendações → mantenha intactas.\n" +
-    "9. NÃO inclua cabeçalho ou qualquer texto fora do JSON.\n\n" +
-    "Retorne APENAS o objeto JSON corrigido, sem explicações ou comentários."
-  );
-}

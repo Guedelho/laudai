@@ -310,7 +310,6 @@ export default function NewLaudoPage() {
               const event: SseEvent = JSON.parse(line.slice(6));
               if (event.status === "generating") setGeneratingStatus("Gerando laudo...");
               else if (event.status === "retrying") setGeneratingStatus("Tentando novamente...");
-              else if (event.status === "reviewing") setGeneratingStatus("Revisando laudo...");
               else if (event.status === "saving") setGeneratingStatus("Salvando...");
               else if (event.status === "chunk") {
                 /* streaming preview */
