@@ -424,18 +424,6 @@ export default function NewReportPage() {
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                id="neutered"
-                type="checkbox"
-                checked={neutered}
-                onChange={(e) => setNeutered(e.target.checked)}
-                className="rounded border-gray-300"
-              />
-              <label htmlFor="neutered" className="text-sm text-gray-700">
-                Castrado(a)
-              </label>
-            </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Raça</label>
               <Typeahead
@@ -455,6 +443,18 @@ export default function NewReportPage() {
                 className={inputCls}
                 required
               />
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                id="neutered"
+                type="checkbox"
+                checked={neutered}
+                onChange={(e) => setNeutered(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <label htmlFor="neutered" className="text-sm text-gray-700">
+                Castrado(a)
+              </label>
             </div>
           </div>
         </div>
