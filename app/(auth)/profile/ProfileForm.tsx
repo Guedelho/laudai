@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as profileApi from "@/lib/api/profile";
+import { logout } from "@/app/actions/auth";
 
 function validateCpf(value: string): boolean {
   const digits = value.replace(/\D/g, "");
@@ -369,6 +370,14 @@ export default function ProfileForm({
           {saveError && <span className="text-sm text-red-600">{saveError}</span>}
         </div>
       </form>
+
+      <div className="pt-6 border-t border-gray-200">
+        <form action={logout}>
+          <button type="submit" className="text-sm text-gray-400 hover:text-gray-600">
+            Sair da conta
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import LogoutButton from "./LogoutButton";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Laudos" },
@@ -20,9 +19,6 @@ export default function AppHeader() {
         Laudai
       </Link>
       <div className="flex items-center gap-4">
-        <Link href="/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
-          Novo Laudo
-        </Link>
         {NAV_LINKS.map((l) => (
           <Link
             key={l.href}
@@ -32,7 +28,9 @@ export default function AppHeader() {
             {l.label}
           </Link>
         ))}
-        <LogoutButton />
+        <Link href="/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
+          Novo Laudo
+        </Link>
       </div>
     </header>
   );
