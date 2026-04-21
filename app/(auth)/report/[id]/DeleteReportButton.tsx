@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { deleteReport } from "@/lib/api/reports";
+import { deleteReport } from "@/lib/services/reports";
 
 export default function DeleteReportButton({ reportId }: { reportId: string }) {
   const [confirming, setConfirming] = useState(false);
