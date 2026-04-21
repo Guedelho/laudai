@@ -1,2 +1,0 @@
-ALTER TABLE laudos ADD COLUMN IF NOT EXISTS clinic_name TEXT;
-ALTER TABLE laudos ADD COLUMN IF NOT EXISTS responsible_vet TEXT;
