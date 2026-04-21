@@ -7,7 +7,7 @@ import { Report, ReportImage, ParsedReport } from "@/shared/models";
 import { SEX_OPTIONS } from "@/shared/constants";
 import { sexLabel, parseReportContent } from "@/lib/utils";
 import { UpdateReportRequest } from "@/shared/interfaces";
-import { updateReport, lockReport, uploadReportImages } from "@/lib/services/reports";
+import { updateReport, lockReport, uploadReportImages } from "@/lib/api/reports";
 import DownloadPDFButton from "./DownloadPDFButton";
 import DeleteReportButton from "./DeleteReportButton";
 import ImageManager from "./ImageManager";

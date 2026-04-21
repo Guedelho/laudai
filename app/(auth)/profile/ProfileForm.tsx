@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import * as profileApi from "@/lib/services/profile";
+import * as profileApi from "@/lib/api/profile";
 import { logout } from "@/app/actions/auth";
 
 function validateCpf(value: string): boolean {

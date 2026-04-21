@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
 import { ReportImage } from "@/shared/models";
-import { uploadReportImages, deleteReportImage } from "@/lib/services/reports";
+import { uploadReportImages, deleteReportImage } from "@/lib/api/reports";
 import ImageLightbox from "@/components/ImageLightbox";
 
 export default function ImageManager({

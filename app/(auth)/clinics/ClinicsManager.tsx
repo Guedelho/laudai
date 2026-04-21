@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Clinic, ClinicVet } from "@/shared/models";
-import * as api from "@/lib/services/clinics";
+import * as api from "@/lib/api/clinics";
 
 export default function ClinicsManager({ initialClinics }: { initialClinics: Clinic[] }) {
   const [clinics, setClinics] = useState<Clinic[]>(initialClinics);
