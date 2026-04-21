@@ -8,10 +8,10 @@ import { useRouter } from "next/navigation";
 import { Pet, Clinic } from "@/shared/models";
 import { SseEvent, ApiResponse } from "@/shared/interfaces";
 import { SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared/constants";
-import { listPets } from "@/lib/api/pets";
-import { listClinics, createClinic, addVet } from "@/lib/api/clinics";
-import { uploadReportImages } from "@/lib/api/reports";
-import { transcribeAudio as transcribe } from "@/lib/api/transcribe";
+import { listPets } from "@/lib/services/pets";
+import { listClinics, createClinic, addVet } from "@/lib/services/clinics";
+import { uploadReportImages } from "@/lib/services/reports";
+import { transcribeAudio as transcribe } from "@/lib/services/transcribe";
 
 export default function NewReportPage() {
   const router = useRouter();

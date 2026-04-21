@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Pet } from "@/shared/models";
 import { SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared/constants";
 import { sexLabel } from "@/lib/utils";
-import * as api from "@/lib/api/pets";
+import * as api from "@/lib/services/pets";
 import Typeahead from "@/components/Typeahead";
 
 export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {

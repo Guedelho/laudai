@@ -44,7 +44,7 @@ All authenticated pages live inside `app/(auth)/`. The route group layout handle
 ## Client-side conventions
 
 - Auth is handled via cookies (`@supabase/ssr`) — no manual auth headers needed on fetch calls.
-- API calls: use typed functions from `lib/api/` (pets, clinics, reports, profile, transcribe) — never inline `fetch()` in components.
+- API calls: use typed functions from `lib/services/` (pets, clinics, reports, profile, transcribe) — never inline `fetch()` in components.
 - JSON requests: add `"Content-Type": "application/json"`. FormData requests need no extra headers (browser sets multipart boundary).
 
 ## Data model
