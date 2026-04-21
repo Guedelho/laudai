@@ -1,6 +1,6 @@
 import { Pet } from "@/shared/models";
 import { PetResponse, PetsResponse, PetRequest } from "@/shared/interfaces";
-import { fetchJson, fetchOk, jsonBody } from "./fetch";
+import { fetchJson, fetchOk, jsonBody } from "@/lib/fetch";
 
 export async function listPets(): Promise<Pet[]> {
   const data = await fetchJson<PetsResponse>("/api/pets");

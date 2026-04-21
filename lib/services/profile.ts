@@ -1,5 +1,5 @@
 import { UpdateProfileRequest } from "@/shared/interfaces";
-import { fetchOk, jsonBody, formBody } from "./fetch";
+import { fetchOk, jsonBody, formBody } from "@/lib/fetch";
 
 export async function updateProfile(body: UpdateProfileRequest, signal?: AbortSignal): Promise<void> {
   await fetchOk("/api/profile", { method: "PUT", ...jsonBody(body), signal });

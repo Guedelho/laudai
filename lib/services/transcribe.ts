@@ -1,5 +1,5 @@
 import { TranscribeResponse } from "@/shared/interfaces";
-import { fetchJson, formBody } from "./fetch";
+import { fetchJson, formBody } from "@/lib/fetch";
 
 export async function transcribeAudio(blob: Blob): Promise<string> {
   const formData = new FormData();

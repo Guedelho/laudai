@@ -1,6 +1,6 @@
 import { ReportImage } from "@/shared/models";
 import { UpdateReportRequest, ImagesResponse } from "@/shared/interfaces";
-import { fetchJson, fetchOk, jsonBody, formBody } from "./fetch";
+import { fetchJson, fetchOk, jsonBody, formBody } from "@/lib/fetch";
 
 export async function updateReport(id: string, body: UpdateReportRequest): Promise<void> {
   await fetchOk(`/api/reports/${id}`, { method: "PATCH", ...jsonBody(body) });

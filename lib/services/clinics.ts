@@ -1,6 +1,6 @@
 import { Clinic, ClinicVet } from "@/shared/models";
 import { ClinicResponse, ClinicsResponse, VetResponse } from "@/shared/interfaces";
-import { fetchJson, fetchOk, jsonBody } from "./fetch";
+import { fetchJson, fetchOk, jsonBody } from "@/lib/fetch";
 
 export async function listClinics(): Promise<Clinic[]> {
   const data = await fetchJson<ClinicsResponse>("/api/clinics");
