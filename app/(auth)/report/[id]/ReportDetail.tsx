@@ -80,6 +80,7 @@ export default function ReportDetail({
   const initialParsed = parseReportContent(report.edited_content);
 
   const [printing, setPrinting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(isEditing);
   const [error, setError] = useState("");
   const [editedParsed, setEditedParsed] = useState<ParsedReport>(initialParsed);
@@ -96,28 +97,44 @@ export default function ReportDetail({
     examDate: report.exam_date,
   });
 
+  async function persistReport() {
+    await updateReport(report.id, {
+      generatedContent: editedParsed,
+      patientFields: {
+        patient_name: fields.patientName,
+        species: fields.species,
+        breed: fields.breed,
+        age: fields.age,
+        sex: fields.sex,
+        neutered: fields.neutered,
+        owner_name: fields.ownerName,
+        clinic_name: fields.clinicName,
+        responsible_vet: fields.responsibleVet,
+        exam_date: fields.examDate,
+      },
+      petId: report.pet_id ?? undefined,
+      clinicId: report.clinic_id ?? undefined,
+      vetId: report.vet_id ?? undefined,
+    });
+  }
+
+  async function handleSalvar() {
+    setSaving(true);
+    setError("");
+    try {
+      await persistReport();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao salvar.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleImprimir() {
     setPrinting(true);
     setError("");
     try {
-      await updateReport(report.id, {
-        generatedContent: editedParsed,
-        patientFields: {
-          patient_name: fields.patientName,
-          species: fields.species,
-          breed: fields.breed,
-          age: fields.age,
-          sex: fields.sex,
-          neutered: fields.neutered,
-          owner_name: fields.ownerName,
-          clinic_name: fields.clinicName,
-          responsible_vet: fields.responsibleVet,
-          exam_date: fields.examDate,
-        },
-        petId: report.pet_id ?? undefined,
-        clinicId: report.clinic_id ?? undefined,
-        vetId: report.vet_id ?? undefined,
-      });
+      await persistReport();
 
       const tab = window.open("", "_blank");
       if (tab) {
@@ -188,20 +205,36 @@ export default function ReportDetail({
         </div>
         <div className="flex items-center gap-2 mt-1">
           {editing ? (
-            <button
-              onClick={handleImprimir}
-              disabled={printing}
-              className="inline-flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18.75 7.131s0 0 0 0"
-                />
-              </svg>
-              {printing ? "Imprimindo..." : "Imprimir"}
-            </button>
+            <>
+              <button
+                onClick={handleSalvar}
+                disabled={saving || printing}
+                className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
+                  />
+                </svg>
+                {saving ? "Salvando..." : "Salvar"}
+              </button>
+              <button
+                onClick={handleImprimir}
+                disabled={printing || saving}
+                className="inline-flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18.75 7.131s0 0 0 0"
+                  />
+                </svg>
+                {printing ? "Imprimindo..." : "Imprimir"}
+              </button>
+            </>
           ) : (
             <>
               <DeleteReportButton reportId={report.id} />
