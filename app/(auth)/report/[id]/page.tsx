@@ -55,7 +55,7 @@ export default async function ReportPage({
   const { report, images } = await getReportData(id, user.id);
   if (!report) notFound();
 
-  const isEditing = review === "1" && !report.locked_at;
+  const isEditing = review === "1";
 
   return <ReportDetail report={report as Report} images={images} isEditing={isEditing} />;
 }

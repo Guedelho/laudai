@@ -12,3 +12,22 @@ export function parseReportContent(content: string): ParsedReport {
   }
   throw new Error("Estrutura de laudo inválida");
 }
+
+export interface TextSegment {
+  text: string;
+  bold: boolean;
+}
+
+export function splitBoldSegments(text: string): TextSegment[] {
+  const segments: TextSegment[] = [];
+  const regex = /\*\*([\s\S]+?)\*\*/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) segments.push({ text: text.slice(lastIndex, match.index), bold: false });
+    segments.push({ text: match[1], bold: true });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) segments.push({ text: text.slice(lastIndex), bold: false });
+  return segments.length ? segments : [{ text, bold: false }];
+}

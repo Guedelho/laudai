@@ -92,7 +92,6 @@ export interface Report {
   pet_id: string | null;
   clinic_id: string | null;
   vet_id: string | null;
-  locked_at: string | null;
   created_at: string;
   updated_at?: string;
 }

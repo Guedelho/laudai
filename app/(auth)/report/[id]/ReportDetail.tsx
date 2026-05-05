@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { SPECIALTIES } from "@/lib/report/templates";
 import { Report, ReportImage, ParsedReport } from "@/shared/models";
 import { SEX_OPTIONS } from "@/shared/constants";
 import { sexLabel, parseReportContent } from "@/lib/utils";
-import { UpdateReportRequest } from "@/shared/interfaces";
-import { updateReport, lockReport, uploadReportImages } from "@/lib/services/reports";
+import { updateReport } from "@/lib/services/reports";
 import DownloadPDFButton from "./DownloadPDFButton";
 import DeleteReportButton from "./DeleteReportButton";
 import ImageManager from "./ImageManager";
@@ -81,9 +80,8 @@ export default function ReportDetail({
   const initialParsed = parseReportContent(report.edited_content);
 
   const [printing, setPrinting] = useState(false);
-  const [locked, setLocked] = useState(false);
+  const [editing, setEditing] = useState(isEditing);
   const [error, setError] = useState("");
-  const editing = isEditing && !locked;
   const [editedParsed, setEditedParsed] = useState<ParsedReport>(initialParsed);
   const [fields, setFields] = useState({
     patientName: report.patient_name,
@@ -97,12 +95,6 @@ export default function ReportDetail({
     responsibleVet: report.responsible_vet,
     examDate: report.exam_date,
   });
-
-  useEffect(() => {
-    if (!isEditing && !report.locked_at) {
-      lockReport(report.id);
-    }
-  }, [isEditing, report.id, report.locked_at]);
 
   async function handleImprimir() {
     setPrinting(true);
@@ -127,8 +119,6 @@ export default function ReportDetail({
         vetId: report.vet_id ?? undefined,
       });
 
-      await lockReport(report.id);
-
       const tab = window.open("", "_blank");
       if (tab) {
         tab.document.write(
@@ -149,7 +139,7 @@ export default function ReportDetail({
         tab.location.href = `/api/reports/${report.id}/pdf`;
       }
 
-      setLocked(true);
+      setEditing(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao imprimir.");
     } finally {
@@ -215,6 +205,19 @@ export default function ReportDetail({
           ) : (
             <>
               <DeleteReportButton reportId={report.id} />
+              <button
+                onClick={() => setEditing(true)}
+                className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                  />
+                </svg>
+                Editar
+              </button>
               <DownloadPDFButton reportId={report.id} />
             </>
           )}

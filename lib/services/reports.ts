@@ -10,10 +10,6 @@ export async function deleteReport(id: string): Promise<void> {
   await fetchOk(`/api/reports/${id}`, { method: "DELETE" });
 }
 
-export async function lockReport(id: string): Promise<void> {
-  await fetch(`/api/reports/${id}/lock`, { method: "POST" });
-}
-
 export async function uploadReportImages(reportId: string, files: File[]): Promise<ReportImage[]> {
   const formData = new FormData();
   files.forEach((f) => formData.append("images", f));

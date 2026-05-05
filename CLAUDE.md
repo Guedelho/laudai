@@ -13,7 +13,7 @@
 ## Stack
 
 - **Next.js 16 App Router** — Tailwind 4 (PostCSS-based, no `tailwind.config.*`), Supabase SSR via `@supabase/ssr`
-- **AI**: `lib/report/generate.ts` makes a single Gemini call per report (`gemini-3-flash-preview`) with a combined system prompt (sections + conclusion + verifier constraints). Streaming via `generateContentStream` with `responseMimeType: "application/json"`. Retry with exponential backoff on transient errors. Generation uses `temperature: 0`.
+- **AI**: `lib/report/generate.ts` makes a single Gemini call per report (`gemini-3-flash-preview`) with a combined system prompt (sections + conclusion + verifier constraints). Streaming via `generateContentStream` with `responseMimeType: "application/json"`. Retry with exponential backoff on transient errors. Generation uses `temperature: 0`. Trechos derivados dos achados do usuário são marcados pelo modelo com `**...**`; `splitBoldSegments` (em `lib/utils.ts`) converte esses marcadores em runs em negrito tanto no PDF quanto na visualização.
 - **Transcription**: `app/api/transcribe/route.ts` uses `gemini-3-flash-preview` for audio → text.
 - **PDF**: `lib/report/pdf.ts` (pdfmake). Fonts fetched from CDN and cached module-level. Generated PDFs are cached in the `report-pdfs` bucket — cleared on report edit or image changes.
 - **Formatting**: Prettier with pre-commit hook via lint-staged. Run `npm run format` to format all files.
@@ -52,8 +52,8 @@ All authenticated pages live inside `app/(auth)/`. The route group layout handle
 - `generated_content` — immutable LLM output, set once on creation, never updated.
 - `edited_content` — always the latest version. Starts equal to `generated_content`, updated on vet edits. All reads use `edited_content`.
 - `raw_input` — original vet findings, immutable.
-- `locked_at` — set on the first page load without `?review=1`. Once set, the report is permanently immutable; the PATCH route rejects requests with a 403.
-- Reports are historical documents. All patient, clinic, and vet data is stored as snapshot text on the report row — display always reads from these snapshot columns, never from joined tables. `reports` also has silent reference FK columns (`pet_id`, `clinic_id`, `vet_id`) that are stored at generation time and persisted on save, used exclusively to write updates back to the source entities (`pets`, `clinics`, `clinic_vets`) during the review window — never for display. The review window (`?review=1`) is the one opportunity to edit; Imprimir saves the snapshot, writes back to source entities via the stored IDs, then locks the report.
+- Reports remain editable after generation via the "Editar" button; the PATCH route accepts updates with no immutability gate.
+- Reports are historical documents. All patient, clinic, and vet data is stored as snapshot text on the report row — display always reads from these snapshot columns, never from joined tables. `reports` also has silent reference FK columns (`pet_id`, `clinic_id`, `vet_id`) that are stored at generation time and persisted on save, used exclusively to write updates back to the source entities (`pets`, `clinics`, `clinic_vets`) on each save — never for display. Imprimir saves the snapshot, writes back to source entities via the stored IDs, opens the PDF in a new tab, and switches back to view mode; the user can re-enter edit mode any time via "Editar".
 - Profile fields `cpf`, `crmv`, `crmv_state` are immutable after first profile creation.
 - All patient/report fields (`breed`, `age`, `sex`, `neutered`, `clinicName`, `responsibleVet`, `examDate`) are required — never nullable.
 - Dropdown options (`SPECIES_OPTIONS`, `SEX_OPTIONS`, `sexLabel`) centralized in `shared/constants.ts`.

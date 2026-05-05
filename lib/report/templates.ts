@@ -207,6 +207,8 @@ REGRAS OBRIGATÓRIAS — CONCLUSÃO:
 
 9. RECOMENDAÇÕES: use as frases salvadoras específicas para cada condição encontrada, conforme referência abaixo.
 
+10. MARCAÇÃO DE ACHADOS DO USUÁRIO: envolva em \`**...**\` somente os trechos do laudo que foram derivados dos achados informados pelo usuário — medidas, alterações descritas, diagnósticos presuntivos e recomendações decorrentes desses achados. Nas seções, marque APENAS os fragmentos modificados em relação ao texto padrão; o restante permanece sem marcação. Em conclusão, impressões, recomendações e observações, marque os trechos clinicamente relevantes derivados dos achados (diagnósticos, lesões, medidas, condições). NÃO marque texto padrão copiado, nem a conclusão de exame normal, nem rótulos de seção.
+
 ${FULL_NOMENCLATURE}
 
 TEXTO PADRÃO (achados normais):

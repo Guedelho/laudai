@@ -12,17 +12,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const admin = createAdmin();
 
-  const { data: existing } = await admin
-    .from("reports")
-    .select("locked_at")
-    .eq("id", id)
-    .eq("user_id", userId)
-    .single();
-
-  if (!existing) return NextResponse.json({ error: "Laudo não encontrado." }, { status: 404 });
-  if (existing.locked_at)
-    return NextResponse.json({ error: "Laudo bloqueado e não pode ser editado." }, { status: 403 });
-
   const { generatedContent, patientFields, petId, clinicId, vetId }: UpdateReportRequest = await req.json();
 
   const { error } = await admin

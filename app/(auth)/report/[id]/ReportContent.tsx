@@ -1,6 +1,23 @@
 "use client";
 
 import { ParsedReport } from "@/shared/models";
+import { splitBoldSegments } from "@/lib/utils";
+
+function RichText({ text }: { text: string }) {
+  return (
+    <>
+      {splitBoldSegments(text).map((seg, i) =>
+        seg.bold ? (
+          <strong key={i} className="font-semibold text-gray-900">
+            {seg.text}
+          </strong>
+        ) : (
+          <span key={i}>{seg.text}</span>
+        ),
+      )}
+    </>
+  );
+}
 
 function BulletList({ title, items, className }: { title: string; items: string[]; className?: string }) {
   return (
@@ -10,7 +27,9 @@ function BulletList({ title, items, className }: { title: string; items: string[
         {items.map((line, i) => (
           <li key={i} className="flex gap-2 text-justify">
             <span className="text-gray-400 shrink-0">•</span>
-            <span>{line}</span>
+            <span>
+              <RichText text={line} />
+            </span>
           </li>
         ))}
       </ul>
@@ -24,7 +43,12 @@ export default function ReportContent({ parsedReport }: { parsedReport: ParsedRe
       {parsedReport.sections.map((section, i) => (
         <div key={i} className="text-justify">
           <span className="font-semibold text-gray-900">{section.label}:</span>
-          {section.content ? " " + section.content : ""}
+          {section.content ? (
+            <>
+              {" "}
+              <RichText text={section.content} />
+            </>
+          ) : null}
         </div>
       ))}
 
@@ -35,7 +59,9 @@ export default function ReportContent({ parsedReport }: { parsedReport: ParsedRe
       )}
 
       {parsedReport.conclusion && !parsedReport.impression?.length && (
-        <p className="text-justify">{parsedReport.conclusion}</p>
+        <p className="text-justify">
+          <RichText text={parsedReport.conclusion} />
+        </p>
       )}
 
       {parsedReport.impression?.length ? (
@@ -51,7 +77,7 @@ export default function ReportContent({ parsedReport }: { parsedReport: ParsedRe
           <h4 className="font-semibold text-gray-900 text-sm mb-2">OBS:</h4>
           {parsedReport.observations.map((line, i) => (
             <p key={i} className="mb-1 text-justify">
-              {line}
+              <RichText text={line} />
             </p>
           ))}
         </div>

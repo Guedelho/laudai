@@ -1,5 +1,6 @@
 import { ParsedReport } from "@/shared/models";
 import { PdfData } from "@/shared/interfaces";
+import { splitBoldSegments } from "@/lib/utils";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfmake = require("pdfmake");
 
@@ -34,13 +35,17 @@ async function fetchFont(name: string): Promise<Buffer> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Content = any;
 
+function richText(text: string): Content[] {
+  return splitBoldSegments(text).map((seg) => ({ text: seg.text, ...(seg.bold ? { bold: true } : {}) }));
+}
+
 function pushBulletSection(items: Content[], title: string, lines: string[], topMargin: number) {
   items.push({ text: title, bold: true, font: "Roboto", margin: [0, topMargin, 0, 4], fontSize: 12 });
   for (const line of lines) {
     items.push({
       columns: [
         { text: "•", bold: true, width: 10, fontSize: 12 },
-        { text: line, alignment: "justify", width: "*", fontSize: 12 },
+        { text: richText(line), alignment: "justify", width: "*", fontSize: 12 },
       ],
       margin: [14, 0, 0, 3],
     });
@@ -52,7 +57,7 @@ function buildBodyFromParsed(parsedReport: ParsedReport): Content[] {
 
   for (const section of parsedReport.sections) {
     items.push({
-      text: [{ text: section.label + ": ", bold: true, font: "Roboto" }, { text: section.content }],
+      text: [{ text: section.label + ": ", bold: true, font: "Roboto" }, ...richText(section.content)],
       margin: [0, 2, 0, 5],
       alignment: "justify",
       fontSize: 12,
@@ -72,7 +77,7 @@ function buildBodyFromParsed(parsedReport: ParsedReport): Content[] {
 
   if (parsedReport.conclusion && !parsedReport.impression?.length) {
     items.push({
-      text: parsedReport.conclusion,
+      text: richText(parsedReport.conclusion),
       alignment: "justify",
       margin: [0, 0, 0, 5],
       fontSize: 12,
@@ -92,7 +97,7 @@ function buildBodyFromParsed(parsedReport: ParsedReport): Content[] {
     });
     for (const line of parsedReport.observations) {
       items.push({
-        text: line,
+        text: richText(line),
         alignment: "justify",
         margin: [0, 0, 0, 4],
         fontSize: 12,
@@ -103,7 +108,7 @@ function buildBodyFromParsed(parsedReport: ParsedReport): Content[] {
   // Fallback: if raw plain text from old records, render as paragraph
   if (!parsedReport.sections.length && parsedReport.raw) {
     items.push({
-      text: parsedReport.raw,
+      text: richText(parsedReport.raw),
       alignment: "justify",
       fontSize: 12,
       margin: [0, 0, 0, 5],
