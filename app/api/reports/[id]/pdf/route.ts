@@ -100,7 +100,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             headers: {
               "Content-Type": "application/pdf",
               "Content-Disposition": `inline; filename="${filename}"`,
-              "Cache-Control": "private, max-age=300",
+              "Cache-Control": "no-store",
             },
           });
         }
