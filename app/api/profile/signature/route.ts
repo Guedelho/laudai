@@ -1,30 +1,28 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getUserId } from "@/lib/supabase/auth";
+import { NextResponse } from "next/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { parseProfileImage } from "@/lib/server-utils";
+import { SIGNED_URL_TTL } from "@/shared/constants";
+import { withApiHandler } from "@/lib/api-handler";
+import { invalidateUserPdfCache } from "@/lib/supabase/db";
 
 const BUCKET = "profile-logos";
 
-export async function GET() {
-  const userId = await getUserId();
-  if (!userId) return new NextResponse(null, { status: 401 });
-
+export const GET = withApiHandler({}, async ({ userId }) => {
   const admin = createAdmin();
   const { data: profile } = await admin.from("profiles").select("signature_image_url").eq("id", userId).single();
 
   if (!profile?.signature_image_url) return new NextResponse(null, { status: 404 });
 
-  const { data, error } = await admin.storage.from(BUCKET).createSignedUrl(profile.signature_image_url, 300);
+  const { data, error } = await admin.storage
+    .from(BUCKET)
+    .createSignedUrl(profile.signature_image_url, SIGNED_URL_TTL.serverFetch);
 
   if (error || !data?.signedUrl) return new NextResponse(null, { status: 404 });
 
   return NextResponse.redirect(data.signedUrl);
-}
+});
 
-export async function POST(req: NextRequest) {
-  const userId = await getUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const POST = withApiHandler({}, async ({ userId, req }) => {
   const formData = await req.formData();
   const result = await parseProfileImage(formData.get("signature") as File | null);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
@@ -52,13 +50,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao salvar assinatura no perfil." }, { status: 500 });
   }
 
+  await invalidateUserPdfCache(admin, userId);
   return NextResponse.json({ ok: true });
-}
+});
 
-export async function DELETE() {
-  const userId = await getUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const DELETE = withApiHandler({}, async ({ userId }) => {
   const admin = createAdmin();
   const { error } = await admin.from("profiles").update({ signature_image_url: null }).eq("id", userId);
 
@@ -67,5 +63,6 @@ export async function DELETE() {
     return NextResponse.json({ error: "Erro ao remover assinatura." }, { status: 500 });
   }
 
+  await invalidateUserPdfCache(admin, userId);
   return NextResponse.json({ ok: true });
-}
+});

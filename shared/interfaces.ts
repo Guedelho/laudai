@@ -103,6 +103,7 @@ export interface GenerateParams extends PatientFields {
   rawInput: string;
   onStatus?: (status: "generating" | "retrying") => void;
   onChunk?: (text: string) => void;
+  signal?: AbortSignal;
 }
 
 // ─── PDF ─────────────────────────────────────────────────────────────────────

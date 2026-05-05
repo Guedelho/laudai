@@ -1,12 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getUserId } from "@/lib/supabase/auth";
+import { NextResponse } from "next/server";
 import { createAdmin } from "@/lib/supabase/admin";
+import { withApiHandler } from "@/lib/api-handler";
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const userId = await getUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, params }) => {
   const { name } = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: "Nome da clínica é obrigatório" }, { status: 400 });
 
@@ -14,7 +10,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { data: clinic, error } = await admin
     .from("clinics")
     .update({ name: name.trim() })
-    .eq("id", id)
+    .eq("id", params.id)
     .eq("user_id", userId)
     .select()
     .single();
@@ -24,20 +20,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Erro ao atualizar clínica." }, { status: 500 });
   }
   return NextResponse.json({ clinic });
-}
+});
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const userId = await getUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const DELETE = withApiHandler<{ id: string }>({}, async ({ userId, params }) => {
   const admin = createAdmin();
-
-  const { error } = await admin.from("clinics").delete().eq("id", id).eq("user_id", userId);
+  const { error } = await admin.from("clinics").delete().eq("id", params.id).eq("user_id", userId);
 
   if (error) {
     console.error("Clinic delete error:", error);
     return NextResponse.json({ error: "Erro ao excluir clínica." }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
-}
+});

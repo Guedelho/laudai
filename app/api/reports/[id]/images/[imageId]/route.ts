@@ -1,14 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getUserId } from "@/lib/supabase/auth";
+import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createAdmin } from "@/lib/supabase/admin";
+import { withApiHandler } from "@/lib/api-handler";
 
 const BUCKET = "report-images";
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string; imageId: string }> }) {
-  const { id, imageId } = await params;
-  const userId = await getUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const DELETE = withApiHandler<{ id: string; imageId: string }>({}, async ({ userId, params }) => {
+  const { id, imageId } = params;
   const admin = createAdmin();
 
   const { data: image } = await admin
@@ -30,5 +28,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   }
 
   await admin.from("reports").update({ pdf_storage_path: null }).eq("id", id).eq("user_id", userId);
+  revalidateTag(`report-${id}`, "max");
   return NextResponse.json({ success: true });
-}
+});

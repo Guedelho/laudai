@@ -26,20 +26,23 @@
 
 All authenticated pages live inside `app/(auth)/`. The route group layout handles auth check + `<AppHeader />` + outer wrapper.
 
-1. **Auth**: Middleware (`proxy.ts`) redirects to `/login`. Layout (`app/(auth)/layout.tsx`) double-checks with `getUser()`. Pages call `getUser()` only to get `user.id` for queries — return `null` if not authenticated (layout already redirected).
+1. **Auth**: Middleware (`proxy.ts`) redirects to `/login`. Layout (`app/(auth)/layout.tsx`) double-checks with `getUser()` inside an `<AuthGate>` Suspense boundary. Pages call `getUser()` only to get `user.id` for queries — return `null` if not authenticated (layout already redirected).
 2. **Data**: Use `createAdmin()` for all server-side queries (never the anon client).
 3. **No inline JSX**: Page files must be thin — fetch data, pass props to a client component.
 4. **Loading**: Every page directory must have a `loading.tsx`.
 5. **Errors**: `app/(auth)/error.tsx` catches page-level errors. `app/(auth)/report/[id]/not-found.tsx` for missing reports.
+6. **Cache Components**: `cacheComponents: true` in `next.config.ts`. Cached server functions use `'use cache'` + `cacheTag` + `cacheLife` (see `app/(auth)/report/[id]/page.tsx`). Runtime data access (cookies, headers, `usePathname`) must live inside a `<Suspense>` boundary so the static shell can render.
 
 ## API route conventions
 
-- Auth: `getUserId()` from `@/lib/supabase/auth`.
+- Wrap every handler in `withApiHandler` (`@/lib/api-handler`). It handles: auth (`getUserId`), CSRF (Sec-Fetch-Site, on by default for non-GET), rate limiting (`consumeRateLimit` from `@/lib/rate-limit`, Postgres-backed via the `rate_limit_consume` SQL function), and a generic 500 fallback. Pass `{ rateLimit: { name, maxPerMinute } }` to enable rate limiting. Pass `{ publicAccess: true }` to skip auth.
 - Data: `createAdmin()` — never the anon client.
-- Rate limiting: `checkRateLimit` + `recordRateLimit` from `@/lib/server-utils` — never inline `Map<string, number[]>`.
+- FK ownership: when accepting `petId` / `clinicId` / `vetId` from a client body, run them through `resolveOwnedFks` (`@/lib/supabase/db`) before persisting — drops any id that doesn't belong to the caller.
 - Image validation: Server-side via `sharp` magic-byte detection (not `file.type`).
 - Errors: Log with `console.error`, return generic Portuguese message to client. Never leak internal details.
-- Cache invalidation: `revalidateTag(\`report-${id}\`, "default")` — Next.js 16 requires the second argument.
+- Cache invalidation in route handlers: `revalidateTag(\`report-${id}\`, "max")`(stale-while-revalidate).`updateTag` is reserved for Server Actions and is not used here.
+- Profile mutations call `invalidateUserPdfCache(admin, userId)` to clear cached PDFs (logo/signature/name/CRMV are baked into the PDF).
+- Signed-URL TTLs are centralised in `SIGNED_URL_TTL` (`shared/constants.ts`): `display` (browsing), `serverFetch` (cached PDF re-fetch), `oneShot` (single-request asset hydration).
 
 ## Client-side conventions
 

@@ -1,18 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { getUserId } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { UpdateReportRequest } from "@/shared/interfaces";
+import { withApiHandler } from "@/lib/api-handler";
+import { resolveOwnedFks } from "@/lib/supabase/db";
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-
-  const userId = await getUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, params }) => {
+  const id = params.id;
   const admin = createAdmin();
 
   const { generatedContent, patientFields, petId, clinicId, vetId }: UpdateReportRequest = await req.json();
+  const owned = await resolveOwnedFks(admin, userId, { petId, clinicId, vetId });
 
   const { error } = await admin
     .from("reports")
@@ -20,9 +18,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       edited_content: JSON.stringify(generatedContent),
       ...patientFields,
       pdf_storage_path: null,
-      ...(petId !== undefined ? { pet_id: petId } : {}),
-      ...(clinicId !== undefined ? { clinic_id: clinicId } : {}),
-      ...(vetId !== undefined ? { vet_id: vetId } : {}),
+      ...(petId !== undefined ? { pet_id: owned.petId } : {}),
+      ...(clinicId !== undefined ? { clinic_id: owned.clinicId } : {}),
+      ...(vetId !== undefined ? { vet_id: owned.vetId } : {}),
     })
     .eq("id", id)
     .eq("user_id", userId);
@@ -34,7 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   await Promise.all(
     [
-      petId &&
+      owned.petId &&
         admin
           .from("pets")
           .update({
@@ -46,25 +44,29 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             neutered: patientFields.neutered,
             owner_name: patientFields.owner_name,
           })
-          .eq("id", petId)
+          .eq("id", owned.petId)
           .eq("user_id", userId),
-      clinicId &&
-        admin.from("clinics").update({ name: patientFields.clinic_name }).eq("id", clinicId).eq("user_id", userId),
-      vetId &&
-        admin.from("clinic_vets").update({ name: patientFields.responsible_vet }).eq("id", vetId).eq("user_id", userId),
+      owned.clinicId &&
+        admin
+          .from("clinics")
+          .update({ name: patientFields.clinic_name })
+          .eq("id", owned.clinicId)
+          .eq("user_id", userId),
+      owned.vetId &&
+        admin
+          .from("clinic_vets")
+          .update({ name: patientFields.responsible_vet })
+          .eq("id", owned.vetId)
+          .eq("user_id", userId),
     ].filter(Boolean),
   );
 
-  revalidateTag(`report-${id}`, "default");
+  revalidateTag(`report-${id}`, "max");
   return NextResponse.json({ ok: true });
-}
+});
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-
-  const userId = await getUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const DELETE = withApiHandler<{ id: string }>({}, async ({ userId, params }) => {
+  const id = params.id;
   const admin = createAdmin();
 
   const { error } = await admin
@@ -78,6 +80,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ error: "Erro ao excluir laudo." }, { status: 500 });
   }
 
-  revalidateTag(`report-${id}`, "default");
+  revalidateTag(`report-${id}`, "max");
   return NextResponse.json({ ok: true });
-}
+});

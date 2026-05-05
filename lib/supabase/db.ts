@@ -2,12 +2,16 @@ import { createAdmin } from "@/lib/supabase/admin";
 
 type Admin = ReturnType<typeof createAdmin>;
 
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (m) => `\\${m}`);
+}
+
 export async function findOrCreateClinic(admin: Admin, userId: string, name: string) {
   const { data: existing } = await admin
     .from("clinics")
     .select("*, clinic_vets(*)")
     .eq("user_id", userId)
-    .ilike("name", name)
+    .ilike("name", escapeLike(name))
     .maybeSingle();
   if (existing) return existing;
 
@@ -25,7 +29,7 @@ export async function findOrCreateVet(admin: Admin, clinicId: string, userId: st
     .from("clinic_vets")
     .select("*")
     .eq("clinic_id", clinicId)
-    .ilike("name", name)
+    .ilike("name", escapeLike(name))
     .maybeSingle();
   if (existing) return existing;
 
@@ -36,6 +40,43 @@ export async function findOrCreateVet(admin: Admin, clinicId: string, userId: st
     .single();
   if (error) throw error;
   return data;
+}
+
+/**
+ * Drop cached PDFs for every report owned by this user. Call after the user
+ * changes any field that the PDF embeds (logo, signature, name, CRMV).
+ */
+export async function invalidateUserPdfCache(admin: Admin, userId: string): Promise<void> {
+  const { error } = await admin.from("reports").update({ pdf_storage_path: null }).eq("user_id", userId);
+  if (error) console.error("PDF cache invalidation error:", error);
+}
+
+/**
+ * Resolve incoming FK ids to ones that actually belong to this user.
+ * Any id that fails the ownership check returns null instead of being persisted.
+ */
+export async function resolveOwnedFks(
+  admin: Admin,
+  userId: string,
+  ids: { petId?: string | null; clinicId?: string | null; vetId?: string | null },
+): Promise<{ petId: string | null; clinicId: string | null; vetId: string | null }> {
+  const [pet, clinic, vet] = await Promise.all([
+    ids.petId
+      ? admin.from("pets").select("id").eq("id", ids.petId).eq("user_id", userId).maybeSingle()
+      : Promise.resolve({ data: null }),
+    ids.clinicId
+      ? admin.from("clinics").select("id").eq("id", ids.clinicId).eq("user_id", userId).maybeSingle()
+      : Promise.resolve({ data: null }),
+    ids.vetId
+      ? admin.from("clinic_vets").select("id").eq("id", ids.vetId).eq("user_id", userId).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  return {
+    petId: pet.data?.id ?? null,
+    clinicId: clinic.data?.id ?? null,
+    vetId: vet.data?.id ?? null,
+  };
 }
 
 export async function findOrCreatePet(
@@ -49,8 +90,8 @@ export async function findOrCreatePet(
     .from("pets")
     .select("*")
     .eq("user_id", userId)
-    .ilike("name", name)
-    .ilike("owner_name", ownerName)
+    .ilike("name", escapeLike(name))
+    .ilike("owner_name", escapeLike(ownerName))
     .maybeSingle();
   if (existing) return existing;
 

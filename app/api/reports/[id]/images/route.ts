@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { getUserId } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
-import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE } from "@/shared/constants";
+import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE, SIGNED_URL_TTL } from "@/shared/constants";
+import { withApiHandler } from "@/lib/api-handler";
 import sharp from "sharp";
 
 const BUCKET = "report-images";
@@ -24,23 +24,14 @@ async function detectImageFormat(buf: Buffer): Promise<{ mime: string; ext: stri
   }
 }
 
-async function ensureBucket(admin: ReturnType<typeof createAdmin>) {
-  const { error } = await admin.storage.createBucket(BUCKET, { public: false });
-  // Ignore "already exists" error
-  if (error && !error.message.includes("already exists")) throw error;
-}
-
 async function getSignedUrl(admin: ReturnType<typeof createAdmin>, storagePath: string): Promise<string | null> {
-  const { data, error } = await admin.storage.from(BUCKET).createSignedUrl(storagePath, 7200);
+  const { data, error } = await admin.storage.from(BUCKET).createSignedUrl(storagePath, SIGNED_URL_TTL.display);
   if (error || !data) return null;
   return data.signedUrl;
 }
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const userId = await getUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const GET = withApiHandler<{ id: string }>({}, async ({ userId, params }) => {
+  const id = params.id;
   const admin = createAdmin();
 
   const { data: images, error } = await admin
@@ -63,17 +54,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   );
 
   return NextResponse.json({ images: withUrls.filter((img) => img.url !== null) });
-}
+});
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const userId = await getUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const POST = withApiHandler<{ id: string }>({}, async ({ userId, req, params }) => {
+  const id = params.id;
   const admin = createAdmin();
-  await ensureBucket(admin);
 
-  // Verify report belongs to user
   const { data: report } = await admin.from("reports").select("id").eq("id", id).eq("user_id", userId).single();
   if (!report) return NextResponse.json({ error: "Laudo não encontrado." }, { status: 404 });
 
@@ -97,7 +83,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     );
   }
 
-  // Phase 1: validate + detect formats in parallel
   const fileData = await Promise.all(
     files.map(async (file) => {
       if (file.size > MAX_IMAGE_FILE_SIZE) {
@@ -117,42 +102,35 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: invalid.validationError }, { status: 400 });
   }
 
-  // Phase 2: upload + insert in parallel
   const validFiles = fileData as Array<{ buf: Buffer; mime: string; ext: string; name: string }>;
-  try {
-    const results = await Promise.all(
-      validFiles.map(async ({ buf, mime, ext, name }) => {
-        const imageId = crypto.randomUUID();
-        const storagePath = `${userId}/${id}/${imageId}.${ext}`;
+  const results = await Promise.all(
+    validFiles.map(async ({ buf, mime, ext, name }) => {
+      const imageId = crypto.randomUUID();
+      const storagePath = `${userId}/${id}/${imageId}.${ext}`;
 
-        const { error: uploadError } = await admin.storage.from(BUCKET).upload(storagePath, buf, { contentType: mime });
+      const { error: uploadError } = await admin.storage.from(BUCKET).upload(storagePath, buf, { contentType: mime });
+      if (uploadError) {
+        console.error("Image upload error:", uploadError);
+        throw new Error("Erro ao enviar imagem.");
+      }
 
-        if (uploadError) {
-          console.error("Image upload error:", uploadError);
-          throw new Error("Erro ao enviar imagem.");
-        }
+      const { data: record, error: dbError } = await admin
+        .from("report_images")
+        .insert({ report_id: id, user_id: userId, storage_path: storagePath, file_name: name })
+        .select()
+        .single();
 
-        const { data: record, error: dbError } = await admin
-          .from("report_images")
-          .insert({ report_id: id, user_id: userId, storage_path: storagePath, file_name: name })
-          .select()
-          .single();
+      if (dbError) {
+        console.error("Image DB insert error:", dbError);
+        await admin.storage.from(BUCKET).remove([storagePath]);
+        throw new Error("Erro ao registrar imagem.");
+      }
 
-        if (dbError) {
-          console.error("Image DB insert error:", dbError);
-          await admin.storage.from(BUCKET).remove([storagePath]);
-          throw new Error("Erro ao registrar imagem.");
-        }
+      return { ...record, url: await getSignedUrl(admin, storagePath) };
+    }),
+  );
 
-        return { ...record, url: await getSignedUrl(admin, storagePath) };
-      }),
-    );
-
-    revalidateTag(`report-${id}`, "default");
-    await admin.from("reports").update({ pdf_storage_path: null }).eq("id", id).eq("user_id", userId);
-    return NextResponse.json({ images: results });
-  } catch (err) {
-    console.error("Image upload error:", err);
-    return NextResponse.json({ error: "Erro ao processar imagens." }, { status: 500 });
-  }
-}
+  revalidateTag(`report-${id}`, "max");
+  await admin.from("reports").update({ pdf_storage_path: null }).eq("id", id).eq("user_id", userId);
+  return NextResponse.json({ images: results });
+});

@@ -35,7 +35,7 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2, onRetry?: () =
 }
 
 export async function generateReport(params: GenerateParams): Promise<string> {
-  const { rawInput, patientName, species, breed, age, sex, neutered, ownerName, onStatus, onChunk } = params;
+  const { rawInput, patientName, species, breed, age, sex, neutered, ownerName, onStatus, onChunk, signal } = params;
 
   const resolvedDefaults = buildDefaults(sex, neutered);
 
@@ -58,6 +58,7 @@ export async function generateReport(params: GenerateParams): Promise<string> {
       const result = await model.generateContentStream(userMessage);
       let text = "";
       for await (const chunk of result.stream) {
+        if (signal?.aborted) throw new Error("aborted");
         const chunkText = chunk.text();
         text += chunkText;
         onChunk?.(chunkText);

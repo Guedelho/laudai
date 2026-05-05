@@ -1,13 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getUserId } from "@/lib/supabase/auth";
+import { NextResponse } from "next/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { PetRequest } from "@/shared/interfaces";
+import { withApiHandler } from "@/lib/api-handler";
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const userId = await getUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, params }) => {
   const { name, species, breed, age, ownerName, sex, neutered }: PetRequest = await req.json();
   if (!name?.trim() || !species?.trim() || !ownerName?.trim()) {
     return NextResponse.json({ error: "Campos obrigatórios: nome, espécie, tutor" }, { status: 400 });
@@ -25,7 +21,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       sex,
       neutered,
     })
-    .eq("id", id)
+    .eq("id", params.id)
     .eq("user_id", userId)
     .select()
     .single();
@@ -35,20 +31,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Erro ao atualizar paciente." }, { status: 500 });
   }
   return NextResponse.json({ pet });
-}
+});
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const userId = await getUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const DELETE = withApiHandler<{ id: string }>({}, async ({ userId, params }) => {
   const admin = createAdmin();
-
-  const { error } = await admin.from("pets").delete().eq("id", id).eq("user_id", userId);
+  const { error } = await admin.from("pets").delete().eq("id", params.id).eq("user_id", userId);
 
   if (error) {
     console.error("Pet delete error:", error);
     return NextResponse.json({ error: "Erro ao excluir paciente." }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
-}
+});

@@ -1,25 +1,36 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { generateReport } from "@/lib/report/generate";
-import { getUserId, getProfile } from "@/lib/supabase/auth";
+import { getProfile } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { GenerateRequest } from "@/shared/interfaces";
-import { findOrCreatePet } from "@/lib/supabase/db";
-import { checkRateLimit, recordRateLimit } from "@/lib/server-utils";
+import { findOrCreatePet, resolveOwnedFks } from "@/lib/supabase/db";
+import { withApiHandler } from "@/lib/api-handler";
 
 export const maxDuration = 180;
 
-function sseStream(handler: (send: (data: object) => void) => Promise<void>): NextResponse {
+function sseStream(
+  handler: (send: (data: object) => void, signal: AbortSignal) => Promise<void>,
+  signal: AbortSignal,
+): NextResponse {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
       const send = (data: object) => {
+        if (signal.aborted) return;
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       };
       try {
-        await handler(send);
+        await handler(send, signal);
       } finally {
-        controller.close();
+        try {
+          controller.close();
+        } catch {
+          /* already closed by client abort */
+        }
       }
+    },
+    cancel() {
+      /* Client disconnected — handler watches `signal` and exits early. */
     },
   });
   return new NextResponse(stream, {
@@ -31,13 +42,7 @@ function sseStream(handler: (send: (data: object) => void) => Promise<void>): Ne
   });
 }
 
-export async function POST(req: NextRequest) {
-  const userId = await getUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  if (!checkRateLimit("generate", userId, 5))
-    return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
-
+export const POST = withApiHandler({ rateLimit: { name: "generate", maxPerMinute: 5 } }, async ({ userId, req }) => {
   const [profile, body] = await Promise.all([getProfile(userId), req.json() as Promise<GenerateRequest>]);
 
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado. Complete seu cadastro." }, { status: 400 });
@@ -77,10 +82,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Achados do exame muito longos. Máximo 2.000 caracteres." }, { status: 400 });
 
   const supabase = createAdmin();
+  const ownedFks = await resolveOwnedFks(supabase, userId, { petId, clinicId, vetId });
 
-  return sseStream(async (send) => {
+  return sseStream(async (send, signal) => {
     let generatedContent: string;
-    let resolvedPetId: string | null = petId ?? null;
+    let resolvedPetId: string | null = ownedFks.petId;
     try {
       const [content, pet] = await Promise.all([
         generateReport({
@@ -92,10 +98,11 @@ export async function POST(req: NextRequest) {
           sex,
           neutered,
           ownerName,
+          signal,
           onStatus: (status) => send({ status }),
           onChunk: (text) => send({ status: "chunk", text }),
         }),
-        !petId
+        !resolvedPetId
           ? findOrCreatePet(supabase, userId, patientName.trim(), ownerName.trim(), {
               species,
               breed,
@@ -108,11 +115,13 @@ export async function POST(req: NextRequest) {
       generatedContent = content;
       if (pet?.id) resolvedPetId = pet.id;
     } catch (err) {
+      if (signal.aborted) return;
       console.error("Gemini generation error:", err);
       send({ status: "error", message: "Erro ao gerar laudo. Tente novamente." });
       return;
     }
 
+    if (signal.aborted) return;
     send({ status: "saving" });
 
     const { data: report, error } = await supabase
@@ -134,19 +143,19 @@ export async function POST(req: NextRequest) {
         responsible_vet: responsibleVet,
         exam_date: examDate,
         pet_id: resolvedPetId,
-        clinic_id: clinicId ?? null,
-        vet_id: vetId ?? null,
+        clinic_id: ownedFks.clinicId,
+        vet_id: ownedFks.vetId,
       })
       .select()
       .single();
 
+    if (signal.aborted) return;
     if (error) {
       console.error("DB insert error:", error);
       send({ status: "error", message: "Erro ao salvar laudo." });
       return;
     }
 
-    recordRateLimit("generate", userId);
     send({ status: "done", report: { id: report.id } });
-  });
-}
+  }, req.signal);
+});

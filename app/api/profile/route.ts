@@ -1,20 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getUserId } from "@/lib/supabase/auth";
+import { NextResponse } from "next/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { UpdateProfileRequest } from "@/shared/interfaces";
+import { withApiHandler } from "@/lib/api-handler";
+import { invalidateUserPdfCache } from "@/lib/supabase/db";
 
-export async function GET() {
-  const userId = await getUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const GET = withApiHandler({}, async ({ userId }) => {
   const { data } = await createAdmin().from("profiles").select("*").eq("id", userId).single();
   return NextResponse.json(data ?? {});
-}
+});
 
-export async function PUT(req: NextRequest) {
-  const userId = await getUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const PUT = withApiHandler({}, async ({ userId, req }) => {
   const admin = createAdmin();
   const body: UpdateProfileRequest = await req.json();
   const { full_name, signature_font, signature_image_url, signature } = body;
@@ -36,5 +31,9 @@ export async function PUT(req: NextRequest) {
     console.error("Profile save error:", error);
     return NextResponse.json({ error: "Erro ao salvar perfil." }, { status: 500 });
   }
+
+  // Profile fields are embedded in cached PDFs — drop them.
+  await invalidateUserPdfCache(admin, userId);
+
   return NextResponse.json(data);
-}
+});
