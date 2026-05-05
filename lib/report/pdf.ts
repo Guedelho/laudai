@@ -204,6 +204,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
   const imageContent: Content[] = [];
   for (let i = 0; i < imageBase64List.length; i += 2) {
     const right = imageBase64List[i + 1];
+    const isFirst = i === 0;
     // Content width: 595.28 - 50 - 50 = 495.28pt. Gutter: 16pt. Each image: (495 - 16) / 2 = 239pt
     if (right) {
       imageContent.push({
@@ -212,7 +213,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
           { text: "", width: 16 },
           { image: right, fit: [239, 300] },
         ],
-        margin: [0, 0, 0, 16],
+        margin: [0, isFirst ? 20 : 0, 0, 16],
       });
     } else {
       imageContent.push({
@@ -221,7 +222,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
           { text: "", width: 16 },
           { text: "", width: 239 },
         ],
-        margin: [0, 0, 0, 16],
+        margin: [0, isFirst ? 20 : 0, 0, 16],
       });
     }
   }
@@ -270,7 +271,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
         margin: [0, 0, 0, 12],
       },
       ...buildBodyFromParsed(parsedReport),
-      ...(imageContent.length > 0 ? [{ text: "", pageBreak: "before" }, ...imageContent] : []),
+      ...imageContent,
     ],
 
     footer: (currentPage: number, pageCount: number) => {
