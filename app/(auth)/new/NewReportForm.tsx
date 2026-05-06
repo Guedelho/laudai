@@ -61,15 +61,32 @@ export default function NewReportPage() {
   }, []);
 
   const liveAnchorRef = useRef<string>("");
-  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
+  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition, isMicrophoneAvailable } =
+    useSpeechRecognition();
 
-  // Mirror the live transcript into rawInput while preserving anything the user typed before recording.
+  // react-speech-recognition reads window.SpeechRecognition at module-load
+  // time. Under Next.js SSR that's undefined, so the hook's first render
+  // returns false even on Chrome/Safari. Defer the support check until after
+  // mount so the button doesn't paint disabled for a frame on supported
+  // browsers.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const speechSupported = !mounted || browserSupportsSpeechRecognition;
+
   useEffect(() => {
     if (!listening && !transcript) return;
     const anchor = liveAnchorRef.current;
     const live = transcript.trim();
     setRawInput(anchor + (anchor && live ? " " : "") + live);
   }, [transcript, listening]);
+
+  useEffect(() => {
+    if (mounted && !isMicrophoneAvailable) {
+      setError("Permissão para microfone negada. Habilite o microfone nas configurações do navegador.");
+    }
+  }, [mounted, isMicrophoneAvailable]);
 
   useEffect(() => {
     async function loadData() {
@@ -157,6 +174,9 @@ export default function NewReportPage() {
     }
     liveAnchorRef.current = rawInput;
     resetTranscript();
+    // First call triggers the browser's native mic-permission prompt. If the
+    // user denies, isMicrophoneAvailable flips false and the effect above
+    // surfaces the Portuguese error.
     try {
       await SpeechRecognition.startListening({ language: "pt-BR", continuous: true });
     } catch {
@@ -464,9 +484,9 @@ export default function NewReportPage() {
             <button
               type="button"
               onClick={listening ? stopRecording : startRecording}
-              disabled={!browserSupportsSpeechRecognition}
+              disabled={!speechSupported}
               title={
-                browserSupportsSpeechRecognition
+                speechSupported
                   ? undefined
                   : "Reconhecimento de voz indisponível neste navegador. Use Chrome, Edge ou Safari."
               }
