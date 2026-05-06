@@ -202,6 +202,56 @@ revoke all on all tables in schema public from anon;
 revoke all on all tables in schema public from authenticated;
 grant select on all tables in schema public to authenticated;
 
+-- ─── Rate limiting ──────────────────────────────────────────────────────────
+-- Postgres-backed sliding-window counter shared across all Vercel function
+-- instances. API routes invoke rate_limit_consume(bucket, user_id, max) via RPC
+-- (lib/rate-limit.ts → withApiHandler). Authenticated clients have no direct
+-- access to the table or the function — both are reached only through the
+-- service role.
+
+create table if not exists rate_limit_events (
+  id         bigserial primary key,
+  bucket     text not null,
+  user_id    uuid not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists rate_limit_events_lookup
+  on rate_limit_events(bucket, user_id, created_at desc);
+
+create or replace function rate_limit_consume(
+  p_bucket  text,
+  p_user_id uuid,
+  p_max     int
+) returns boolean
+language plpgsql
+security definer
+as $$
+declare
+  v_count int;
+begin
+  delete from rate_limit_events
+  where bucket = p_bucket
+    and user_id = p_user_id
+    and created_at < now() - interval '1 minute';
+
+  select count(*) into v_count
+  from rate_limit_events
+  where bucket = p_bucket
+    and user_id = p_user_id;
+
+  if v_count >= p_max then
+    return false;
+  end if;
+
+  insert into rate_limit_events(bucket, user_id) values (p_bucket, p_user_id);
+  return true;
+end;
+$$;
+
+revoke all on rate_limit_events from anon, authenticated;
+revoke all on function rate_limit_consume(text, uuid, int) from anon, authenticated;
+
 -- ─── Storage buckets ────────────────────────────────────────────────────────
 -- Create via Supabase dashboard or API:
 --   report-images (private, 5 MB, image/jpeg + image/png + image/webp)
