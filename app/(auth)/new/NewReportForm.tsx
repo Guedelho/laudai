@@ -64,6 +64,10 @@ export default function NewReportPage() {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const liveRecognitionRef = useRef<any>(null);
+  const liveAnchorRef = useRef<string>("");
+  const liveFinalRef = useRef<string>("");
 
   useEffect(() => {
     async function loadData() {
@@ -144,6 +148,69 @@ export default function NewReportPage() {
   const breedSuggestions = [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
 
   async function startRecording() {
+    setError("");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (SR) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const recognition: any = new SR();
+        recognition.lang = "pt-BR";
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        liveAnchorRef.current = rawInput;
+        liveFinalRef.current = "";
+        liveRecognitionRef.current = recognition;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        recognition.onresult = (e: any) => {
+          let interim = "";
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            const result = e.results[i];
+            const text = result[0]?.transcript ?? "";
+            if (result.isFinal) liveFinalRef.current += (liveFinalRef.current ? " " : "") + text.trim();
+            else interim += text;
+          }
+          const anchor = liveAnchorRef.current;
+          const final = liveFinalRef.current;
+          const live = [final, interim.trim()].filter(Boolean).join(" ");
+          setRawInput(anchor + (anchor && live ? " " : "") + live);
+        };
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        recognition.onerror = (e: any) => {
+          if (e.error === "no-speech" || e.error === "aborted") return;
+          if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+            setError("Permissão para microfone negada. Habilite o microfone nas configurações do navegador.");
+            setRecording(false);
+            return;
+          }
+          setError("Erro ao reconhecer voz.");
+        };
+
+        recognition.onend = () => {
+          // Browser auto-stops on long silence. If stopRecording() ran, the ref is null;
+          // otherwise we restart so the session continues until the user actually stops.
+          if (liveRecognitionRef.current === recognition) {
+            try {
+              recognition.start();
+            } catch {
+              /* already started or in transition */
+            }
+          }
+        };
+
+        recognition.start();
+        setRecording(true);
+        return;
+      } catch (err) {
+        console.error("SpeechRecognition failed, falling back to MediaRecorder:", err);
+      }
+    }
+
+    // Fallback: record audio and send to Gemini after stop (Firefox, older browsers).
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
@@ -166,6 +233,15 @@ export default function NewReportPage() {
   }
 
   function stopRecording() {
+    if (liveRecognitionRef.current) {
+      const r = liveRecognitionRef.current;
+      liveRecognitionRef.current = null;
+      try {
+        r.stop();
+      } catch {
+        /* already stopped */
+      }
+    }
     mediaRecorderRef.current?.stop();
     setRecording(false);
   }
