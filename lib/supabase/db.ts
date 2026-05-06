@@ -2,16 +2,12 @@ import { createAdmin } from "@/lib/supabase/admin";
 
 type Admin = ReturnType<typeof createAdmin>;
 
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (m) => `\\${m}`);
-}
-
 export async function findOrCreateClinic(admin: Admin, userId: string, name: string) {
   const { data: existing } = await admin
     .from("clinics")
     .select("*, clinic_vets(*)")
     .eq("user_id", userId)
-    .ilike("name", escapeLike(name))
+    .eq("name", name.trim())
     .maybeSingle();
   if (existing) return existing;
 
@@ -29,7 +25,7 @@ export async function findOrCreateVet(admin: Admin, clinicId: string, userId: st
     .from("clinic_vets")
     .select("*")
     .eq("clinic_id", clinicId)
-    .ilike("name", escapeLike(name))
+    .eq("name", name.trim())
     .maybeSingle();
   if (existing) return existing;
 
@@ -90,8 +86,8 @@ export async function findOrCreatePet(
     .from("pets")
     .select("*")
     .eq("user_id", userId)
-    .ilike("name", escapeLike(name))
-    .ilike("owner_name", escapeLike(ownerName))
+    .eq("name", name.trim())
+    .eq("owner_name", ownerName.trim())
     .maybeSingle();
   if (existing) return existing;
 
