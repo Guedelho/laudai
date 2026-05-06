@@ -7,6 +7,7 @@ import { Report, ReportImage, ParsedReport } from "@/shared/models";
 import { SEX_OPTIONS } from "@/shared/constants";
 import { sexLabel, parseReportContent } from "@/lib/utils";
 import { updateReport } from "@/lib/services/reports";
+import { openReportPdfTab } from "@/lib/pdf-tab";
 import DownloadPDFButton from "./DownloadPDFButton";
 import DeleteReportButton from "./DeleteReportButton";
 import ImageManager from "./ImageManager";
@@ -22,14 +23,12 @@ function InfoItem({ label, value }: { label: string; value: string }) {
 }
 
 function EditableList({
-  listKey,
   title,
   items,
   onUpdate,
   onAdd,
   onRemove,
 }: {
-  listKey: string;
   title: string;
   items: string[];
   onUpdate: (i: number, value: string) => void;
@@ -136,26 +135,7 @@ export default function ReportDetail({
     try {
       await persistReport();
 
-      const tab = window.open("", "_blank");
-      if (tab) {
-        tab.document.write(
-          [
-            "<!DOCTYPE html><html><head><title>Laudai</title><style>",
-            "*{margin:0;padding:0;box-sizing:border-box}",
-            "body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f9fafb;font-family:system-ui,-apple-system,sans-serif}",
-            ".c{text-align:center;animation:fadeIn .4s ease-out}",
-            ".s{width:40px;height:40px;border:3px solid #e5e7eb;border-top-color:#2563eb;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}",
-            "h1{font-size:18px;font-weight:600;color:#111827;margin-bottom:6px}",
-            "p{font-size:14px;color:#6b7280;animation:pulse 2s ease-in-out infinite}",
-            "@keyframes spin{to{transform:rotate(360deg)}}",
-            "@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}",
-            "@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}",
-            '</style></head><body><div class="c"><div class="s"></div><h1>Laudai</h1><p>Preparando PDF...</p></div></body></html>',
-          ].join(""),
-        );
-        tab.location.href = `/api/reports/${report.id}/pdf`;
-      }
-
+      openReportPdfTab(report.id);
       setEditing(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao imprimir.");
@@ -426,7 +406,6 @@ export default function ReportDetail({
               )}
 
               <EditableList
-                listKey="impression"
                 title="IMPRESSÃO DIAGNÓSTICA:"
                 items={editedParsed.impression ?? []}
                 onUpdate={(i, v) => updateList("impression", i, v)}
@@ -434,7 +413,6 @@ export default function ReportDetail({
                 onRemove={(i) => removeFromList("impression", i)}
               />
               <EditableList
-                listKey="recommendations"
                 title="RECOMENDAÇÕES:"
                 items={editedParsed.recommendations ?? []}
                 onUpdate={(i, v) => updateList("recommendations", i, v)}
@@ -442,7 +420,6 @@ export default function ReportDetail({
                 onRemove={(i) => removeFromList("recommendations", i)}
               />
               <EditableList
-                listKey="observations"
                 title="OBS:"
                 items={editedParsed.observations ?? []}
                 onUpdate={(i, v) => updateList("observations", i, v)}

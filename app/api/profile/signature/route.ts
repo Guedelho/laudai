@@ -5,7 +5,7 @@ import { parseProfileImage } from "@/lib/server-utils";
 
 const BUCKET = "profile-logos";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const userId = await getUserId();
   if (!userId) return new NextResponse(null, { status: 401 });
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE() {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

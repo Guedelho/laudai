@@ -4,7 +4,7 @@ import { createAdmin } from "@/lib/supabase/admin";
 import { findOrCreatePet } from "@/lib/supabase/db";
 import { PetRequest } from "@/shared/interfaces";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

@@ -5,7 +5,7 @@ import { parseProfileImage } from "@/lib/server-utils";
 
 const BUCKET = "profile-logos";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const userId = await getUserId();
   if (!userId) return new NextResponse(null, { status: 401 });
 

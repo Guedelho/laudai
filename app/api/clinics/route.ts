@@ -3,7 +3,7 @@ import { getUserId } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { findOrCreateClinic, findOrCreateVet } from "@/lib/supabase/db";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

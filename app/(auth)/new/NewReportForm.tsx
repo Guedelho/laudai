@@ -193,7 +193,7 @@ export default function NewReportPage() {
 
       let resolvedClinicName = clinicName;
       let resolvedVetName = responsibleVet;
-      let resolvedPetId = selectedPetId || undefined;
+      const resolvedPetId = selectedPetId || undefined;
       let resolvedClinicId = selectedClinicId || undefined;
       let resolvedVetId = selectedVetId || undefined;
 

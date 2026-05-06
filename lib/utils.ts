@@ -13,7 +13,7 @@ export function parseReportContent(content: string): ParsedReport {
   throw new Error("Estrutura de laudo inválida");
 }
 
-export interface TextSegment {
+interface TextSegment {
   text: string;
   bold: boolean;
 }

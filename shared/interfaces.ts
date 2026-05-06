@@ -5,7 +5,6 @@ import type {
   Pet,
   Clinic,
   ClinicVet,
-  Report,
   ReportImage,
   Specialty,
 } from "./models";

@@ -3,7 +3,7 @@ import { GENERATE_MODEL } from "@/shared/constants";
 import { buildDefaults, buildSingleCallPrompt } from "@/lib/report/templates";
 import type { GenerateParams } from "@/shared/interfaces";
 
-export const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
 function isRetryable(err: unknown): boolean {
   if (err instanceof Error) {
