@@ -1,6 +1,6 @@
 "use client";
 
-import { ParsedReport } from "@/shared/models";
+import { ParsedReport, Pet, Clinic, ClinicVet } from "@/shared/models";
 import { SEX_OPTIONS } from "@/shared/constants";
 import { ReportFieldsState } from "./useReportEditor";
 
@@ -104,11 +104,55 @@ interface EditorProps {
   removeFromList: (key: ListKey, i: number) => void;
 }
 
-export function ReportEditorPatientFields({ fields, setFields }: Pick<EditorProps, "fields" | "setFields">) {
+interface PatientFieldsProps {
+  fields: ReportFieldsState;
+  setFields: (f: ReportFieldsState) => void;
+  pets: Pet[];
+  clinics: Clinic[];
+  selectedPetId: string | null;
+  selectedClinicId: string | null;
+  selectedVetId: string | null;
+  selectPet: (pet: Pet | null) => void;
+  selectClinic: (clinic: Clinic | null) => void;
+  selectVet: (vet: ClinicVet | null) => void;
+}
+
+export function ReportEditorPatientFields({
+  fields,
+  setFields,
+  pets,
+  clinics,
+  selectedPetId,
+  selectedClinicId,
+  selectedVetId,
+  selectPet,
+  selectClinic,
+  selectVet,
+}: PatientFieldsProps) {
+  const selectedClinic = clinics.find((c) => c.id === selectedClinicId);
+  const vets = selectedClinic?.clinic_vets ?? [];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Paciente</h3>
+        {pets.length > 0 && (
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Selecionar paciente cadastrado</label>
+            <select
+              value={selectedPetId ?? ""}
+              onChange={(e) => selectPet(pets.find((p) => p.id === e.target.value) ?? null)}
+              className={inputCls}
+            >
+              <option value="">— Sem vínculo —</option>
+              {pets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.owner_name})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label className="block text-xs text-gray-500 mb-1">Nome</label>
           <input
@@ -178,6 +222,23 @@ export function ReportEditorPatientFields({ fields, setFields }: Pick<EditorProp
             className={inputCls}
           />
         </div>
+        {clinics.length > 0 && (
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Selecionar clínica cadastrada</label>
+            <select
+              value={selectedClinicId ?? ""}
+              onChange={(e) => selectClinic(clinics.find((c) => c.id === e.target.value) ?? null)}
+              className={inputCls}
+            >
+              <option value="">— Sem vínculo —</option>
+              {clinics.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label className="block text-xs text-gray-500 mb-1">Clínica</label>
           <input
@@ -186,6 +247,23 @@ export function ReportEditorPatientFields({ fields, setFields }: Pick<EditorProp
             className={inputCls}
           />
         </div>
+        {vets.length > 0 && (
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Selecionar médico cadastrado</label>
+            <select
+              value={selectedVetId ?? ""}
+              onChange={(e) => selectVet(vets.find((v) => v.id === e.target.value) ?? null)}
+              className={inputCls}
+            >
+              <option value="">— Sem vínculo —</option>
+              {vets.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label className="block text-xs text-gray-500 mb-1">Médico Responsável</label>
           <input

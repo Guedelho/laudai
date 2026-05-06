@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SPECIALTIES } from "@/lib/report/templates";
-import { Report, ReportImage } from "@/shared/models";
+import { Report, ReportImage, Pet, Clinic } from "@/shared/models";
+import { listPets } from "@/lib/services/pets";
+import { listClinics } from "@/lib/services/clinics";
 import ImageManager from "./ImageManager";
 import { useReportEditor } from "./useReportEditor";
 import { ReportEditorActions, ReportEditorContent, ReportEditorPatientFields } from "./ReportEditor";
@@ -20,6 +22,19 @@ export default function ReportDetail({
 }) {
   const [editing, setEditing] = useState(isEditing);
   const editor = useReportEditor(report, () => setEditing(false));
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [clinics, setClinics] = useState<Clinic[]>([]);
+
+  useEffect(() => {
+    Promise.all([listPets(), listClinics()])
+      .then(([p, c]) => {
+        setPets(p);
+        setClinics(c);
+      })
+      .catch(() => {
+        /* dropdowns just won't be offered */
+      });
+  }, []);
 
   const displayDate = new Date(editor.fields.examDate + "T12:00:00").toLocaleDateString("pt-BR");
 
@@ -62,7 +77,18 @@ export default function ReportDetail({
       )}
 
       {editing ? (
-        <ReportEditorPatientFields fields={editor.fields} setFields={editor.setFields} />
+        <ReportEditorPatientFields
+          fields={editor.fields}
+          setFields={editor.setFields}
+          pets={pets}
+          clinics={clinics}
+          selectedPetId={editor.selectedPetId}
+          selectedClinicId={editor.selectedClinicId}
+          selectedVetId={editor.selectedVetId}
+          selectPet={editor.selectPet}
+          selectClinic={editor.selectClinic}
+          selectVet={editor.selectVet}
+        />
       ) : (
         <ReportViewerInfo fields={editor.fields} displayDate={displayDate} />
       )}
