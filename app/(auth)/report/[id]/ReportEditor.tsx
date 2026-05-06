@@ -2,7 +2,7 @@
 
 import { ParsedReport, Pet, Clinic, ClinicVet } from "@/shared/models";
 import { SEX_OPTIONS } from "@/shared/constants";
-import Typeahead from "@/components/Typeahead";
+import EntityTypeahead from "@/components/EntityTypeahead";
 import { ReportFieldsState } from "./useReportEditor";
 
 const inputCls =
@@ -110,9 +110,7 @@ interface PatientFieldsProps {
   setFields: (f: ReportFieldsState) => void;
   pets: Pet[];
   clinics: Clinic[];
-  selectedPetId: string | null;
   selectedClinicId: string | null;
-  selectedVetId: string | null;
   selectPet: (pet: Pet | null) => void;
   selectClinic: (clinic: Clinic | null) => void;
   selectVet: (vet: ClinicVet | null) => void;
@@ -123,9 +121,7 @@ export function ReportEditorPatientFields({
   setFields,
   pets,
   clinics,
-  selectedPetId,
   selectedClinicId,
-  selectedVetId,
   selectPet,
   selectClinic,
   selectVet,
@@ -133,28 +129,18 @@ export function ReportEditorPatientFields({
   const selectedClinic = clinics.find((c) => c.id === selectedClinicId);
   const vets = selectedClinic?.clinic_vets ?? [];
 
-  const petLabelFor = (p: Pet) => `${p.name} (${p.owner_name})`;
-  const petByLabel = new Map(pets.map((p) => [petLabelFor(p), p]));
-  const clinicByName = new Map(clinics.map((c) => [c.name, c]));
-  const vetByName = new Map(vets.map((v) => [v.name, v]));
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Paciente</h3>
         <div>
           <label className="block text-xs text-gray-500 mb-1">Nome</label>
-          <Typeahead
+          <EntityTypeahead<Pet>
             value={fields.patientName}
-            onChange={(v) => {
-              setFields({ ...fields, patientName: v });
-              if (selectedPetId) selectPet(null);
-            }}
-            onSelect={(label) => {
-              const pet = petByLabel.get(label);
-              if (pet) selectPet(pet);
-            }}
-            suggestions={pets.map(petLabelFor)}
+            onChange={(v) => setFields({ ...fields, patientName: v })}
+            items={pets}
+            getLabel={(p) => p.name}
+            onPick={selectPet}
             className={inputCls}
           />
         </div>
@@ -221,33 +207,23 @@ export function ReportEditorPatientFields({
         </div>
         <div>
           <label className="block text-xs text-gray-500 mb-1">Clínica</label>
-          <Typeahead
+          <EntityTypeahead<Clinic>
             value={fields.clinicName}
-            onChange={(v) => {
-              setFields({ ...fields, clinicName: v });
-              if (selectedClinicId) selectClinic(null);
-            }}
-            onSelect={(name) => {
-              const clinic = clinicByName.get(name);
-              if (clinic) selectClinic(clinic);
-            }}
-            suggestions={clinics.map((c) => c.name)}
+            onChange={(v) => setFields({ ...fields, clinicName: v })}
+            items={clinics}
+            getLabel={(c) => c.name}
+            onPick={selectClinic}
             className={inputCls}
           />
         </div>
         <div>
           <label className="block text-xs text-gray-500 mb-1">Médico Responsável</label>
-          <Typeahead
+          <EntityTypeahead<ClinicVet>
             value={fields.responsibleVet}
-            onChange={(v) => {
-              setFields({ ...fields, responsibleVet: v });
-              if (selectedVetId) selectVet(null);
-            }}
-            onSelect={(name) => {
-              const vet = vetByName.get(name);
-              if (vet) selectVet(vet);
-            }}
-            suggestions={vets.map((v) => v.name)}
+            onChange={(v) => setFields({ ...fields, responsibleVet: v })}
+            items={vets}
+            getLabel={(v) => v.name}
+            onPick={selectVet}
             className={inputCls}
           />
         </div>

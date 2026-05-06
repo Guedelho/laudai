@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import ImageLightbox from "@/components/ImageLightbox";
 import Typeahead from "@/components/Typeahead";
+import EntityTypeahead from "@/components/EntityTypeahead";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Pet, Clinic } from "@/shared/models";
@@ -368,16 +369,16 @@ export default function NewReportPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Clínica</label>
-              <Typeahead
+              <EntityTypeahead<Clinic>
                 value={newClinicName}
-                onChange={(v) => {
-                  setNewClinicName(v);
-                  const match = clinics.find((c) => c.name.toLowerCase() === v.toLowerCase());
-                  setSelectedClinicId(match?.id ?? "");
+                onChange={setNewClinicName}
+                items={clinics}
+                getLabel={(c) => c.name}
+                onPick={(c) => {
+                  setSelectedClinicId(c?.id ?? "");
                   setSelectedVetId("");
                   setNewVetName("");
                 }}
-                suggestions={clinics.map((c) => c.name)}
                 placeholder="Nome da clínica"
                 className={inputCls}
                 required
@@ -385,14 +386,12 @@ export default function NewReportPage() {
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Médico Responsável</label>
-              <Typeahead
+              <EntityTypeahead
                 value={newVetName}
-                onChange={(v) => {
-                  setNewVetName(v);
-                  const match = vets.find((vet) => vet.name.toLowerCase() === v.toLowerCase());
-                  setSelectedVetId(match?.id ?? "");
-                }}
-                suggestions={vets.map((v) => v.name)}
+                onChange={setNewVetName}
+                items={vets}
+                getLabel={(v) => v.name}
+                onPick={(v) => setSelectedVetId(v?.id ?? "")}
                 placeholder="Nome do responsável"
                 className={inputCls}
                 required
@@ -412,15 +411,15 @@ export default function NewReportPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Paciente</label>
-              <Typeahead
+              <EntityTypeahead<Pet>
                 value={patientName}
-                onChange={(v) => {
-                  setPatientName(v);
-                  const match = pets.find((p) => p.name.toLowerCase() === v.toLowerCase());
-                  if (match) handlePetSelect(match.id);
+                onChange={setPatientName}
+                items={pets}
+                getLabel={(p) => p.name}
+                onPick={(p) => {
+                  if (p) handlePetSelect(p.id);
                   else setSelectedPetId("");
                 }}
-                suggestions={pets.map((p) => p.name)}
                 placeholder="Nome do paciente"
                 className={inputCls}
                 required

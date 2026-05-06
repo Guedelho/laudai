@@ -82,9 +82,7 @@ export default function ReportDetail({
           setFields={editor.setFields}
           pets={pets}
           clinics={clinics}
-          selectedPetId={editor.selectedPetId}
           selectedClinicId={editor.selectedClinicId}
-          selectedVetId={editor.selectedVetId}
           selectPet={editor.selectPet}
           selectClinic={editor.selectClinic}
           selectVet={editor.selectVet}
