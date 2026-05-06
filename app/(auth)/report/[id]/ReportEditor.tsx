@@ -3,6 +3,7 @@
 import { ParsedReport, Pet, Clinic, ClinicVet } from "@/shared/models";
 import { SEX_OPTIONS } from "@/shared/constants";
 import EntityTypeahead from "@/components/EntityTypeahead";
+import Typeahead from "@/components/Typeahead";
 import { ReportFieldsState } from "./useReportEditor";
 
 const inputCls =
@@ -110,6 +111,7 @@ interface PatientFieldsProps {
   setFields: (f: ReportFieldsState) => void;
   pets: Pet[];
   clinics: Clinic[];
+  breedSuggestions: string[];
   selectedClinicId: string | null;
   selectPet: (pet: Pet | null) => void;
   selectClinic: (clinic: Clinic | null) => void;
@@ -121,6 +123,7 @@ export function ReportEditorPatientFields({
   setFields,
   pets,
   clinics,
+  breedSuggestions,
   selectedClinicId,
   selectPet,
   selectClinic,
@@ -154,9 +157,10 @@ export function ReportEditorPatientFields({
         </div>
         <div>
           <label className="block text-xs text-gray-500 mb-1">Raça</label>
-          <input
+          <Typeahead
             value={fields.breed}
-            onChange={(e) => setFields({ ...fields, breed: e.target.value })}
+            onChange={(v) => setFields({ ...fields, breed: v })}
+            suggestions={breedSuggestions}
             className={inputCls}
           />
         </div>

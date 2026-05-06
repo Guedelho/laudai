@@ -14,7 +14,7 @@
 
 - **Next.js 16 App Router** — Tailwind 4 (PostCSS-based, no `tailwind.config.*`), Supabase SSR via `@supabase/ssr`
 - **AI**: `lib/report/generate.ts` makes a single Gemini call per report (`gemini-3-flash-preview`) with a combined system prompt (sections + conclusion + verifier constraints). Streaming via `generateContentStream` with `responseMimeType: "application/json"`. Retry with exponential backoff on transient errors. Generation uses `temperature: 0`. Trechos derivados dos achados do usuário são marcados pelo modelo com `**...**`; `splitBoldSegments` (em `lib/utils.ts`) converte esses marcadores em runs em negrito tanto no PDF quanto na visualização.
-- **Transcription**: `app/api/transcribe/route.ts` uses `gemini-3-flash-preview` for audio → text.
+- **Speech-to-text**: real-time via the browser Web Speech API (wrapped by `react-speech-recognition`). The mic button and live transcript live in `NewReportForm.tsx`. Firefox falls through to a disabled state with a tooltip; there is no server-side transcription endpoint.
 - **PDF**: `lib/report/pdf.ts` (pdfmake). Fonts fetched from CDN and cached module-level. Generated PDFs are cached in the `report-pdfs` bucket — cleared on report edit or image changes.
 - **Formatting**: Prettier with pre-commit hook via lint-staged. Run `npm run format` to format all files.
 - **Database**: Supabase Postgres (project `rgemiayidnumeotplozm`, region `sa-east-1`). RLS on every table with `(select auth.uid()) = user_id` scoped to `authenticated` role. All FK and user_id columns are indexed.

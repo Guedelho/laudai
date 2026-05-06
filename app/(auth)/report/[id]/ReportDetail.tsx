@@ -36,6 +36,7 @@ export default function ReportDetail({
       });
   }, []);
 
+  const breedSuggestions = [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
   const displayDate = new Date(editor.fields.examDate + "T12:00:00").toLocaleDateString("pt-BR");
 
   return (
@@ -82,6 +83,7 @@ export default function ReportDetail({
           setFields={editor.setFields}
           pets={pets}
           clinics={clinics}
+          breedSuggestions={breedSuggestions}
           selectedClinicId={editor.selectedClinicId}
           selectPet={editor.selectPet}
           selectClinic={editor.selectClinic}
