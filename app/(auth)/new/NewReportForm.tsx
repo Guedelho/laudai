@@ -41,7 +41,8 @@ export default function NewReportPage() {
   const [examDate, setExamDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [rawInput, setRawInput] = useState("");
   const [generating, setGenerating] = useState(false);
-  const [generatingStatus, setGeneratingStatus] = useState("Gerando laudo...");
+  const [generatingStatus, setGeneratingStatus] = useState("Iniciando...");
+  const [generatingProgress, setGeneratingProgress] = useState(0);
   const [error, setError] = useState("");
 
   // Images (selected before submit)
@@ -206,7 +207,8 @@ export default function NewReportPage() {
       return;
     }
     setGenerating(true);
-    setGeneratingStatus("Gerando laudo...");
+    setGeneratingStatus("Iniciando...");
+    setGeneratingProgress(3);
 
     try {
       const headers = { "Content-Type": "application/json" };
@@ -281,6 +283,10 @@ export default function NewReportPage() {
           const reader = res.body!.getReader();
           const decoder = new TextDecoder();
           let buffer = "";
+          let chunkChars = 0;
+          // Average laudo body length we observe; used only to scale the progress
+          // bar — overshoot just clamps at the cap.
+          const CHUNK_TARGET_CHARS = 4000;
 
           outer: while (true) {
             const { done, value } = await reader.read();
@@ -292,11 +298,22 @@ export default function NewReportPage() {
               const line = part.trim();
               if (!line.startsWith("data: ")) continue;
               const event: SseEvent = JSON.parse(line.slice(6));
-              if (event.status === "generating") setGeneratingStatus("Gerando laudo...");
-              else if (event.status === "retrying") setGeneratingStatus("Tentando novamente...");
-              else if (event.status === "saving") setGeneratingStatus("Salvando...");
-              else if (event.status === "chunk") {
-                /* streaming preview */
+              if (event.status === "generating") {
+                setGeneratingStatus("Analisando achados...");
+                setGeneratingProgress(10);
+              } else if (event.status === "retrying") {
+                setGeneratingStatus("Tentando novamente...");
+                setGeneratingProgress(8);
+                chunkChars = 0;
+              } else if (event.status === "saving") {
+                setGeneratingStatus("Salvando laudo...");
+                setGeneratingProgress(85);
+              } else if (event.status === "chunk") {
+                chunkChars += event.text.length;
+                const pct = 10 + Math.min(70, (chunkChars / CHUNK_TARGET_CHARS) * 70);
+                setGeneratingProgress(pct);
+                if (chunkChars > CHUNK_TARGET_CHARS * 0.6) setGeneratingStatus("Validando terminologia...");
+                else if (chunkChars > CHUNK_TARGET_CHARS * 0.3) setGeneratingStatus("Estruturando laudo...");
               } else if (event.status === "error") throw new Error(event.message || "Erro ao gerar laudo.");
               else if (event.status === "done") {
                 reportId = event.report.id;
@@ -317,14 +334,17 @@ export default function NewReportPage() {
 
       if (selectedFiles.length > 0) {
         setGeneratingStatus("Enviando imagens...");
+        setGeneratingProgress(92);
         await uploadReportImages(reportId, selectedFiles);
       }
 
       setGeneratingStatus("Redirecionando...");
+      setGeneratingProgress(100);
       router.push(`/report/${reportId}?review=1`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar laudo.");
       setGenerating(false);
+      setGeneratingProgress(0);
     }
   }
 
@@ -574,23 +594,36 @@ export default function NewReportPage() {
 
         {error && <p className="text-sm text-red-500">{error}</p>}
 
-        <button
-          type="submit"
-          disabled={generating}
-          className="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {generating ? (
-            <>
+        {generating ? (
+          <div
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(generatingProgress)}
+            aria-label={generatingStatus}
+            className="relative w-full h-12 rounded-xl overflow-hidden bg-blue-100 select-none"
+          >
+            <div
+              className="absolute inset-y-0 left-0 bg-blue-600 transition-[width] duration-700 ease-out"
+              style={{ width: `${Math.max(3, Math.min(100, generatingProgress))}%` }}
+            />
+            <div className="relative h-full flex items-center justify-center gap-2 text-sm font-semibold text-white mix-blend-difference">
               <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              {generatingStatus}
-            </>
-          ) : (
-            "Gerar Laudo"
-          )}
-        </button>
+              <span>{generatingStatus}</span>
+              <span className="tabular-nums opacity-80">{Math.round(generatingProgress)}%</span>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-blue-700 flex items-center justify-center"
+          >
+            Gerar Laudo
+          </button>
+        )}
       </form>
     </main>
   );
