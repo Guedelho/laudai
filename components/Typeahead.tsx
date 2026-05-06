@@ -6,12 +6,22 @@ interface TypeaheadProps {
   value: string;
   onChange: (value: string) => void;
   suggestions: string[];
+  /** Fires when the user picks a suggestion from the dropdown (after onChange). */
+  onSelect?: (value: string) => void;
   placeholder?: string;
   className?: string;
   required?: boolean;
 }
 
-export default function Typeahead({ value, onChange, suggestions, placeholder, className, required }: TypeaheadProps) {
+export default function Typeahead({
+  value,
+  onChange,
+  suggestions,
+  onSelect,
+  placeholder,
+  className,
+  required,
+}: TypeaheadProps) {
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -61,6 +71,7 @@ export default function Typeahead({ value, onChange, suggestions, placeholder, c
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   onChange(s);
+                  onSelect?.(s);
                   setOpen(false);
                 }}
                 className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"

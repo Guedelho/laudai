@@ -2,6 +2,7 @@
 
 import { ParsedReport, Pet, Clinic, ClinicVet } from "@/shared/models";
 import { SEX_OPTIONS } from "@/shared/constants";
+import Typeahead from "@/components/Typeahead";
 import { ReportFieldsState } from "./useReportEditor";
 
 const inputCls =
@@ -132,32 +133,28 @@ export function ReportEditorPatientFields({
   const selectedClinic = clinics.find((c) => c.id === selectedClinicId);
   const vets = selectedClinic?.clinic_vets ?? [];
 
+  const petLabelFor = (p: Pet) => `${p.name} (${p.owner_name})`;
+  const petByLabel = new Map(pets.map((p) => [petLabelFor(p), p]));
+  const clinicByName = new Map(clinics.map((c) => [c.name, c]));
+  const vetByName = new Map(vets.map((v) => [v.name, v]));
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Paciente</h3>
-        {pets.length > 0 && (
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Selecionar paciente cadastrado</label>
-            <select
-              value={selectedPetId ?? ""}
-              onChange={(e) => selectPet(pets.find((p) => p.id === e.target.value) ?? null)}
-              className={inputCls}
-            >
-              <option value="">— Sem vínculo —</option>
-              {pets.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.owner_name})
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
         <div>
           <label className="block text-xs text-gray-500 mb-1">Nome</label>
-          <input
+          <Typeahead
             value={fields.patientName}
-            onChange={(e) => setFields({ ...fields, patientName: e.target.value })}
+            onChange={(v) => {
+              setFields({ ...fields, patientName: v });
+              if (selectedPetId) selectPet(null);
+            }}
+            onSelect={(label) => {
+              const pet = petByLabel.get(label);
+              if (pet) selectPet(pet);
+            }}
+            suggestions={pets.map(petLabelFor)}
             className={inputCls}
           />
         </div>
@@ -222,53 +219,35 @@ export function ReportEditorPatientFields({
             className={inputCls}
           />
         </div>
-        {clinics.length > 0 && (
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Selecionar clínica cadastrada</label>
-            <select
-              value={selectedClinicId ?? ""}
-              onChange={(e) => selectClinic(clinics.find((c) => c.id === e.target.value) ?? null)}
-              className={inputCls}
-            >
-              <option value="">— Sem vínculo —</option>
-              {clinics.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
         <div>
           <label className="block text-xs text-gray-500 mb-1">Clínica</label>
-          <input
+          <Typeahead
             value={fields.clinicName}
-            onChange={(e) => setFields({ ...fields, clinicName: e.target.value })}
+            onChange={(v) => {
+              setFields({ ...fields, clinicName: v });
+              if (selectedClinicId) selectClinic(null);
+            }}
+            onSelect={(name) => {
+              const clinic = clinicByName.get(name);
+              if (clinic) selectClinic(clinic);
+            }}
+            suggestions={clinics.map((c) => c.name)}
             className={inputCls}
           />
         </div>
-        {vets.length > 0 && (
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Selecionar médico cadastrado</label>
-            <select
-              value={selectedVetId ?? ""}
-              onChange={(e) => selectVet(vets.find((v) => v.id === e.target.value) ?? null)}
-              className={inputCls}
-            >
-              <option value="">— Sem vínculo —</option>
-              {vets.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
         <div>
           <label className="block text-xs text-gray-500 mb-1">Médico Responsável</label>
-          <input
+          <Typeahead
             value={fields.responsibleVet}
-            onChange={(e) => setFields({ ...fields, responsibleVet: e.target.value })}
+            onChange={(v) => {
+              setFields({ ...fields, responsibleVet: v });
+              if (selectedVetId) selectVet(null);
+            }}
+            onSelect={(name) => {
+              const vet = vetByName.get(name);
+              if (vet) selectVet(vet);
+            }}
+            suggestions={vets.map((v) => v.name)}
             className={inputCls}
           />
         </div>
