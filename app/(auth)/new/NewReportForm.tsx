@@ -1,6 +1,33 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+
+// Web Speech API — the SpeechRecognition constructor isn't in lib.dom.d.ts yet.
+interface SpeechRecognitionEventLike {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+interface SpeechRecognitionErrorEventLike {
+  error: string;
+}
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  start(): void;
+  stop(): void;
+  abort(): void;
+  onresult: ((e: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((e: SpeechRecognitionErrorEventLike) => void) | null;
+  onend: (() => void) | null;
+}
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionCtor;
+    webkitSpeechRecognition?: SpeechRecognitionCtor;
+  }
+}
 import ImageLightbox from "@/components/ImageLightbox";
 import Typeahead from "@/components/Typeahead";
 import Link from "next/link";
@@ -64,8 +91,7 @@ export default function NewReportPage() {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const liveRecognitionRef = useRef<any>(null);
+  const liveRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const liveAnchorRef = useRef<string>("");
   const liveFinalRef = useRef<string>("");
 
@@ -149,13 +175,11 @@ export default function NewReportPage() {
 
   async function startRecording() {
     setError("");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SR = window.SpeechRecognition ?? window.webkitSpeechRecognition;
 
     if (SR) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const recognition: any = new SR();
+        const recognition = new SR();
         recognition.lang = "pt-BR";
         recognition.continuous = true;
         recognition.interimResults = true;
@@ -164,8 +188,7 @@ export default function NewReportPage() {
         liveFinalRef.current = "";
         liveRecognitionRef.current = recognition;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        recognition.onresult = (e: any) => {
+        recognition.onresult = (e) => {
           let interim = "";
           for (let i = e.resultIndex; i < e.results.length; i++) {
             const result = e.results[i];
@@ -179,8 +202,7 @@ export default function NewReportPage() {
           setRawInput(anchor + (anchor && live ? " " : "") + live);
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        recognition.onerror = (e: any) => {
+        recognition.onerror = (e) => {
           if (e.error === "no-speech" || e.error === "aborted") return;
           if (e.error === "not-allowed" || e.error === "service-not-allowed") {
             setError("Permissão para microfone negada. Habilite o microfone nas configurações do navegador.");
