@@ -88,10 +88,6 @@ export interface ImagesResponse extends ApiResponse {
   images: ReportImage[];
 }
 
-export interface TranscribeResponse extends ApiResponse {
-  text: string;
-}
-
 // ─── SSE events ──────────────────────────────────────────────────────────────
 
 export type SseEvent =

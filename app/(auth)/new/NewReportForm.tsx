@@ -1,33 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-
-// Web Speech API — the SpeechRecognition constructor isn't in lib.dom.d.ts yet.
-interface SpeechRecognitionEventLike {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
-}
-interface SpeechRecognitionErrorEventLike {
-  error: string;
-}
-interface SpeechRecognitionLike {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  start(): void;
-  stop(): void;
-  abort(): void;
-  onresult: ((e: SpeechRecognitionEventLike) => void) | null;
-  onerror: ((e: SpeechRecognitionErrorEventLike) => void) | null;
-  onend: (() => void) | null;
-}
-type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
-declare global {
-  interface Window {
-    SpeechRecognition?: SpeechRecognitionCtor;
-    webkitSpeechRecognition?: SpeechRecognitionCtor;
-  }
-}
+import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import ImageLightbox from "@/components/ImageLightbox";
 import Typeahead from "@/components/Typeahead";
 import Link from "next/link";
@@ -38,7 +12,6 @@ import { SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared/constants";
 import { listPets } from "@/lib/services/pets";
 import { listClinics, createClinic, addVet } from "@/lib/services/clinics";
 import { uploadReportImages } from "@/lib/services/reports";
-import { transcribeAudio as transcribe } from "@/lib/services/transcribe";
 
 export default function NewReportPage() {
   const router = useRouter();
@@ -67,8 +40,6 @@ export default function NewReportPage() {
   // Exam
   const [examDate, setExamDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [rawInput, setRawInput] = useState("");
-  const [recording, setRecording] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generatingStatus, setGeneratingStatus] = useState("Gerando laudo...");
   const [error, setError] = useState("");
@@ -89,11 +60,16 @@ export default function NewReportPage() {
     };
   }, []);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const liveRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const liveAnchorRef = useRef<string>("");
-  const liveFinalRef = useRef<string>("");
+  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
+
+  // Mirror the live transcript into rawInput while preserving anything the user typed before recording.
+  useEffect(() => {
+    if (!listening && !transcript) return;
+    const anchor = liveAnchorRef.current;
+    const live = transcript.trim();
+    setRawInput(anchor + (anchor && live ? " " : "") + live);
+  }, [transcript, listening]);
 
   useEffect(() => {
     async function loadData() {
@@ -175,109 +151,21 @@ export default function NewReportPage() {
 
   async function startRecording() {
     setError("");
-    const SR = window.SpeechRecognition ?? window.webkitSpeechRecognition;
-
-    if (SR) {
-      try {
-        const recognition = new SR();
-        recognition.lang = "pt-BR";
-        recognition.continuous = true;
-        recognition.interimResults = true;
-
-        liveAnchorRef.current = rawInput;
-        liveFinalRef.current = "";
-        liveRecognitionRef.current = recognition;
-
-        recognition.onresult = (e) => {
-          let interim = "";
-          for (let i = e.resultIndex; i < e.results.length; i++) {
-            const result = e.results[i];
-            const text = result[0]?.transcript ?? "";
-            if (result.isFinal) liveFinalRef.current += (liveFinalRef.current ? " " : "") + text.trim();
-            else interim += text;
-          }
-          const anchor = liveAnchorRef.current;
-          const final = liveFinalRef.current;
-          const live = [final, interim.trim()].filter(Boolean).join(" ");
-          setRawInput(anchor + (anchor && live ? " " : "") + live);
-        };
-
-        recognition.onerror = (e) => {
-          if (e.error === "no-speech" || e.error === "aborted") return;
-          if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-            setError("Permissão para microfone negada. Habilite o microfone nas configurações do navegador.");
-            setRecording(false);
-            return;
-          }
-          setError("Erro ao reconhecer voz.");
-        };
-
-        recognition.onend = () => {
-          // Browser auto-stops on long silence. If stopRecording() ran, the ref is null;
-          // otherwise we restart so the session continues until the user actually stops.
-          if (liveRecognitionRef.current === recognition) {
-            try {
-              recognition.start();
-            } catch {
-              /* already started or in transition */
-            }
-          }
-        };
-
-        recognition.start();
-        setRecording(true);
-        return;
-      } catch (err) {
-        console.error("SpeechRecognition failed, falling back to MediaRecorder:", err);
-      }
+    if (!browserSupportsSpeechRecognition) {
+      setError("Seu navegador não suporta reconhecimento de voz. Use Chrome, Edge ou Safari.");
+      return;
     }
-
-    // Fallback: record audio and send to Gemini after stop (Firefox, older browsers).
+    liveAnchorRef.current = rawInput;
+    resetTranscript();
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
-      mediaRecorder.ondataavailable = (e) => chunksRef.current.push(e.data);
-      mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        await transcribeAudio(new Blob(chunksRef.current, { type: "audio/webm" }));
-      };
-      mediaRecorder.start();
-      setRecording(true);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "NotAllowedError") {
-        setError("Permissão para microfone negada. Habilite o microfone nas configurações do navegador.");
-      } else {
-        setError("Não foi possível acessar o microfone.");
-      }
-    }
-  }
-
-  function stopRecording() {
-    if (liveRecognitionRef.current) {
-      const r = liveRecognitionRef.current;
-      liveRecognitionRef.current = null;
-      try {
-        r.stop();
-      } catch {
-        /* already stopped */
-      }
-    }
-    mediaRecorderRef.current?.stop();
-    setRecording(false);
-  }
-
-  async function transcribeAudio(blob: Blob) {
-    setTranscribing(true);
-    try {
-      const text = await transcribe(blob);
-      setRawInput((prev) => prev + (prev ? " " : "") + text);
+      await SpeechRecognition.startListening({ language: "pt-BR", continuous: true });
     } catch {
-      setError("Erro ao transcrever áudio.");
-    } finally {
-      setTranscribing(false);
+      setError("Não foi possível acessar o microfone.");
     }
+  }
+
+  async function stopRecording() {
+    await SpeechRecognition.stopListening();
   }
 
   async function handleGenerate(e: React.FormEvent) {
@@ -575,15 +463,20 @@ export default function NewReportPage() {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={recording ? stopRecording : startRecording}
-              disabled={transcribing}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                recording
+              onClick={listening ? stopRecording : startRecording}
+              disabled={!browserSupportsSpeechRecognition}
+              title={
+                browserSupportsSpeechRecognition
+                  ? undefined
+                  : "Reconhecimento de voz indisponível neste navegador. Use Chrome, Edge ou Safari."
+              }
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                listening
                   ? "bg-red-500 text-white border-red-500 hover:bg-red-600"
                   : "bg-white text-gray-700 border-gray-300 hover:border-blue-400"
               }`}
             >
-              {recording ? "Parar gravação" : transcribing ? "Transcrevendo..." : "Gravar voz"}
+              {listening ? "Parar gravação" : "Gravar voz"}
             </button>
           </div>
           <textarea

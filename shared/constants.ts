@@ -13,4 +13,3 @@ export const SEX_OPTIONS = [
 // ─── AI models ──────────────────────────────────────────────────────────────
 
 export const GENERATE_MODEL = "gemini-3-flash-preview";
-export const TRANSCRIBE_MODEL = "gemini-3-flash-preview";
