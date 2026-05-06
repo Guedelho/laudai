@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { getUserId } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
+import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE } from "@/shared/constants";
 import sharp from "sharp";
 
 const BUCKET = "report-images";
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const MAX_FILES = 30;
 
 const SHARP_FORMAT_TO_MIME: Record<string, string> = {
   jpeg: "image/jpeg",
@@ -82,13 +81,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const files = formData.getAll("images") as File[];
 
   if (!files.length) return NextResponse.json({ error: "No images provided" }, { status: 400 });
-  if (files.length > MAX_FILES)
-    return NextResponse.json({ error: `Máximo de ${MAX_FILES} imagens por vez` }, { status: 400 });
+
+  // Total-per-report cap, not just per-request: count what's already there
+  // and reject if this batch would push the report over the limit.
+  const { count: existingCount } = await admin
+    .from("report_images")
+    .select("*", { count: "exact", head: true })
+    .eq("report_id", id)
+    .eq("user_id", userId);
+
+  if ((existingCount ?? 0) + files.length > MAX_REPORT_IMAGES) {
+    return NextResponse.json(
+      { error: `Limite de ${MAX_REPORT_IMAGES} imagens por laudo. Atual: ${existingCount ?? 0}.` },
+      { status: 400 },
+    );
+  }
 
   // Phase 1: validate + detect formats in parallel
   const fileData = await Promise.all(
     files.map(async (file) => {
-      if (file.size > MAX_FILE_SIZE) {
+      if (file.size > MAX_IMAGE_FILE_SIZE) {
         return { validationError: `Arquivo muito grande (máx 5MB): ${file.name}` } as const;
       }
       const buf = Buffer.from(await file.arrayBuffer());

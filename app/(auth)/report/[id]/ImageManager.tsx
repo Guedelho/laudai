@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
 import { ReportImage } from "@/shared/models";
+import { MAX_REPORT_IMAGES } from "@/shared/constants";
 import { uploadReportImages, deleteReportImage } from "@/lib/services/reports";
 import ImageLightbox from "@/components/ImageLightbox";
 
@@ -60,14 +61,18 @@ export default function ImageManager({
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-semibold text-gray-700">
             Imagens do exame
-            {images.length > 0 && <span className="ml-2 text-xs font-normal text-gray-400">{images.length}/30</span>}
+            {images.length > 0 && (
+              <span className="ml-2 text-xs font-normal text-gray-400">
+                {images.length}/{MAX_REPORT_IMAGES}
+              </span>
+            )}
           </p>
           {editable && (
             <>
               <button
                 type="button"
                 onClick={() => inputRef.current?.click()}
-                disabled={uploading || images.length >= 30}
+                disabled={uploading || images.length >= MAX_REPORT_IMAGES}
                 className="text-xs text-blue-600 hover:text-blue-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {uploading ? "Enviando..." : "Adicionar imagens"}

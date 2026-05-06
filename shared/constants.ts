@@ -13,3 +13,8 @@ export const SEX_OPTIONS = [
 // ─── AI models ──────────────────────────────────────────────────────────────
 
 export const GENERATE_MODEL = "gemini-3-flash-preview";
+
+// ─── Limits ──────────────────────────────────────────────────────────────────
+
+export const MAX_REPORT_IMAGES = 50;
+export const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024; // 5 MB

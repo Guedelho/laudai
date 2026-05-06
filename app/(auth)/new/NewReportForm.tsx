@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Pet, Clinic } from "@/shared/models";
 import { SseEvent, ApiResponse } from "@/shared/interfaces";
-import { SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared/constants";
+import { SPECIES_OPTIONS, SEX_OPTIONS, MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE } from "@/shared/constants";
 import { listPets } from "@/lib/services/pets";
 import { listClinics, createClinic, addVet } from "@/lib/services/clinics";
 import { uploadReportImages } from "@/lib/services/reports";
@@ -122,28 +122,28 @@ export default function NewReportPage() {
     }
   }
 
-  const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
     const valid = files.filter((f) => {
-      if (f.size > MAX_IMAGE_SIZE) {
+      if (f.size > MAX_IMAGE_FILE_SIZE) {
         setError(`Imagem "${f.name}" excede 5 MB.`);
         return false;
       }
       return true;
     });
     if (!valid.length) return;
-    const remaining = 30 - selectedFiles.length;
+    const remaining = MAX_REPORT_IMAGES - selectedFiles.length;
     if (remaining <= 0) {
-      setError("Limite de 30 imagens atingido.");
+      setError(`Limite de ${MAX_REPORT_IMAGES} imagens atingido.`);
       if (imageInputRef.current) imageInputRef.current.value = "";
       return;
     }
     const capped = valid.slice(0, remaining);
     if (capped.length < valid.length) {
-      setError(`Limite de 30 imagens. Apenas ${capped.length} adicionada${capped.length !== 1 ? "s" : ""}.`);
+      setError(
+        `Limite de ${MAX_REPORT_IMAGES} imagens. Apenas ${capped.length} adicionada${capped.length !== 1 ? "s" : ""}.`,
+      );
     }
     setSelectedFiles((prev) => [...prev, ...capped]);
     setObjectUrls((prev) => [...prev, ...capped.map((f) => URL.createObjectURL(f))]);
