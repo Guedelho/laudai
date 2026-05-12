@@ -205,15 +205,8 @@ export default function ReportList({ userId, initialReports }: Props) {
             />
           ))}
           {showSentinel && (
-            <div ref={sentinelRef} className="pt-2">
-              <button
-                type="button"
-                onClick={() => loadMoreRef.current()}
-                disabled={loadingMore}
-                className="w-full py-3 text-sm text-blue-600 hover:underline disabled:opacity-50"
-              >
-                {loadingMore ? "Carregando..." : "Carregar mais"}
-              </button>
+            <div ref={sentinelRef} className="py-4 text-center text-xs text-gray-400">
+              {loadingMore ? "Carregando..." : ""}
             </div>
           )}
         </div>
