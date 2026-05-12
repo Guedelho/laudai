@@ -59,12 +59,9 @@ export default function ReportList({ userId, initialReports }: Props) {
 
   const sentinelRef = useCallback((node: HTMLDivElement | null) => {
     if (!node) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) loadMoreRef.current();
-      },
-      { rootMargin: "200px" },
-    );
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) loadMoreRef.current();
+    });
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
