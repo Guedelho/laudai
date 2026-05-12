@@ -34,6 +34,7 @@ export default function ReportList({ userId, initialReports }: Props) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [realtimeStatus, setRealtimeStatus] = useState<string>("connecting");
   const prevStatusRef = useRef<Map<string, ReportStatus>>(new Map(initialReports.map((r) => [r.id, r.status])));
 
   const loadMoreRef = useRef<() => Promise<void>>(() => Promise.resolve());
@@ -68,74 +69,69 @@ export default function ReportList({ userId, initialReports }: Props) {
 
   useEffect(() => {
     const supabase = createClient();
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    let cancelled = false;
 
-    async function start() {
-      const { data } = await supabase.auth.getSession();
-      if (cancelled) return;
-      if (data.session?.access_token) {
-        await supabase.realtime.setAuth(data.session.access_token);
-      } else {
-        console.warn("Realtime: no session, events may be blocked by RLS");
-      }
-
-      channel = supabase
-        .channel(`reports:${userId}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "reports", filter: `user_id=eq.${userId}` },
-          (payload) => {
-            if (payload.eventType === "INSERT") {
-              const summary = rowToSummary(payload.new);
-              prevStatusRef.current.set(summary.id, summary.status);
-              setReports((prev) => (prev.some((r) => r.id === summary.id) ? prev : [summary, ...prev]));
-              return;
-            }
-
-            if (payload.eventType === "UPDATE") {
-              const row = payload.new as Record<string, unknown> & { deleted_at: string | null };
-              if (row.deleted_at) {
-                prevStatusRef.current.delete(row.id as string);
-                setReports((prev) => prev.filter((r) => r.id !== row.id));
-                return;
-              }
-              const summary = rowToSummary(row);
-              const previous = prevStatusRef.current.get(summary.id);
-              if (previous && previous !== "completed" && summary.status === "completed") {
-                setToast(`Laudo de ${summary.patient_name} pronto.`);
-              }
-              prevStatusRef.current.set(summary.id, summary.status);
-              setReports((prev) => {
-                const idx = prev.findIndex((r) => r.id === summary.id);
-                if (idx === -1) return prev;
-                const next = prev.slice();
-                next[idx] = summary;
-                return next;
-              });
-              return;
-            }
-
-            if (payload.eventType === "DELETE") {
-              const oldId = (payload.old as { id?: string }).id;
-              if (!oldId) return;
-              prevStatusRef.current.delete(oldId);
-              setReports((prev) => prev.filter((r) => r.id !== oldId));
-            }
-          },
-        )
-        .subscribe((status, err) => {
-          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-            console.error(`Realtime channel ${status}`, err);
+    const channel = supabase
+      .channel(`reports:${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "reports", filter: `user_id=eq.${userId}` },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            const summary = rowToSummary(payload.new);
+            prevStatusRef.current.set(summary.id, summary.status);
+            setReports((prev) => (prev.some((r) => r.id === summary.id) ? prev : [summary, ...prev]));
+            return;
           }
-        });
-    }
 
-    start();
+          if (payload.eventType === "UPDATE") {
+            const row = payload.new as Record<string, unknown> & { deleted_at: string | null };
+            if (row.deleted_at) {
+              prevStatusRef.current.delete(row.id as string);
+              setReports((prev) => prev.filter((r) => r.id !== row.id));
+              return;
+            }
+            const summary = rowToSummary(row);
+            const previous = prevStatusRef.current.get(summary.id);
+            if (previous && previous !== "completed" && summary.status === "completed") {
+              setToast(`Laudo de ${summary.patient_name} pronto.`);
+            }
+            prevStatusRef.current.set(summary.id, summary.status);
+            setReports((prev) => {
+              const idx = prev.findIndex((r) => r.id === summary.id);
+              if (idx === -1) return prev;
+              const next = prev.slice();
+              next[idx] = summary;
+              return next;
+            });
+            return;
+          }
+
+          if (payload.eventType === "DELETE") {
+            const oldId = (payload.old as { id?: string }).id;
+            if (!oldId) return;
+            prevStatusRef.current.delete(oldId);
+            setReports((prev) => prev.filter((r) => r.id !== oldId));
+          }
+        },
+      )
+      .subscribe((status, err) => {
+        setRealtimeStatus(status);
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          console.error(`Realtime channel ${status}`, err);
+        }
+      });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token) {
+        supabase.realtime.setAuth(session.access_token);
+      }
+    });
 
     return () => {
-      cancelled = true;
-      if (channel) supabase.removeChannel(channel);
+      subscription.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, [userId]);
 
@@ -171,6 +167,13 @@ export default function ReportList({ userId, initialReports }: Props) {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center gap-2 text-xs text-gray-400">
+        <span
+          className={`inline-block w-2 h-2 rounded-full ${realtimeStatus === "SUBSCRIBED" ? "bg-green-500" : "bg-gray-300"}`}
+          aria-hidden
+        />
+        <span>realtime: {realtimeStatus.toLowerCase()}</span>
+      </div>
       <input
         type="search"
         value={query}
