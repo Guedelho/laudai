@@ -7,6 +7,7 @@ import { ReportStatus, ReportSummary } from "@/shared/models";
 import { DASHBOARD_PAGE_SIZE } from "@/shared/constants";
 import { createClient } from "@/lib/supabase/client";
 import { listReports, regenerateReport } from "@/lib/services/reports";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 
 interface Props {
   userId: string;
@@ -94,6 +95,7 @@ export default function ReportList({ userId }: Props) {
       new: Record<string, unknown>;
       old: Record<string, unknown>;
     }) {
+      console.log("[realtime] change", payload.eventType, payload.new ?? payload.old);
       if (payload.eventType === "INSERT") {
         const summary = rowToSummary(payload.new);
         prevStatusRef.current.set(summary.id, summary.status);
@@ -144,9 +146,7 @@ export default function ReportList({ userId }: Props) {
           handleChange,
         )
         .subscribe((status, err) => {
-          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-            console.error(`Realtime channel ${status}`, err);
-          }
+          console.log("[realtime] subscribe status", status, err);
         });
     }
 
@@ -188,6 +188,8 @@ export default function ReportList({ userId }: Props) {
 
   const showSentinel = !query.trim() && hasMore;
 
+  if (loadingInitial) return <LoadingSkeleton rows={DASHBOARD_PAGE_SIZE} />;
+
   return (
     <div className="space-y-4">
       <input
@@ -198,9 +200,7 @@ export default function ReportList({ userId }: Props) {
         className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
       />
 
-      {loadingInitial ? (
-        <div className="text-center py-16 text-gray-400 text-sm">Carregando...</div>
-      ) : !reports.length ? (
+      {!reports.length ? (
         <div className="text-center py-16 text-gray-400">
           <p className="text-lg mb-2">Nenhum laudo gerado ainda</p>
           <Link href="/new" className="text-blue-600 text-sm hover:underline">
