@@ -11,7 +11,6 @@ export const DASHBOARD_PAGE_SIZE = 5;
 
 interface Props {
   userId: string;
-  reports: ReportSummary[];
 }
 
 function rowToSummary(row: Record<string, unknown>): ReportSummary {
@@ -28,15 +27,36 @@ function rowToSummary(row: Record<string, unknown>): ReportSummary {
   };
 }
 
-export default function ReportList({ userId, reports: initialReports }: Props) {
+export default function ReportList({ userId }: Props) {
   const [query, setQuery] = useState("");
-  const [reports, setReports] = useState<ReportSummary[]>(initialReports);
-  const [hasMore, setHasMore] = useState(initialReports.length === DASHBOARD_PAGE_SIZE);
+  const [reports, setReports] = useState<ReportSummary[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingInitial, setLoadingInitial] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
-  const prevStatusRef = useRef<Map<string, ReportStatus>>(new Map(initialReports.map((r) => [r.id, r.status])));
+  const prevStatusRef = useRef<Map<string, ReportStatus>>(new Map());
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    listReports(DASHBOARD_PAGE_SIZE)
+      .then((data) => {
+        if (cancelled) return;
+        setReports(data);
+        setHasMore(data.length === DASHBOARD_PAGE_SIZE);
+        prevStatusRef.current = new Map(data.map((r) => [r.id, r.status]));
+      })
+      .catch((err) => {
+        console.error("Initial dashboard load failed:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingInitial(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -187,7 +207,9 @@ export default function ReportList({ userId, reports: initialReports }: Props) {
         className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
       />
 
-      {!reports.length ? (
+      {loadingInitial ? (
+        <div className="text-center py-16 text-gray-400 text-sm">Carregando...</div>
+      ) : !reports.length ? (
         <div className="text-center py-16 text-gray-400">
           <p className="text-lg mb-2">Nenhum laudo gerado ainda</p>
           <Link href="/new" className="text-blue-600 text-sm hover:underline">
