@@ -69,57 +69,73 @@ export default function ReportList({ userId, initialReports }: Props) {
 
   useEffect(() => {
     const supabase = createClient();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
 
-    const channel = supabase
-      .channel(`reports:${userId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "reports", filter: `user_id=eq.${userId}` },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            const summary = rowToSummary(payload.new);
-            prevStatusRef.current.set(summary.id, summary.status);
-            setReports((prev) => (prev.some((r) => r.id === summary.id) ? prev : [summary, ...prev]));
-            return;
-          }
+    async function init() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (!session?.access_token) {
+        setRealtimeStatus("NO_SESSION");
+        return;
+      }
+      supabase.realtime.setAuth(session.access_token);
 
-          if (payload.eventType === "UPDATE") {
-            const row = payload.new as Record<string, unknown> & { deleted_at: string | null };
-            if (row.deleted_at) {
-              prevStatusRef.current.delete(row.id as string);
-              setReports((prev) => prev.filter((r) => r.id !== row.id));
+      channel = supabase
+        .channel(`reports:${userId}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "reports", filter: `user_id=eq.${userId}` },
+          (payload) => {
+            if (payload.eventType === "INSERT") {
+              const summary = rowToSummary(payload.new);
+              prevStatusRef.current.set(summary.id, summary.status);
+              setReports((prev) => (prev.some((r) => r.id === summary.id) ? prev : [summary, ...prev]));
               return;
             }
-            const summary = rowToSummary(row);
-            const previous = prevStatusRef.current.get(summary.id);
-            if (previous && previous !== "completed" && summary.status === "completed") {
-              setToast(`Laudo de ${summary.patient_name} pronto.`);
-            }
-            prevStatusRef.current.set(summary.id, summary.status);
-            setReports((prev) => {
-              const idx = prev.findIndex((r) => r.id === summary.id);
-              if (idx === -1) return prev;
-              const next = prev.slice();
-              next[idx] = summary;
-              return next;
-            });
-            return;
-          }
 
-          if (payload.eventType === "DELETE") {
-            const oldId = (payload.old as { id?: string }).id;
-            if (!oldId) return;
-            prevStatusRef.current.delete(oldId);
-            setReports((prev) => prev.filter((r) => r.id !== oldId));
+            if (payload.eventType === "UPDATE") {
+              const row = payload.new as Record<string, unknown> & { deleted_at: string | null };
+              if (row.deleted_at) {
+                prevStatusRef.current.delete(row.id as string);
+                setReports((prev) => prev.filter((r) => r.id !== row.id));
+                return;
+              }
+              const summary = rowToSummary(row);
+              const previous = prevStatusRef.current.get(summary.id);
+              if (previous && previous !== "completed" && summary.status === "completed") {
+                setToast(`Laudo de ${summary.patient_name} pronto.`);
+              }
+              prevStatusRef.current.set(summary.id, summary.status);
+              setReports((prev) => {
+                const idx = prev.findIndex((r) => r.id === summary.id);
+                if (idx === -1) return prev;
+                const next = prev.slice();
+                next[idx] = summary;
+                return next;
+              });
+              return;
+            }
+
+            if (payload.eventType === "DELETE") {
+              const oldId = (payload.old as { id?: string }).id;
+              if (!oldId) return;
+              prevStatusRef.current.delete(oldId);
+              setReports((prev) => prev.filter((r) => r.id !== oldId));
+            }
+          },
+        )
+        .subscribe((status, err) => {
+          setRealtimeStatus(status);
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            console.error(`Realtime channel ${status}`, err);
           }
-        },
-      )
-      .subscribe((status, err) => {
-        setRealtimeStatus(status);
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-          console.error(`Realtime channel ${status}`, err);
-        }
-      });
+        });
+    }
+
+    init();
 
     const {
       data: { subscription },
@@ -130,8 +146,9 @@ export default function ReportList({ userId, initialReports }: Props) {
     });
 
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [userId]);
 
