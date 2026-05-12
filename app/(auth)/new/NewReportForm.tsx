@@ -6,7 +6,6 @@ import ImageLightbox from "@/components/ImageLightbox";
 import Typeahead from "@/components/Typeahead";
 import EntityTypeahead from "@/components/EntityTypeahead";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Pet, Clinic } from "@/shared/models";
 import { SPECIES_OPTIONS, SEX_OPTIONS, MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE } from "@/shared/constants";
 import { listPets } from "@/lib/services/pets";
@@ -15,7 +14,6 @@ import { enqueueGeneration, uploadReportImages } from "@/lib/services/reports";
 import { useIsClient } from "@/lib/use-is-client";
 
 export default function NewReportPage() {
-  const router = useRouter();
   const specialty = "ultrasound_abdominal" as const;
 
   // Pets
@@ -265,8 +263,7 @@ export default function NewReportPage() {
         }
       }
 
-      router.push("/dashboard");
-      router.refresh();
+      window.location.assign("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao enviar laudo.");
       setSubmitting(false);

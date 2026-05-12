@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import ReportList, { DASHBOARD_PAGE_SIZE } from "./ReportList";
+import Loading from "./loading";
 
-export default async function DashboardPage() {
+async function DashboardContents() {
   const {
     data: { user },
   } = await (await createClient()).auth.getUser();
@@ -17,10 +19,16 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false })
     .limit(DASHBOARD_PAGE_SIZE);
 
+  return <ReportList userId={user.id} reports={reports ?? []} />;
+}
+
+export default function DashboardPage() {
   return (
     <main className="max-w-3xl mx-auto px-6 py-8">
       <h2 className="text-xl font-semibold text-gray-900 mb-6">Laudos Recentes</h2>
-      <ReportList userId={user.id} reports={reports ?? []} />
+      <Suspense fallback={<Loading />}>
+        <DashboardContents />
+      </Suspense>
     </main>
   );
 }
