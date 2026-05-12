@@ -8,11 +8,11 @@ import EntityTypeahead from "@/components/EntityTypeahead";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Pet, Clinic } from "@/shared/models";
-import { SseEvent, ApiResponse } from "@/shared/interfaces";
 import { SPECIES_OPTIONS, SEX_OPTIONS, MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE } from "@/shared/constants";
 import { listPets } from "@/lib/services/pets";
 import { listClinics, createClinic, addVet } from "@/lib/services/clinics";
-import { uploadReportImages } from "@/lib/services/reports";
+import { enqueueGeneration, uploadReportImages } from "@/lib/services/reports";
+import { useIsClient } from "@/lib/use-is-client";
 
 export default function NewReportPage() {
   const router = useRouter();
@@ -41,9 +41,8 @@ export default function NewReportPage() {
   // Exam
   const [examDate, setExamDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [rawInput, setRawInput] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [generatingStatus, setGeneratingStatus] = useState("Iniciando...");
-  const [generatingProgress, setGeneratingProgress] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [error, setError] = useState("");
 
   // Images (selected before submit)
@@ -52,7 +51,9 @@ export default function NewReportPage() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const objectUrlsRef = useRef<string[]>([]);
-  objectUrlsRef.current = objectUrls;
+  useEffect(() => {
+    objectUrlsRef.current = objectUrls;
+  }, [objectUrls]);
 
   // Revoke all remaining URLs only on unmount, not on every change.
   // removeFile() already revokes individual URLs when they're removed.
@@ -69,13 +70,14 @@ export default function NewReportPage() {
   // react-speech-recognition reads window.SpeechRecognition at module-load
   // time. Under Next.js SSR that's undefined, so the hook's first render
   // returns false even on Chrome/Safari. Defer the support check until after
-  // mount so the button doesn't paint disabled for a frame on supported
+  // hydration so the button doesn't paint disabled for a frame on supported
   // browsers.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-  const speechSupported = !mounted || browserSupportsSpeechRecognition;
+  const isClient = useIsClient();
+  const speechSupported = !isClient || browserSupportsSpeechRecognition;
+  const micPermissionError =
+    isClient && !isMicrophoneAvailable
+      ? "Permissão para microfone negada. Habilite o microfone nas configurações do navegador."
+      : "";
 
   useEffect(() => {
     if (!listening && !transcript) return;
@@ -83,12 +85,6 @@ export default function NewReportPage() {
     const live = transcript.trim();
     setRawInput(anchor + (anchor && live ? " " : "") + live);
   }, [transcript, listening]);
-
-  useEffect(() => {
-    if (mounted && !isMicrophoneAvailable) {
-      setError("Permissão para microfone negada. Habilite o microfone nas configurações do navegador.");
-    }
-  }, [mounted, isMicrophoneAvailable]);
 
   useEffect(() => {
     async function loadData() {
@@ -207,13 +203,9 @@ export default function NewReportPage() {
       setError(`${missing[1]} é obrigatório(a).`);
       return;
     }
-    setGenerating(true);
-    setGeneratingStatus("Iniciando...");
-    setGeneratingProgress(3);
+    setSubmitting(true);
 
     try {
-      const headers = { "Content-Type": "application/json" };
-
       let resolvedClinicName = clinicName;
       let resolvedVetName = responsibleVet;
       const resolvedPetId = selectedPetId || undefined;
@@ -246,7 +238,7 @@ export default function NewReportPage() {
         }
       }
 
-      const generateBody = JSON.stringify({
+      const reportId = await enqueueGeneration({
         specialty,
         rawInput,
         patientName,
@@ -264,88 +256,19 @@ export default function NewReportPage() {
         vetId: resolvedVetId,
       });
 
-      let reportId: string | null = null;
-      const maxAttempts = 3;
-
-      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      if (selectedFiles.length > 0) {
+        setUploadingImages(true);
         try {
-          const res = await fetch("/api/generate", { method: "POST", headers, body: generateBody });
-
-          if (!res.ok) {
-            let data: ApiResponse = {};
-            try {
-              data = await res.json();
-            } catch {
-              /* ignore */
-            }
-            throw new Error(data.error || "Erro ao gerar laudo.");
-          }
-
-          const reader = res.body!.getReader();
-          const decoder = new TextDecoder();
-          let buffer = "";
-          let chunkChars = 0;
-          // Average laudo body length we observe; used only to scale the progress
-          // bar — overshoot just clamps at the cap.
-          const CHUNK_TARGET_CHARS = 4000;
-
-          outer: while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const parts = buffer.split("\n\n");
-            buffer = parts.pop() ?? "";
-            for (const part of parts) {
-              const line = part.trim();
-              if (!line.startsWith("data: ")) continue;
-              const event: SseEvent = JSON.parse(line.slice(6));
-              if (event.status === "generating") {
-                setGeneratingStatus("Analisando achados...");
-                setGeneratingProgress(10);
-              } else if (event.status === "retrying") {
-                setGeneratingStatus("Tentando novamente...");
-                setGeneratingProgress(8);
-                chunkChars = 0;
-              } else if (event.status === "saving") {
-                setGeneratingStatus("Salvando laudo...");
-                setGeneratingProgress(85);
-              } else if (event.status === "chunk") {
-                chunkChars += event.text.length;
-                const pct = 10 + Math.min(70, (chunkChars / CHUNK_TARGET_CHARS) * 70);
-                setGeneratingProgress(pct);
-                if (chunkChars > CHUNK_TARGET_CHARS * 0.6) setGeneratingStatus("Validando terminologia...");
-                else if (chunkChars > CHUNK_TARGET_CHARS * 0.3) setGeneratingStatus("Estruturando laudo...");
-              } else if (event.status === "error") throw new Error(event.message || "Erro ao gerar laudo.");
-              else if (event.status === "done") {
-                reportId = event.report.id;
-                break outer;
-              }
-            }
-          }
-
-          if (reportId) break;
-          throw new Error("Resposta incompleta do servidor.");
+          await uploadReportImages(reportId, selectedFiles);
         } catch (err) {
-          if (attempt === maxAttempts) throw err;
-          await new Promise((r) => setTimeout(r, 1000 * attempt));
+          console.error("Image upload failed:", err);
         }
       }
 
-      if (!reportId) throw new Error("Erro ao gerar laudo. Tente novamente.");
-
-      if (selectedFiles.length > 0) {
-        setGeneratingStatus("Enviando imagens...");
-        setGeneratingProgress(92);
-        await uploadReportImages(reportId, selectedFiles);
-      }
-
-      setGeneratingStatus("Redirecionando...");
-      setGeneratingProgress(100);
-      router.push(`/report/${reportId}?review=1`);
+      router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao gerar laudo.");
-      setGenerating(false);
-      setGeneratingProgress(0);
+      setError(err instanceof Error ? err.message : "Erro ao enviar laudo.");
+      setSubmitting(false);
     }
   }
 
@@ -591,38 +514,25 @@ export default function NewReportPage() {
           )}
         </div>
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {(error || micPermissionError) && <p className="text-sm text-red-500">{error || micPermissionError}</p>}
 
-        {generating ? (
-          <div
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(generatingProgress)}
-            aria-label={generatingStatus}
-            className="relative w-full h-12 rounded-xl overflow-hidden bg-blue-100 select-none"
-          >
-            <div
-              className="absolute inset-y-0 left-0 bg-blue-600 transition-[width] duration-700 ease-out"
-              style={{ width: `${Math.max(3, Math.min(100, generatingProgress))}%` }}
-            />
-            <div className="relative h-full flex items-center justify-center gap-2 text-sm font-semibold text-white mix-blend-difference">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {submitting ? (
+            <>
               <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              <span>{generatingStatus}</span>
-              <span className="tabular-nums opacity-80">{Math.round(generatingProgress)}%</span>
-            </div>
-          </div>
-        ) : (
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-blue-700 flex items-center justify-center"
-          >
-            Gerar Laudo
-          </button>
-        )}
+              <span>{uploadingImages ? "Enviando imagens..." : "Enviando..."}</span>
+            </>
+          ) : (
+            "Gerar Laudo"
+          )}
+        </button>
       </form>
     </main>
   );

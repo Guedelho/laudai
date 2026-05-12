@@ -87,23 +87,14 @@ export interface ImagesResponse extends ApiResponse {
   images: ReportImage[];
 }
 
-// ─── SSE events ──────────────────────────────────────────────────────────────
-
-export type SseEvent =
-  | { status: "generating" }
-  | { status: "retrying" }
-  | { status: "saving" }
-  | { status: "chunk"; text: string }
-  | { status: "error"; message: string }
-  | { status: "done"; report: { id: string } };
-
 // ─── Generation ──────────────────────────────────────────────────────────────
+
+export interface GenerateResponse extends ApiResponse {
+  reportId?: string;
+}
 
 export interface GenerateParams extends PatientFields {
   rawInput: string;
-  onStatus?: (status: "generating" | "retrying") => void;
-  onChunk?: (text: string) => void;
-  signal?: AbortSignal;
 }
 
 // ─── PDF ─────────────────────────────────────────────────────────────────────

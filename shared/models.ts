@@ -72,6 +72,15 @@ export interface Clinic {
   clinic_vets: ClinicVet[];
 }
 
+export const REPORT_STATUSES = {
+  pending: "pending",
+  generating: "generating",
+  completed: "completed",
+  failed: "failed",
+} as const;
+
+export type ReportStatus = (typeof REPORT_STATUSES)[keyof typeof REPORT_STATUSES];
+
 export interface Report {
   id: string;
   user_id: string;
@@ -86,12 +95,16 @@ export interface Report {
   clinic_name: string;
   responsible_vet: string;
   raw_input: string;
-  generated_content: string;
-  edited_content: string;
+  generated_content: string | null;
+  edited_content: string | null;
   exam_date: string;
   pet_id: string | null;
   clinic_id: string | null;
   vet_id: string | null;
+  status: ReportStatus;
+  error_message: string | null;
+  generation_started_at: string | null;
+  generation_completed_at: string | null;
   created_at: string;
   updated_at?: string;
 }

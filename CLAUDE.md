@@ -13,7 +13,8 @@
 ## Stack
 
 - **Next.js 16 App Router** — Tailwind 4 (PostCSS-based, no `tailwind.config.*`), Supabase SSR via `@supabase/ssr`
-- **AI**: `lib/report/generate.ts` makes a single Gemini call per report (`gemini-3-flash-preview`) with a combined system prompt (sections + conclusion + verifier constraints). Streaming via `generateContentStream` with `responseMimeType: "application/json"`. Retry with exponential backoff on transient errors. Generation uses `temperature: 0`. Trechos derivados dos achados do usuário são marcados pelo modelo com `**...**`; `splitBoldSegments` (em `lib/utils.ts`) converte esses marcadores em runs em negrito tanto no PDF quanto na visualização.
+- **AI**: `lib/report/generate.ts` makes a single Gemini call per report (`gemini-3-flash-preview`) with a combined system prompt (sections + conclusion + verifier constraints). Streaming via `generateContentStream` with `responseMimeType: "application/json"` — chunks are concatenated server-side; the client never sees the stream. Retry with exponential backoff on transient errors (429/500/503/ECONNRESET). Generation uses `temperature: 0`. Trechos derivados dos achados do usuário são marcados pelo modelo com `**...**`; `splitBoldSegments` (em `lib/utils.ts`) converte esses marcadores em runs em negrito tanto no PDF quanto na visualização.
+- **Async generation**: laudo generation runs as a background task. `POST /api/generate` validates input, inserts a `reports` row with `status='pending'`, schedules the Gemini call via Next.js `after()`, and returns `{ reportId }` immediately. `lib/report/worker.ts` (`runGeneration`) flips the row through `generating → completed | failed` and calls `revalidateTag(reportCacheTag(id), "max")` on completion. Status enum lives in `REPORT_STATUSES` (`shared/models.ts`) — write through it, never inline strings. The dashboard subscribes to Supabase Realtime on the `reports` table (filter `user_id=eq.<id>`) to live-update rows and fire a completion toast. Failed laudos retry via `POST /api/reports/[id]/regenerate` (rate-limited; only allowed when `status='failed'`). A 15-minute Vercel cron (`/api/internal/sweep-stale-laudos`, gated by `Bearer ${CRON_SECRET}`) marks rows stuck in `generating` for more than 10 minutes as `failed`.
 - **Speech-to-text**: real-time via the browser Web Speech API (wrapped by `react-speech-recognition`). The mic button and live transcript live in `NewReportForm.tsx`. Firefox falls through to a disabled state with a tooltip; there is no server-side transcription endpoint.
 - **PDF**: `lib/report/pdf.ts` (pdfmake). Fonts fetched from CDN and cached module-level. Generated PDFs are cached in the `report-pdfs` bucket — cleared on report edit or image changes.
 - **Formatting**: Prettier with pre-commit hook via lint-staged. Run `npm run format` to format all files.
@@ -40,7 +41,7 @@ All authenticated pages live inside `app/(auth)/`. The route group layout handle
 - FK ownership: when accepting `petId` / `clinicId` / `vetId` from a client body, run them through `resolveOwnedFks` (`@/lib/supabase/db`) before persisting — drops any id that doesn't belong to the caller.
 - Image validation: Server-side via `sharp` magic-byte detection (not `file.type`).
 - Errors: Log with `console.error`, return generic Portuguese message to client. Never leak internal details.
-- Cache invalidation in route handlers: `revalidateTag(\`report-${id}\`, "max")`(stale-while-revalidate).`updateTag` is reserved for Server Actions and is not used here.
+- Cache invalidation in route handlers: `revalidateTag(reportCacheTag(id), "max")` (stale-while-revalidate). Use the `reportCacheTag` helper from `@/lib/utils` — never hand-build the `report-${id}` string. `updateTag` is reserved for Server Actions and is not used here.
 - Profile mutations call `invalidateUserPdfCache(admin, userId)` to clear cached PDFs (logo/signature/name/CRMV are baked into the PDF).
 - Signed-URL TTLs are centralised in `SIGNED_URL_TTL` (`shared/constants.ts`): `display` (browsing), `serverFetch` (cached PDF re-fetch), `oneShot` (single-request asset hydration).
 
@@ -52,8 +53,10 @@ All authenticated pages live inside `app/(auth)/`. The route group layout handle
 
 ## Data model
 
-- `generated_content` — immutable LLM output, set once on creation, never updated.
-- `edited_content` — always the latest version. Starts equal to `generated_content`, updated on vet edits. All reads use `edited_content`.
+- `status` — `pending | generating | completed | failed`. Set by `/api/generate` (`pending`), the worker (`generating` → terminal), `/api/reports/[id]/regenerate` (back to `pending`), or the stale-job sweeper (`failed`). Pre-existing rows from before the async migration default to `completed`.
+- `generated_content` — immutable LLM output, populated by the background worker. `null` until `status='completed'`. Set once, never updated.
+- `edited_content` — always the latest version. Starts equal to `generated_content` (set in the same worker write), updated on vet edits. All reads use `edited_content`. `null` until `status='completed'`.
+- `error_message`, `generation_started_at`, `generation_completed_at` — populated by the worker. `error_message` is shown verbatim in the dashboard retry row.
 - `raw_input` — original vet findings, immutable.
 - Reports remain editable after generation via the "Editar" button; the PATCH route accepts updates with no immutability gate.
 - Reports are historical documents. All patient, clinic, and vet data is stored as snapshot text on the report row — display always reads from these snapshot columns, never from joined tables. `reports` also has silent reference FK columns (`pet_id`, `clinic_id`, `vet_id`) that are stored at generation time and persisted on save, used exclusively to write updates back to the source entities (`pets`, `clinics`, `clinic_vets`) on each save — never for display. Imprimir saves the snapshot, writes back to source entities via the stored IDs, opens the PDF in a new tab, and switches back to view mode; the user can re-enter edit mode any time via "Editar".
@@ -65,7 +68,8 @@ All authenticated pages live inside `app/(auth)/`. The route group layout handle
 
 - Shared field sets: `PatientFields`, `ReportFields` in `shared/models.ts` — reuse via `extends` instead of repeating fields.
 - API request bodies: `GenerateRequest`, `PetRequest`, `UpdateReportRequest`, `UpdateProfileRequest` — always type `req.json()`.
-- SSE events: `SseEvent` discriminated union — type all streaming event parsing.
+- API response bodies: `GenerateResponse` (`{ reportId? }`) and the other `*Response` types in `shared/interfaces.ts`. `ApiResponse` is the base error-bearing shape.
+- Status: write via `REPORT_STATUSES.<x>` (the const object in `shared/models.ts`), read via the `ReportStatus` union.
 - Required field validation: use a `required` array + loop, not repeated if/return blocks.
 
 ## Rules

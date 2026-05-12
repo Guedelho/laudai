@@ -1,6 +1,16 @@
 import { ReportImage } from "@/shared/models";
-import { UpdateReportRequest, ImagesResponse } from "@/shared/interfaces";
+import { GenerateRequest, GenerateResponse, UpdateReportRequest, ImagesResponse } from "@/shared/interfaces";
 import { fetchJson, fetchOk, jsonBody, formBody } from "@/lib/fetch";
+
+export async function enqueueGeneration(body: GenerateRequest): Promise<string> {
+  const data = await fetchJson<GenerateResponse>("/api/generate", { method: "POST", ...jsonBody(body) });
+  if (!data.reportId) throw new Error("Resposta inválida do servidor.");
+  return data.reportId;
+}
+
+export async function regenerateReport(id: string): Promise<void> {
+  await fetchOk(`/api/reports/${id}/regenerate`, { method: "POST" });
+}
 
 export async function updateReport(id: string, body: UpdateReportRequest): Promise<void> {
   await fetchOk(`/api/reports/${id}`, { method: "PATCH", ...jsonBody(body) });

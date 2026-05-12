@@ -110,7 +110,7 @@ create table if not exists reports (
   clinic_name       text,
   responsible_vet   text,
   raw_input         text not null,
-  generated_content text not null,
+  generated_content text,
   edited_content    text,
   exam_date         date,
   pdf_storage_path  text,
@@ -118,6 +118,11 @@ create table if not exists reports (
   pet_id            uuid references pets(id) on delete set null,
   clinic_id         uuid references clinics(id) on delete set null,
   vet_id            uuid references clinic_vets(id) on delete set null,
+  status                  text not null default 'completed'
+                          check (status in ('pending','generating','completed','failed')),
+  error_message           text,
+  generation_started_at   timestamptz,
+  generation_completed_at timestamptz,
   created_at        timestamptz default now() not null,
   updated_at        timestamptz,
 
@@ -141,6 +146,38 @@ create policy "Users can manage their own reports"
   on reports for all to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
+
+-- Idempotent upgrades for existing alpha-test rows.
+-- Existing reports keep generated_content; status defaults to 'completed'
+-- so they appear as ready in the dashboard.
+alter table reports add column if not exists
+  status text not null default 'completed';
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'reports_status_check') then
+    alter table reports add constraint reports_status_check
+      check (status in ('pending','generating','completed','failed'));
+  end if;
+end $$;
+alter table reports add column if not exists error_message text;
+alter table reports add column if not exists generation_started_at timestamptz;
+alter table reports add column if not exists generation_completed_at timestamptz;
+alter table reports alter column generated_content drop not null;
+
+-- Enable Realtime so the dashboard can subscribe to status changes.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'reports'
+  ) then
+    alter publication supabase_realtime add table reports;
+  end if;
+end $$;
+
+-- Index for dashboard "in-progress" filter and stale-job sweep.
+create index if not exists reports_status_user_idx
+  on reports(user_id, status) where status in ('pending','generating');
 
 -- ─── report_images ──────────────────────────────────────────────────────────
 

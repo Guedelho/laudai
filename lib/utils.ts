@@ -5,6 +5,10 @@ export function sexLabel(value: string): string {
   return SEX_OPTIONS.find((o) => o.value === value)?.label ?? value;
 }
 
+export function reportCacheTag(id: string): string {
+  return `report-${id}`;
+}
+
 export function parseReportContent(content: string): ParsedReport {
   const parsed = JSON.parse(content.trim());
   if (parsed && Array.isArray(parsed.sections)) {

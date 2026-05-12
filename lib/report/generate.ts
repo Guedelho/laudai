@@ -19,7 +19,7 @@ function isRetryable(err: unknown): boolean {
   return false;
 }
 
-async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2, onRetry?: () => void): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> {
   let lastErr: unknown;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -27,7 +27,6 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2, onRetry?: () =
     } catch (err) {
       if (!isRetryable(err) || attempt === maxRetries) throw err;
       lastErr = err;
-      onRetry?.();
       await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
     }
   }
@@ -35,7 +34,7 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2, onRetry?: () =
 }
 
 export async function generateReport(params: GenerateParams): Promise<string> {
-  const { rawInput, patientName, species, breed, age, sex, neutered, ownerName, onStatus, onChunk, signal } = params;
+  const { rawInput, patientName, species, breed, age, sex, neutered, ownerName } = params;
 
   const resolvedDefaults = buildDefaults(sex, neutered);
 
@@ -45,29 +44,20 @@ export async function generateReport(params: GenerateParams): Promise<string> {
     generationConfig: { temperature: 0, responseMimeType: "application/json" },
   });
 
-  onStatus?.("generating");
-
   const userMessage =
     `Achados do exame:\n${rawInput}\n\n` +
     `Dados do paciente: ${patientName}, ${species}, ${breed}, ${age}, ` +
     `${sex === "M" ? "Macho" : "Fêmea"}, ${neutered ? "castrado(a)" : "não castrado(a)"}, ` +
     `responsável: ${ownerName}.\n\nGere o laudo completo.`;
 
-  const raw = await withRetry(
-    async () => {
-      const result = await model.generateContentStream(userMessage);
-      let text = "";
-      for await (const chunk of result.stream) {
-        if (signal?.aborted) throw new Error("aborted");
-        const chunkText = chunk.text();
-        text += chunkText;
-        onChunk?.(chunkText);
-      }
-      return text;
-    },
-    2,
-    () => onStatus?.("retrying"),
-  );
+  const raw = await withRetry(async () => {
+    const result = await model.generateContentStream(userMessage);
+    let text = "";
+    for await (const chunk of result.stream) {
+      text += chunk.text();
+    }
+    return text;
+  });
 
   try {
     JSON.parse(raw.trim());

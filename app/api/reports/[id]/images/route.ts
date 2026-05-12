@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
+import { reportCacheTag } from "@/lib/utils";
 import { createAdmin } from "@/lib/supabase/admin";
 import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE, SIGNED_URL_TTL } from "@/shared/constants";
 import { withApiHandler } from "@/lib/api-handler";
@@ -130,7 +131,7 @@ export const POST = withApiHandler<{ id: string }>({}, async ({ userId, req, par
     }),
   );
 
-  revalidateTag(`report-${id}`, "max");
+  revalidateTag(reportCacheTag(id), "max");
   await admin.from("reports").update({ pdf_storage_path: null }).eq("id", id).eq("user_id", userId);
   return NextResponse.json({ images: results });
 });

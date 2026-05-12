@@ -25,7 +25,7 @@ export function useReportEditor(report: Report, onAfterImprimir: () => void) {
   const [printing, setPrinting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [editedParsed, setEditedParsed] = useState<ParsedReport>(parseReportContent(report.edited_content));
+  const [editedParsed, setEditedParsed] = useState<ParsedReport>(parseReportContent(report.edited_content!));
   const [fields, setFields] = useState<ReportFieldsState>({
     patientName: report.patient_name,
     species: report.species,

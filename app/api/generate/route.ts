@@ -1,46 +1,14 @@
+import { after } from "next/server";
 import { NextResponse } from "next/server";
-import { generateReport } from "@/lib/report/generate";
+import { runGeneration } from "@/lib/report/worker";
 import { getProfile } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { GenerateRequest } from "@/shared/interfaces";
 import { findOrCreatePet, resolveOwnedFks } from "@/lib/supabase/db";
 import { withApiHandler } from "@/lib/api-handler";
+import { REPORT_STATUSES } from "@/shared/models";
 
-export const maxDuration = 180;
-
-function sseStream(
-  handler: (send: (data: object) => void, signal: AbortSignal) => Promise<void>,
-  signal: AbortSignal,
-): NextResponse {
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controller) {
-      const send = (data: object) => {
-        if (signal.aborted) return;
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-      };
-      try {
-        await handler(send, signal);
-      } finally {
-        try {
-          controller.close();
-        } catch {
-          /* already closed by client abort */
-        }
-      }
-    },
-    cancel() {
-      /* Client disconnected — handler watches `signal` and exits early. */
-    },
-  });
-  return new NextResponse(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
-}
+export const maxDuration = 300;
 
 export const POST = withApiHandler({ rateLimit: { name: "generate", maxPerMinute: 5 } }, async ({ userId, req }) => {
   const [profile, body] = await Promise.all([getProfile(userId), req.json() as Promise<GenerateRequest>]);
@@ -84,78 +52,59 @@ export const POST = withApiHandler({ rateLimit: { name: "generate", maxPerMinute
   const supabase = createAdmin();
   const ownedFks = await resolveOwnedFks(supabase, userId, { petId, clinicId, vetId });
 
-  return sseStream(async (send, signal) => {
-    let generatedContent: string;
-    let resolvedPetId: string | null = ownedFks.petId;
-    try {
-      const [content, pet] = await Promise.all([
-        generateReport({
-          rawInput,
-          patientName,
-          species,
-          breed,
-          age,
-          sex,
-          neutered,
-          ownerName,
-          signal,
-          onStatus: (status) => send({ status }),
-          onChunk: (text) => send({ status: "chunk", text }),
-        }),
-        !resolvedPetId
-          ? findOrCreatePet(supabase, userId, patientName.trim(), ownerName.trim(), {
-              species,
-              breed,
-              age,
-              sex,
-              neutered,
-            })
-          : Promise.resolve(null),
-      ]);
-      generatedContent = content;
-      if (pet?.id) resolvedPetId = pet.id;
-    } catch (err) {
-      if (signal.aborted) return;
-      console.error("Gemini generation error:", err);
-      send({ status: "error", message: "Erro ao gerar laudo. Tente novamente." });
-      return;
-    }
+  let resolvedPetId: string | null = ownedFks.petId;
+  if (!resolvedPetId) {
+    const pet = await findOrCreatePet(supabase, userId, patientName.trim(), ownerName.trim(), {
+      species,
+      breed,
+      age,
+      sex,
+      neutered,
+    });
+    resolvedPetId = pet?.id ?? null;
+  }
 
-    if (signal.aborted) return;
-    send({ status: "saving" });
+  const { data: report, error } = await supabase
+    .from("reports")
+    .insert({
+      user_id: userId,
+      status: REPORT_STATUSES.pending,
+      specialty,
+      patient_name: patientName,
+      species,
+      breed,
+      age,
+      owner_name: ownerName,
+      raw_input: rawInput,
+      sex,
+      neutered,
+      clinic_name: clinicName,
+      responsible_vet: responsibleVet,
+      exam_date: examDate,
+      pet_id: resolvedPetId,
+      clinic_id: ownedFks.clinicId,
+      vet_id: ownedFks.vetId,
+    })
+    .select("id")
+    .single();
 
-    const { data: report, error } = await supabase
-      .from("reports")
-      .insert({
-        user_id: userId,
-        specialty,
-        patient_name: patientName,
-        species,
-        breed,
-        age,
-        owner_name: ownerName,
-        raw_input: rawInput,
-        generated_content: generatedContent,
-        edited_content: generatedContent,
-        sex,
-        neutered,
-        clinic_name: clinicName,
-        responsible_vet: responsibleVet,
-        exam_date: examDate,
-        pet_id: resolvedPetId,
-        clinic_id: ownedFks.clinicId,
-        vet_id: ownedFks.vetId,
-      })
-      .select()
-      .single();
+  if (error) {
+    console.error("DB insert error:", error);
+    return NextResponse.json({ error: "Erro ao salvar laudo." }, { status: 500 });
+  }
 
-    if (signal.aborted) return;
-    if (error) {
-      console.error("DB insert error:", error);
-      send({ status: "error", message: "Erro ao salvar laudo." });
-      return;
-    }
+  after(() =>
+    runGeneration(supabase, report.id, userId, {
+      rawInput,
+      patientName,
+      species,
+      breed,
+      age,
+      sex,
+      neutered,
+      ownerName,
+    }),
+  );
 
-    send({ status: "done", report: { id: report.id } });
-  }, req.signal);
+  return NextResponse.json({ reportId: report.id });
 });

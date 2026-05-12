@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { createAdmin } from "@/lib/supabase/admin";
 import { withApiHandler } from "@/lib/api-handler";
+import { reportCacheTag } from "@/lib/utils";
 
 const BUCKET = "report-images";
 
@@ -28,6 +29,6 @@ export const DELETE = withApiHandler<{ id: string; imageId: string }>({}, async 
   }
 
   await admin.from("reports").update({ pdf_storage_path: null }).eq("id", id).eq("user_id", userId);
-  revalidateTag(`report-${id}`, "max");
+  revalidateTag(reportCacheTag(id), "max");
   return NextResponse.json({ success: true });
 });
