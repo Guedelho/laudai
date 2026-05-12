@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
-import ReportList from "./ReportList";
+import ReportList, { DASHBOARD_PAGE_SIZE } from "./ReportList";
 
 export default async function DashboardPage() {
   const {
@@ -14,7 +14,8 @@ export default async function DashboardPage() {
     .select("id, patient_name, owner_name, clinic_name, specialty, created_at, exam_date, status, error_message")
     .eq("user_id", user.id)
     .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(DASHBOARD_PAGE_SIZE);
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-8">

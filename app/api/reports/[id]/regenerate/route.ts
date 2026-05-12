@@ -1,4 +1,5 @@
 import { after, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { withApiHandler } from "@/lib/api-handler";
 import { createAdmin } from "@/lib/supabase/admin";
 import { runGeneration } from "@/lib/report/worker";
@@ -31,6 +32,8 @@ export const POST = withApiHandler<{ id: string }>(
       .update({ status: REPORT_STATUSES.pending, error_message: null, generation_completed_at: null })
       .eq("id", report.id)
       .eq("user_id", userId);
+
+    revalidatePath("/dashboard");
 
     after(() =>
       runGeneration(supabase, report.id, userId, {

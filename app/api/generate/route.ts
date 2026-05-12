@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { runGeneration } from "@/lib/report/worker";
 import { getProfile } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
@@ -92,6 +93,8 @@ export const POST = withApiHandler({ rateLimit: { name: "generate", maxPerMinute
     console.error("DB insert error:", error);
     return NextResponse.json({ error: "Erro ao salvar laudo." }, { status: 500 });
   }
+
+  revalidatePath("/dashboard");
 
   after(() =>
     runGeneration(supabase, report.id, userId, {

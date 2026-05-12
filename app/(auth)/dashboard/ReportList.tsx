@@ -1,35 +1,42 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { SPECIALTIES } from "@/lib/report/templates";
-import { Specialty, ReportStatus } from "@/shared/models";
+import { ReportStatus, ReportSummary } from "@/shared/models";
 import { createClient } from "@/lib/supabase/client";
-import { regenerateReport } from "@/lib/services/reports";
+import { listReports, regenerateReport } from "@/lib/services/reports";
 
-interface ReportSummary {
-  id: string;
-  patient_name: string;
-  owner_name: string;
-  clinic_name: string;
-  specialty: Specialty;
-  created_at: string;
-  exam_date?: string;
-  status: ReportStatus;
-  error_message: string | null;
-}
+export const DASHBOARD_PAGE_SIZE = 5;
 
 interface Props {
   userId: string;
   reports: ReportSummary[];
 }
 
+function rowToSummary(row: Record<string, unknown>): ReportSummary {
+  return {
+    id: row.id as string,
+    patient_name: row.patient_name as string,
+    owner_name: row.owner_name as string,
+    clinic_name: row.clinic_name as string,
+    specialty: row.specialty as ReportSummary["specialty"],
+    created_at: row.created_at as string,
+    exam_date: row.exam_date as string | undefined,
+    status: row.status as ReportStatus,
+    error_message: (row.error_message ?? null) as string | null,
+  };
+}
+
 export default function ReportList({ userId, reports: initialReports }: Props) {
   const [query, setQuery] = useState("");
   const [reports, setReports] = useState<ReportSummary[]>(initialReports);
+  const [hasMore, setHasMore] = useState(initialReports.length === DASHBOARD_PAGE_SIZE);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const prevStatusRef = useRef<Map<string, ReportStatus>>(new Map(initialReports.map((r) => [r.id, r.status])));
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -39,48 +46,49 @@ export default function ReportList({ userId, reports: initialReports }: Props) {
         "postgres_changes",
         { event: "*", schema: "public", table: "reports", filter: `user_id=eq.${userId}` },
         (payload) => {
+          if (payload.eventType === "INSERT") {
+            const summary = rowToSummary(payload.new);
+            prevStatusRef.current.set(summary.id, summary.status);
+            setReports((prev) => (prev.some((r) => r.id === summary.id) ? prev : [summary, ...prev]));
+            return;
+          }
+
+          if (payload.eventType === "UPDATE") {
+            const row = payload.new as Record<string, unknown> & { deleted_at: string | null };
+            if (row.deleted_at) {
+              prevStatusRef.current.delete(row.id as string);
+              setReports((prev) => prev.filter((r) => r.id !== row.id));
+              return;
+            }
+            const summary = rowToSummary(row);
+            const previous = prevStatusRef.current.get(summary.id);
+            if (previous && previous !== "completed" && summary.status === "completed") {
+              setToast(`Laudo de ${summary.patient_name} pronto.`);
+            }
+            prevStatusRef.current.set(summary.id, summary.status);
+            setReports((prev) => {
+              const idx = prev.findIndex((r) => r.id === summary.id);
+              if (idx === -1) return prev;
+              const next = prev.slice();
+              next[idx] = summary;
+              return next;
+            });
+            return;
+          }
+
           if (payload.eventType === "DELETE") {
-            const oldRow = payload.old as { id: string };
-            setReports((prev) => prev.filter((r) => r.id !== oldRow.id));
-            prevStatusRef.current.delete(oldRow.id);
-            return;
+            const oldId = (payload.old as { id?: string }).id;
+            if (!oldId) return;
+            prevStatusRef.current.delete(oldId);
+            setReports((prev) => prev.filter((r) => r.id !== oldId));
           }
-
-          const row = payload.new as ReportSummary & { deleted_at: string | null };
-          if (row.deleted_at) {
-            setReports((prev) => prev.filter((r) => r.id !== row.id));
-            prevStatusRef.current.delete(row.id);
-            return;
-          }
-
-          const summary: ReportSummary = {
-            id: row.id,
-            patient_name: row.patient_name,
-            owner_name: row.owner_name,
-            clinic_name: row.clinic_name,
-            specialty: row.specialty,
-            created_at: row.created_at,
-            exam_date: row.exam_date,
-            status: row.status,
-            error_message: row.error_message,
-          };
-
-          const previous = prevStatusRef.current.get(row.id);
-          if (previous && previous !== "completed" && row.status === "completed") {
-            setToast(`Laudo de ${row.patient_name} pronto.`);
-          }
-          prevStatusRef.current.set(row.id, row.status);
-
-          setReports((prev) => {
-            const idx = prev.findIndex((r) => r.id === row.id);
-            if (idx === -1) return [summary, ...prev];
-            const next = prev.slice();
-            next[idx] = summary;
-            return next;
-          });
         },
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          console.error(`Realtime channel ${status}`, err);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -92,6 +100,44 @@ export default function ReportList({ userId, reports: initialReports }: Props) {
     const t = setTimeout(() => setToast(null), 4500);
     return () => clearTimeout(t);
   }, [toast]);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || reports.length === 0) return;
+    setLoadingMore(true);
+    try {
+      const last = reports[reports.length - 1];
+      const more = await listReports(DASHBOARD_PAGE_SIZE, last.created_at);
+      setReports((prev) => {
+        const seen = new Set(prev.map((r) => r.id));
+        const merged = [...prev];
+        for (const row of more) {
+          if (!seen.has(row.id)) {
+            merged.push(row);
+            prevStatusRef.current.set(row.id, row.status);
+          }
+        }
+        return merged;
+      });
+      if (more.length < DASHBOARD_PAGE_SIZE) setHasMore(false);
+    } catch (err) {
+      console.error("Load more failed:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, hasMore, reports]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasMore || query.trim()) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadMore();
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore, query]);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return reports;
@@ -146,6 +192,11 @@ export default function ReportList({ userId, reports: initialReports }: Props) {
               onRetry={() => handleRetry(report.id)}
             />
           ))}
+          {!query.trim() && hasMore && (
+            <div ref={sentinelRef} className="py-4 text-center text-xs text-gray-400">
+              {loadingMore ? "Carregando..." : "Role para carregar mais"}
+            </div>
+          )}
         </div>
       )}
 

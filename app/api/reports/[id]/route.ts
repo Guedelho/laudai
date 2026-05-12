@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { reportCacheTag } from "@/lib/utils";
 import { createAdmin } from "@/lib/supabase/admin";
 import { UpdateReportRequest } from "@/shared/interfaces";
@@ -63,6 +63,7 @@ export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, pa
   );
 
   revalidateTag(reportCacheTag(id), "max");
+  revalidatePath("/dashboard");
   return NextResponse.json({ ok: true });
 });
 
@@ -82,5 +83,6 @@ export const DELETE = withApiHandler<{ id: string }>({}, async ({ userId, params
   }
 
   revalidateTag(reportCacheTag(id), "max");
+  revalidatePath("/dashboard");
   return NextResponse.json({ ok: true });
 });

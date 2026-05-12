@@ -1,6 +1,19 @@
-import { ReportImage } from "@/shared/models";
-import { GenerateRequest, GenerateResponse, UpdateReportRequest, ImagesResponse } from "@/shared/interfaces";
+import { ReportImage, ReportSummary } from "@/shared/models";
+import {
+  GenerateRequest,
+  GenerateResponse,
+  ListReportsResponse,
+  UpdateReportRequest,
+  ImagesResponse,
+} from "@/shared/interfaces";
 import { fetchJson, fetchOk, jsonBody, formBody } from "@/lib/fetch";
+
+export async function listReports(limit: number, before?: string): Promise<ReportSummary[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (before) params.set("before", before);
+  const data = await fetchJson<ListReportsResponse>(`/api/reports?${params.toString()}`);
+  return data.reports ?? [];
+}
 
 export async function enqueueGeneration(body: GenerateRequest): Promise<string> {
   const data = await fetchJson<GenerateResponse>("/api/generate", { method: "POST", ...jsonBody(body) });

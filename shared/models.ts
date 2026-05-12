@@ -81,6 +81,18 @@ export const REPORT_STATUSES = {
 
 export type ReportStatus = (typeof REPORT_STATUSES)[keyof typeof REPORT_STATUSES];
 
+export interface ReportSummary {
+  id: string;
+  patient_name: string;
+  owner_name: string;
+  clinic_name: string;
+  specialty: Specialty;
+  created_at: string;
+  exam_date?: string;
+  status: ReportStatus;
+  error_message: string | null;
+}
+
 export interface Report {
   id: string;
   user_id: string;

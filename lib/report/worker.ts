@@ -1,6 +1,6 @@
 import "server-only";
 
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { generateReport } from "@/lib/report/generate";
 import { createAdmin } from "@/lib/supabase/admin";
 import { reportCacheTag } from "@/lib/utils";
@@ -54,4 +54,5 @@ export async function runGeneration(
   }
 
   revalidateTag(reportCacheTag(reportId), "max");
+  revalidatePath("/dashboard");
 }

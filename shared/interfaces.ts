@@ -6,6 +6,7 @@ import type {
   Clinic,
   ClinicVet,
   ReportImage,
+  ReportSummary,
   Specialty,
 } from "./models";
 // ─── Request types ───────────────────────────────────────────────────────────
@@ -85,6 +86,10 @@ export interface VetResponse extends ApiResponse {
 
 export interface ImagesResponse extends ApiResponse {
   images: ReportImage[];
+}
+
+export interface ListReportsResponse extends ApiResponse {
+  reports?: ReportSummary[];
 }
 
 // ─── Generation ──────────────────────────────────────────────────────────────
