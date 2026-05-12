@@ -5,9 +5,10 @@ import Link from "next/link";
 import { SPECIALTIES } from "@/lib/report/templates";
 import { ReportStatus, ReportSummary } from "@/shared/models";
 import { DASHBOARD_PAGE_SIZE } from "@/shared/constants";
-import { createClient } from "@/lib/supabase/client";
 import { listReports, regenerateReport } from "@/lib/services/reports";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
+
+const POLL_INTERVAL_MS = 3000;
 
 interface Props {
   userId: string;
@@ -85,78 +86,36 @@ export default function ReportList({ userId }: Props) {
     return () => observer.disconnect();
   }, []);
 
+  const hasInProgress = reports.some((r) => r.status === "pending" || r.status === "generating");
+
   useEffect(() => {
-    const supabase = createClient();
-    let channel: ReturnType<typeof supabase.channel> | null = null;
+    if (!hasInProgress) return;
     let cancelled = false;
 
-    function handleChange(payload: {
-      eventType: "INSERT" | "UPDATE" | "DELETE";
-      new: Record<string, unknown>;
-      old: Record<string, unknown>;
-    }) {
-      console.log("[realtime] change", payload.eventType, payload.new ?? payload.old);
-      if (payload.eventType === "INSERT") {
-        const summary = rowToSummary(payload.new);
-        prevStatusRef.current.set(summary.id, summary.status);
-        setReports((prev) => (prev.some((r) => r.id === summary.id) ? prev : [summary, ...prev]));
-        return;
-      }
-
-      if (payload.eventType === "UPDATE") {
-        const row = payload.new as Record<string, unknown> & { deleted_at: string | null };
-        if (row.deleted_at) {
-          prevStatusRef.current.delete(row.id as string);
-          setReports((prev) => prev.filter((r) => r.id !== row.id));
-          return;
+    const tick = async () => {
+      try {
+        const fresh = await listReports(DASHBOARD_PAGE_SIZE);
+        if (cancelled) return;
+        const freshById = new Map(fresh.map((r) => [r.id, r]));
+        for (const r of fresh) {
+          const prev = prevStatusRef.current.get(r.id);
+          if (prev && prev !== "completed" && r.status === "completed") {
+            setToast(`Laudo de ${r.patient_name} pronto.`);
+          }
+          prevStatusRef.current.set(r.id, r.status);
         }
-        const summary = rowToSummary(row);
-        const previous = prevStatusRef.current.get(summary.id);
-        if (previous && previous !== "completed" && summary.status === "completed") {
-          setToast(`Laudo de ${summary.patient_name} pronto.`);
-        }
-        prevStatusRef.current.set(summary.id, summary.status);
-        setReports((prev) => {
-          const idx = prev.findIndex((r) => r.id === summary.id);
-          if (idx === -1) return prev;
-          const next = prev.slice();
-          next[idx] = summary;
-          return next;
-        });
-        return;
+        setReports((prev) => prev.map((r) => freshById.get(r.id) ?? r));
+      } catch (err) {
+        console.error("Poll failed:", err);
       }
+    };
 
-      if (payload.eventType === "DELETE") {
-        const oldId = payload.old?.id as string | undefined;
-        if (!oldId) return;
-        prevStatusRef.current.delete(oldId);
-        setReports((prev) => prev.filter((r) => r.id !== oldId));
-      }
-    }
-
-    async function init() {
-      await supabase.realtime.setAuth();
-      if (cancelled) return;
-
-      channel = supabase
-        .channel(`reports:${userId}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "reports", filter: `user_id=eq.${userId}` },
-          handleChange,
-        )
-        .subscribe((status, err) => {
-          console.log("[realtime] subscribe status", status, err);
-        });
-    }
-
-    init();
-
+    const interval = setInterval(tick, POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
-      if (channel) supabase.removeChannel(channel);
+      clearInterval(interval);
     };
-  }, [userId]);
+  }, [hasInProgress]);
 
   useEffect(() => {
     if (!toast) return;
