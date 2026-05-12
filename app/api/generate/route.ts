@@ -7,11 +7,12 @@ import { createAdmin } from "@/lib/supabase/admin";
 import { GenerateRequest } from "@/shared/interfaces";
 import { findOrCreatePet, resolveOwnedFks } from "@/lib/supabase/db";
 import { withApiHandler } from "@/lib/api-handler";
+import { RATE_LIMITS } from "@/shared/constants";
 import { REPORT_STATUSES } from "@/shared/models";
 
 export const maxDuration = 300;
 
-export const POST = withApiHandler({ rateLimit: { name: "generate", maxPerMinute: 5 } }, async ({ userId, req }) => {
+export const POST = withApiHandler(RATE_LIMITS.generate, async ({ userId, req }) => {
   const [profile, body] = await Promise.all([getProfile(userId), req.json() as Promise<GenerateRequest>]);
 
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado. Complete seu cadastro." }, { status: 400 });

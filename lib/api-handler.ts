@@ -12,10 +12,13 @@ type Handler<P> = (ctx: { userId: string; req: NextRequest; params: P }) => Prom
 interface Options {
   /** Skip auth check (defaults to false). */
   publicAccess?: boolean;
+  /** Per-user rate limit. Defaults to DEFAULT_RATE_LIMIT for authenticated routes. */
   rateLimit?: RateLimitOpts;
   /** Default: enforce same-origin on non-GET/HEAD requests. */
   csrf?: boolean;
 }
+
+const DEFAULT_RATE_LIMIT: RateLimitOpts = { name: "default", maxPerMinute: 60 };
 
 export function withApiHandler<P = Record<string, never>>(
   opts: Options,
@@ -36,9 +39,9 @@ export function withApiHandler<P = Record<string, never>>(
         userId = id;
       }
 
-      if (opts.rateLimit) {
-        const { name, maxPerMinute } = opts.rateLimit;
-        const allowed = await consumeRateLimit(name, userId, maxPerMinute);
+      const rateLimit = opts.publicAccess ? opts.rateLimit : (opts.rateLimit ?? DEFAULT_RATE_LIMIT);
+      if (rateLimit) {
+        const allowed = await consumeRateLimit(rateLimit.name, userId, rateLimit.maxPerMinute);
         if (!allowed) return NextResponse.json({ error: "Muitas requisições. Aguarde um momento." }, { status: 429 });
       }
 

@@ -20,6 +20,14 @@ export const MAX_REPORT_IMAGES = 50;
 export const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 export const DASHBOARD_PAGE_SIZE = 5;
 
+// ─── Rate-limit overrides ──────────────────────────────────────────────────
+// withApiHandler applies a default 60/min bucket per user. Routes that need a
+// tighter or looser limit pass one of these instead.
+
+export const RATE_LIMITS = {
+  generate: { rateLimit: { name: "generate", maxPerMinute: 5 } },
+} as const;
+
 // ─── Signed-URL TTLs (seconds) ──────────────────────────────────────────────
 
 export const SIGNED_URL_TTL = {
