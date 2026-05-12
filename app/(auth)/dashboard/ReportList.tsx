@@ -72,20 +72,20 @@ export default function ReportList({ userId, initialReports }: Props) {
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let cancelled = false;
 
-    function handleBroadcast(payload: {
-      operation: "INSERT" | "UPDATE" | "DELETE";
-      record: Record<string, unknown> | null;
-      old_record: Record<string, unknown> | null;
+    function handleChange(payload: {
+      eventType: "INSERT" | "UPDATE" | "DELETE";
+      new: Record<string, unknown>;
+      old: Record<string, unknown>;
     }) {
-      if (payload.operation === "INSERT" && payload.record) {
-        const summary = rowToSummary(payload.record);
+      if (payload.eventType === "INSERT") {
+        const summary = rowToSummary(payload.new);
         prevStatusRef.current.set(summary.id, summary.status);
         setReports((prev) => (prev.some((r) => r.id === summary.id) ? prev : [summary, ...prev]));
         return;
       }
 
-      if (payload.operation === "UPDATE" && payload.record) {
-        const row = payload.record as Record<string, unknown> & { deleted_at: string | null };
+      if (payload.eventType === "UPDATE") {
+        const row = payload.new as Record<string, unknown> & { deleted_at: string | null };
         if (row.deleted_at) {
           prevStatusRef.current.delete(row.id as string);
           setReports((prev) => prev.filter((r) => r.id !== row.id));
@@ -107,8 +107,8 @@ export default function ReportList({ userId, initialReports }: Props) {
         return;
       }
 
-      if (payload.operation === "DELETE" && payload.old_record) {
-        const oldId = payload.old_record.id as string | undefined;
+      if (payload.eventType === "DELETE") {
+        const oldId = payload.old?.id as string | undefined;
         if (!oldId) return;
         prevStatusRef.current.delete(oldId);
         setReports((prev) => prev.filter((r) => r.id !== oldId));
@@ -127,10 +127,12 @@ export default function ReportList({ userId, initialReports }: Props) {
       supabase.realtime.setAuth(session.access_token);
 
       channel = supabase
-        .channel(`user:${userId}:reports`, { config: { private: true } })
-        .on("broadcast", { event: "INSERT" }, ({ payload }) => handleBroadcast(payload))
-        .on("broadcast", { event: "UPDATE" }, ({ payload }) => handleBroadcast(payload))
-        .on("broadcast", { event: "DELETE" }, ({ payload }) => handleBroadcast(payload))
+        .channel(`reports:${userId}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "reports", filter: `user_id=eq.${userId}` },
+          handleChange,
+        )
         .subscribe((status, err) => {
           setRealtimeStatus(status);
           if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
