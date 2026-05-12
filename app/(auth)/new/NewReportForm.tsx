@@ -266,6 +266,7 @@ export default function NewReportPage() {
       }
 
       router.push("/dashboard");
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao enviar laudo.");
       setSubmitting(false);
