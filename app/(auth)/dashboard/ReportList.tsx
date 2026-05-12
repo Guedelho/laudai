@@ -133,12 +133,8 @@ export default function ReportList({ userId }: Props) {
     }
 
     async function init() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      await supabase.realtime.setAuth();
       if (cancelled) return;
-      if (!session?.access_token) return;
-      supabase.realtime.setAuth(session.access_token);
 
       channel = supabase
         .channel(`reports:${userId}`)
@@ -156,17 +152,8 @@ export default function ReportList({ userId }: Props) {
 
     init();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.access_token) {
-        supabase.realtime.setAuth(session.access_token);
-      }
-    });
-
     return () => {
       cancelled = true;
-      subscription.unsubscribe();
       if (channel) supabase.removeChannel(channel);
     };
   }, [userId]);
