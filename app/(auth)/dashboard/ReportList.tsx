@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { RealtimePostgresUpdatePayload } from "@supabase/supabase-js";
 import { SPECIALTIES } from "@/lib/report/templates";
@@ -38,6 +38,8 @@ export default function ReportList({ userId }: Props) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<ReportSummary[] | null>(null);
+  const [searching, setSearching] = useState(false);
   const prevStatusRef = useRef<Map<string, ReportStatus>>(new Map());
 
   useEffect(() => {
@@ -64,7 +66,7 @@ export default function ReportList({ userId }: Props) {
     setLoadingMore(true);
     try {
       const last = reports[reports.length - 1];
-      const more = await listReports(DASHBOARD_PAGE_SIZE, last.created_at);
+      const more = await listReports(DASHBOARD_PAGE_SIZE, { before: last.created_at });
       setReports((prev) => {
         const seen = new Set(prev.map((r) => r.id));
         const additions = more.filter((r) => !seen.has(r.id));
@@ -151,16 +153,32 @@ export default function ReportList({ userId }: Props) {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const filtered = useMemo(() => {
-    if (!query.trim()) return reports;
-    const q = query.toLowerCase();
-    return reports.filter(
-      (r) =>
-        r.patient_name.toLowerCase().includes(q) ||
-        r.owner_name.toLowerCase().includes(q) ||
-        r.clinic_name.toLowerCase().includes(q),
-    );
-  }, [reports, query]);
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) {
+      setSearchResults(null);
+      setSearching(false);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const results = await listReports(50, { q, signal: controller.signal });
+        if (!controller.signal.aborted) setSearchResults(results);
+      } catch (err) {
+        if (!controller.signal.aborted) console.error("Search failed:", err);
+      } finally {
+        if (!controller.signal.aborted) setSearching(false);
+      }
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query]);
+
+  const displayList = searchResults ?? reports;
 
   async function handleRetry(id: string) {
     setRetryingId(id);
@@ -187,20 +205,24 @@ export default function ReportList({ userId }: Props) {
         className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
       />
 
-      {!reports.length ? (
-        <div className="text-center py-16 text-gray-400">
-          <p className="text-lg mb-2">Nenhum laudo gerado ainda</p>
-          <Link href="/new" className="text-blue-600 text-sm hover:underline">
-            Gerar primeiro laudo
-          </Link>
-        </div>
-      ) : !filtered.length ? (
-        <div className="text-center py-16 text-gray-400">
-          <p>Nenhum resultado para &ldquo;{query}&rdquo;</p>
-        </div>
+      {query.trim() && searching && !searchResults ? (
+        <div className="text-center py-16 text-gray-400 text-sm">Buscando...</div>
+      ) : !displayList.length ? (
+        query.trim() ? (
+          <div className="text-center py-16 text-gray-400">
+            <p>Nenhum resultado para &ldquo;{query}&rdquo;</p>
+          </div>
+        ) : (
+          <div className="text-center py-16 text-gray-400">
+            <p className="text-lg mb-2">Nenhum laudo gerado ainda</p>
+            <Link href="/new" className="text-blue-600 text-sm hover:underline">
+              Gerar primeiro laudo
+            </Link>
+          </div>
+        )
       ) : (
         <div className="space-y-3">
-          {filtered.map((report) => (
+          {displayList.map((report) => (
             <ReportRow
               key={report.id}
               report={report}

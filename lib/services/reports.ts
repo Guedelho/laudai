@@ -8,10 +8,16 @@ import {
 } from "@/shared/interfaces";
 import { fetchJson, fetchOk, jsonBody, formBody } from "@/lib/fetch";
 
-export async function listReports(limit: number, before?: string): Promise<ReportSummary[]> {
+export async function listReports(
+  limit: number,
+  options: { before?: string; q?: string; signal?: AbortSignal } = {},
+): Promise<ReportSummary[]> {
   const params = new URLSearchParams({ limit: String(limit) });
-  if (before) params.set("before", before);
-  const data = await fetchJson<ListReportsResponse>(`/api/reports?${params.toString()}`);
+  if (options.q) params.set("q", options.q);
+  else if (options.before) params.set("before", options.before);
+  const data = await fetchJson<ListReportsResponse>(`/api/reports?${params.toString()}`, {
+    signal: options.signal,
+  });
   return data.reports ?? [];
 }
 

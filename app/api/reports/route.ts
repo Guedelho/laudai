@@ -1,14 +1,22 @@
 import { NextResponse } from "next/server";
 import { withApiHandler } from "@/lib/api-handler";
 import { createAdmin } from "@/lib/supabase/admin";
+import { logError } from "@/lib/log";
 
 const MAX_LIMIT = 50;
+const MAX_SEARCH_LEN = 100;
 
 export const GET = withApiHandler({}, async ({ userId, req }) => {
   const url = new URL(req.url);
   const requestedLimit = Number.parseInt(url.searchParams.get("limit") ?? "5", 10);
   const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), MAX_LIMIT) : 5;
   const before = url.searchParams.get("before");
+  // Strip chars that have meaning in PostgREST's .or() grammar before splicing in.
+  const q = url.searchParams
+    .get("q")
+    ?.trim()
+    .slice(0, MAX_SEARCH_LEN)
+    .replace(/[,()*]/g, "");
 
   const admin = createAdmin();
   let query = admin
@@ -19,11 +27,15 @@ export const GET = withApiHandler({}, async ({ userId, req }) => {
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (before) query = query.lt("created_at", before);
+  if (q) {
+    query = query.or(`patient_name.ilike.%${q}%,owner_name.ilike.%${q}%,clinic_name.ilike.%${q}%`);
+  } else if (before) {
+    query = query.lt("created_at", before);
+  }
 
   const { data, error } = await query;
   if (error) {
-    console.error("List reports error:", error);
+    logError("List reports failed", error, { userId, hasQuery: !!q });
     return NextResponse.json({ error: "Erro ao buscar laudos." }, { status: 500 });
   }
 
