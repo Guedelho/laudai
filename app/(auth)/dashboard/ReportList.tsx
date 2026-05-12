@@ -34,7 +34,6 @@ export default function ReportList({ userId }: Props) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
-  const [realtimeStatus, setRealtimeStatus] = useState<string>("connecting");
   const prevStatusRef = useRef<Map<string, ReportStatus>>(new Map());
 
   useEffect(() => {
@@ -138,10 +137,7 @@ export default function ReportList({ userId }: Props) {
         data: { session },
       } = await supabase.auth.getSession();
       if (cancelled) return;
-      if (!session?.access_token) {
-        setRealtimeStatus("NO_SESSION");
-        return;
-      }
+      if (!session?.access_token) return;
       supabase.realtime.setAuth(session.access_token);
 
       channel = supabase
@@ -152,7 +148,6 @@ export default function ReportList({ userId }: Props) {
           handleChange,
         )
         .subscribe((status, err) => {
-          setRealtimeStatus(status);
           if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
             console.error(`Realtime channel ${status}`, err);
           }
@@ -208,13 +203,6 @@ export default function ReportList({ userId }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-xs text-gray-400">
-        <span
-          className={`inline-block w-2 h-2 rounded-full ${realtimeStatus === "SUBSCRIBED" ? "bg-green-500" : "bg-gray-300"}`}
-          aria-hidden
-        />
-        <span>realtime: {realtimeStatus.toLowerCase()}</span>
-      </div>
       <input
         type="search"
         value={query}
