@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
-import ReportList, { DASHBOARD_PAGE_SIZE } from "./ReportList";
+import { DASHBOARD_PAGE_SIZE } from "@/shared/constants";
+import ReportList from "./ReportList";
 import Loading from "./loading";
 
 async function DashboardContents() {

@@ -4,10 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { SPECIALTIES } from "@/lib/report/templates";
 import { ReportStatus, ReportSummary } from "@/shared/models";
+import { DASHBOARD_PAGE_SIZE } from "@/shared/constants";
 import { createClient } from "@/lib/supabase/client";
 import { listReports, regenerateReport } from "@/lib/services/reports";
-
-export const DASHBOARD_PAGE_SIZE = 5;
 
 interface Props {
   userId: string;

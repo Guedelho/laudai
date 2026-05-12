@@ -18,6 +18,7 @@ export const GENERATE_MODEL = "gemini-3-flash-preview";
 
 export const MAX_REPORT_IMAGES = 50;
 export const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+export const DASHBOARD_PAGE_SIZE = 5;
 
 // ─── Signed-URL TTLs (seconds) ──────────────────────────────────────────────
 
