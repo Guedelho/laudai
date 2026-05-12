@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import type { RealtimePostgresUpdatePayload } from "@supabase/supabase-js";
 import { SPECIALTIES } from "@/lib/report/templates";
 import { ReportStatus, ReportSummary } from "@/shared/models";
 import { DASHBOARD_PAGE_SIZE } from "@/shared/constants";
@@ -13,17 +14,19 @@ interface Props {
   userId: string;
 }
 
-function rowToSummary(row: Record<string, unknown>): ReportSummary {
+type ReportRealtimeRow = ReportSummary & { deleted_at: string | null };
+
+function toSummary(row: ReportRealtimeRow): ReportSummary {
   return {
-    id: row.id as string,
-    patient_name: row.patient_name as string,
-    owner_name: row.owner_name as string,
-    clinic_name: row.clinic_name as string,
-    specialty: row.specialty as ReportSummary["specialty"],
-    created_at: row.created_at as string,
-    exam_date: row.exam_date as string | undefined,
-    status: row.status as ReportStatus,
-    error_message: (row.error_message ?? null) as string | null,
+    id: row.id,
+    patient_name: row.patient_name,
+    owner_name: row.owner_name,
+    clinic_name: row.clinic_name,
+    specialty: row.specialty,
+    created_at: row.created_at,
+    exam_date: row.exam_date,
+    status: row.status,
+    error_message: row.error_message,
   };
 }
 
@@ -85,53 +88,35 @@ export default function ReportList({ userId }: Props) {
     return () => observer.disconnect();
   }, []);
 
+  const hasInProgress = reports.some((r) => r.status === "pending" || r.status === "generating");
+
   useEffect(() => {
+    if (!hasInProgress) return;
+
     const supabase = createClient();
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let cancelled = false;
 
-    function handleChange(payload: {
-      eventType: "INSERT" | "UPDATE" | "DELETE";
-      new: Record<string, unknown>;
-      old: Record<string, unknown>;
-    }) {
-      console.log("[realtime] change", payload.eventType, payload.new ?? payload.old);
-      if (payload.eventType === "INSERT") {
-        const summary = rowToSummary(payload.new);
-        prevStatusRef.current.set(summary.id, summary.status);
-        setReports((prev) => (prev.some((r) => r.id === summary.id) ? prev : [summary, ...prev]));
+    function handleUpdate(payload: RealtimePostgresUpdatePayload<ReportRealtimeRow>) {
+      const row = payload.new;
+      if (row.deleted_at) {
+        prevStatusRef.current.delete(row.id);
+        setReports((prev) => prev.filter((r) => r.id !== row.id));
         return;
       }
-
-      if (payload.eventType === "UPDATE") {
-        const row = payload.new as Record<string, unknown> & { deleted_at: string | null };
-        if (row.deleted_at) {
-          prevStatusRef.current.delete(row.id as string);
-          setReports((prev) => prev.filter((r) => r.id !== row.id));
-          return;
-        }
-        const summary = rowToSummary(row);
-        const previous = prevStatusRef.current.get(summary.id);
-        if (previous && previous !== "completed" && summary.status === "completed") {
-          setToast(`Laudo de ${summary.patient_name} pronto.`);
-        }
-        prevStatusRef.current.set(summary.id, summary.status);
-        setReports((prev) => {
-          const idx = prev.findIndex((r) => r.id === summary.id);
-          if (idx === -1) return prev;
-          const next = prev.slice();
-          next[idx] = summary;
-          return next;
-        });
-        return;
+      const previous = prevStatusRef.current.get(row.id);
+      if (previous && previous !== "completed" && row.status === "completed") {
+        setToast(`Laudo de ${row.patient_name} pronto.`);
       }
-
-      if (payload.eventType === "DELETE") {
-        const oldId = payload.old?.id as string | undefined;
-        if (!oldId) return;
-        prevStatusRef.current.delete(oldId);
-        setReports((prev) => prev.filter((r) => r.id !== oldId));
-      }
+      prevStatusRef.current.set(row.id, row.status);
+      const summary = toSummary(row);
+      setReports((prev) => {
+        const idx = prev.findIndex((r) => r.id === summary.id);
+        if (idx === -1) return prev;
+        const next = prev.slice();
+        next[idx] = summary;
+        return next;
+      });
     }
 
     async function init() {
@@ -142,11 +127,13 @@ export default function ReportList({ userId }: Props) {
         .channel(`reports:${userId}`)
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "reports", filter: `user_id=eq.${userId}` },
-          handleChange,
+          { event: "UPDATE", schema: "public", table: "reports", filter: `user_id=eq.${userId}` },
+          handleUpdate,
         )
         .subscribe((status, err) => {
-          console.log("[realtime] subscribe status", status, err);
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            console.error(`Realtime channel ${status}`, err);
+          }
         });
     }
 
@@ -156,7 +143,7 @@ export default function ReportList({ userId }: Props) {
       cancelled = true;
       if (channel) supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, hasInProgress]);
 
   useEffect(() => {
     if (!toast) return;
