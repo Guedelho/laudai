@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { REPORT_STATUSES } from "@/shared/models";
+import { logError } from "@/lib/log";
 
 const STALE_MINUTES = 10;
 
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
     .select("id");
 
   if (error) {
-    console.error("Stale sweep error:", error);
+    logError("Stale sweep failed", error);
     return NextResponse.json({ error: "Sweep failed." }, { status: 500 });
   }
 

@@ -8,6 +8,7 @@ import { Specialty } from "@/shared/models";
 import { SPECIALTIES } from "@/lib/report/templates";
 import { withApiHandler } from "@/lib/api-handler";
 import { SIGNED_URL_TTL } from "@/shared/constants";
+import { logError } from "@/lib/log";
 import sharp from "sharp";
 
 const IMAGES_BUCKET = "report-images";
@@ -132,7 +133,7 @@ export const GET = withApiHandler<{ id: string }>(
           if (!data) return null;
           return await fetchAsBase64(data.signedUrl);
         } catch (err) {
-          console.error("Failed to load report image:", img.storage_path, err);
+          logError("Failed to load report image", err, { storagePath: img.storage_path });
           return null;
         }
       }),
@@ -148,7 +149,7 @@ export const GET = withApiHandler<{ id: string }>(
           .createSignedUrl(profile.logo_url, SIGNED_URL_TTL.oneShot);
         if (logoSigned?.signedUrl) logoBase64 = await fetchAsBase64(logoSigned.signedUrl);
       } catch (err) {
-        console.error("Failed to fetch user logo:", err);
+        logError("Failed to fetch user logo", err, { userId });
       }
     }
 
@@ -160,7 +161,7 @@ export const GET = withApiHandler<{ id: string }>(
           .createSignedUrl(profile.signature_image_url, SIGNED_URL_TTL.oneShot);
         if (sigSigned?.signedUrl) signatureImageBase64 = await fetchAsBase64(sigSigned.signedUrl);
       } catch (err) {
-        console.error("Failed to fetch signature image:", err);
+        logError("Failed to fetch signature image", err, { userId });
       }
     }
 
@@ -198,7 +199,7 @@ export const GET = withApiHandler<{ id: string }>(
       });
       await admin.from("reports").update({ pdf_storage_path: storagePath }).eq("id", id).eq("user_id", userId);
     } catch (err) {
-      console.error("Failed to cache PDF:", err);
+      logError("Failed to cache PDF", err, { userId, reportId: params.id });
     }
 
     return new NextResponse(new Uint8Array(buffer), {

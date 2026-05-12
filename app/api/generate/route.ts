@@ -9,6 +9,7 @@ import { findOrCreatePet, resolveOwnedFks } from "@/lib/supabase/db";
 import { withApiHandler } from "@/lib/api-handler";
 import { RATE_LIMITS } from "@/shared/constants";
 import { REPORT_STATUSES } from "@/shared/models";
+import { logError } from "@/lib/log";
 
 export const maxDuration = 300;
 
@@ -91,7 +92,7 @@ export const POST = withApiHandler(RATE_LIMITS.generate, async ({ userId, req })
     .single();
 
   if (error) {
-    console.error("DB insert error:", error);
+    logError("Generate insert failed", error, { userId });
     return NextResponse.json({ error: "Erro ao salvar laudo." }, { status: 500 });
   }
 

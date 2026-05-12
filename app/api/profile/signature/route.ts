@@ -4,6 +4,7 @@ import { parseProfileImage } from "@/lib/server-utils";
 import { SIGNED_URL_TTL } from "@/shared/constants";
 import { withApiHandler } from "@/lib/api-handler";
 import { invalidateUserPdfCache } from "@/lib/supabase/db";
+import { logError } from "@/lib/log";
 
 const BUCKET = "profile-logos";
 
@@ -36,7 +37,7 @@ export const POST = withApiHandler({}, async ({ userId, req }) => {
     .upload(storagePath, buf, { contentType: mime, upsert: true });
 
   if (uploadError) {
-    console.error("Signature upload error:", uploadError);
+    logError("Signature upload failed", uploadError, { userId });
     return NextResponse.json({ error: "Erro ao enviar imagem de assinatura." }, { status: 500 });
   }
 
@@ -46,7 +47,7 @@ export const POST = withApiHandler({}, async ({ userId, req }) => {
     .eq("id", userId);
 
   if (updateError) {
-    console.error("Profile signature_image_url update error:", updateError);
+    logError("Profile signature_image_url update failed", updateError, { userId });
     return NextResponse.json({ error: "Erro ao salvar assinatura no perfil." }, { status: 500 });
   }
 
@@ -59,7 +60,7 @@ export const DELETE = withApiHandler({}, async ({ userId }) => {
   const { error } = await admin.from("profiles").update({ signature_image_url: null }).eq("id", userId);
 
   if (error) {
-    console.error("Signature remove error:", error);
+    logError("Signature remove failed", error, { userId });
     return NextResponse.json({ error: "Erro ao remover assinatura." }, { status: 500 });
   }
 

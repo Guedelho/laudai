@@ -3,6 +3,7 @@ import { createAdmin } from "@/lib/supabase/admin";
 import { findOrCreatePet } from "@/lib/supabase/db";
 import { PetRequest } from "@/shared/interfaces";
 import { withApiHandler } from "@/lib/api-handler";
+import { logError } from "@/lib/log";
 
 export const GET = withApiHandler({}, async ({ userId }) => {
   const admin = createAdmin();
@@ -13,7 +14,7 @@ export const GET = withApiHandler({}, async ({ userId }) => {
     .order("name", { ascending: true });
 
   if (error) {
-    console.error("Pets fetch error:", error);
+    logError("Pets fetch failed", error, { userId });
     return NextResponse.json({ error: "Erro ao buscar pacientes." }, { status: 500 });
   }
   return NextResponse.json({ pets });

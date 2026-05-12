@@ -4,6 +4,7 @@ import { reportCacheTag } from "@/lib/utils";
 import { createAdmin } from "@/lib/supabase/admin";
 import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE, SIGNED_URL_TTL } from "@/shared/constants";
 import { withApiHandler } from "@/lib/api-handler";
+import { logError } from "@/lib/log";
 import sharp from "sharp";
 
 const BUCKET = "report-images";
@@ -43,7 +44,7 @@ export const GET = withApiHandler<{ id: string }>({}, async ({ userId, params })
     .order("created_at", { ascending: true });
 
   if (error) {
-    console.error("Report images fetch error:", error);
+    logError("Report images fetch failed", error, { userId, reportId: params.id });
     return NextResponse.json({ error: "Erro ao buscar imagens." }, { status: 500 });
   }
 
@@ -111,7 +112,7 @@ export const POST = withApiHandler<{ id: string }>({}, async ({ userId, req, par
 
       const { error: uploadError } = await admin.storage.from(BUCKET).upload(storagePath, buf, { contentType: mime });
       if (uploadError) {
-        console.error("Image upload error:", uploadError);
+        logError("Image upload failed", uploadError, { userId, reportId: params.id });
         throw new Error("Erro ao enviar imagem.");
       }
 
@@ -122,7 +123,7 @@ export const POST = withApiHandler<{ id: string }>({}, async ({ userId, req, par
         .single();
 
       if (dbError) {
-        console.error("Image DB insert error:", dbError);
+        logError("Image DB insert failed", dbError, { userId, reportId: params.id });
         await admin.storage.from(BUCKET).remove([storagePath]);
         throw new Error("Erro ao registrar imagem.");
       }

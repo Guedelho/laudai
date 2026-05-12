@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { createAdmin } from "@/lib/supabase/admin";
 import { withApiHandler } from "@/lib/api-handler";
 import { reportCacheTag } from "@/lib/utils";
+import { logError } from "@/lib/log";
 
 const BUCKET = "report-images";
 
@@ -24,7 +25,7 @@ export const DELETE = withApiHandler<{ id: string; imageId: string }>({}, async 
 
   const { error } = await admin.from("report_images").delete().eq("id", imageId).eq("user_id", userId);
   if (error) {
-    console.error("Image delete error:", error);
+    logError("Image delete failed", error, { userId, reportId: id, imageId });
     return NextResponse.json({ error: "Erro ao remover imagem." }, { status: 500 });
   }
 

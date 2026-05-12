@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createAdmin } from "@/lib/supabase/admin";
+import { logError } from "@/lib/log";
 
 /**
  * Atomically counts and (if under the cap) records a request.
@@ -17,7 +18,7 @@ export async function consumeRateLimit(bucket: string, userId: string, maxPerMin
     p_max: maxPerMinute,
   });
   if (error) {
-    console.error("Rate limit RPC failed:", error);
+    logError("Rate limit RPC failed", error, { bucket, userId });
     return true;
   }
   return data === true;

@@ -5,6 +5,7 @@ import { createAdmin } from "@/lib/supabase/admin";
 import { UpdateReportRequest } from "@/shared/interfaces";
 import { withApiHandler } from "@/lib/api-handler";
 import { resolveOwnedFks } from "@/lib/supabase/db";
+import { logError } from "@/lib/log";
 
 export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, params }) => {
   const id = params.id;
@@ -27,7 +28,7 @@ export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, pa
     .eq("user_id", userId);
 
   if (error) {
-    console.error("Report update error:", error);
+    logError("Report update failed", error, { userId, reportId: id });
     return NextResponse.json({ error: "Erro ao salvar laudo." }, { status: 500 });
   }
 
@@ -78,7 +79,7 @@ export const DELETE = withApiHandler<{ id: string }>({}, async ({ userId, params
     .eq("user_id", userId);
 
   if (error) {
-    console.error("Report delete error:", error);
+    logError("Report delete failed", error, { userId, reportId: id });
     return NextResponse.json({ error: "Erro ao excluir laudo." }, { status: 500 });
   }
 

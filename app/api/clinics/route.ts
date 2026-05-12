@@ -3,6 +3,7 @@ import { createAdmin } from "@/lib/supabase/admin";
 import { findOrCreateClinic, findOrCreateVet } from "@/lib/supabase/db";
 import { withApiHandler } from "@/lib/api-handler";
 import { ClinicRequest } from "@/shared/interfaces";
+import { logError } from "@/lib/log";
 
 export const GET = withApiHandler({}, async ({ userId }) => {
   const admin = createAdmin();
@@ -13,7 +14,7 @@ export const GET = withApiHandler({}, async ({ userId }) => {
     .order("name", { ascending: true });
 
   if (error) {
-    console.error("Clinics fetch error:", error);
+    logError("Clinics fetch failed", error, { userId });
     return NextResponse.json({ error: "Erro ao buscar clínicas." }, { status: 500 });
   }
   return NextResponse.json({ clinics });

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { withApiHandler } from "@/lib/api-handler";
+import { logError } from "@/lib/log";
 
 export const DELETE = withApiHandler<{ id: string; vetId: string }>({}, async ({ userId, params }) => {
   const clinicId = params.id;
@@ -12,7 +13,7 @@ export const DELETE = withApiHandler<{ id: string; vetId: string }>({}, async ({
   const { error } = await admin.from("clinic_vets").delete().eq("id", params.vetId).eq("clinic_id", clinicId);
 
   if (error) {
-    console.error("Clinic vet delete error:", error);
+    logError("Clinic vet delete failed", error, { userId, clinicId: params.id, vetId: params.vetId });
     return NextResponse.json({ error: "Erro ao remover médico." }, { status: 500 });
   }
   return NextResponse.json({ ok: true });

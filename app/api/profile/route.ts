@@ -3,6 +3,7 @@ import { createAdmin } from "@/lib/supabase/admin";
 import { UpdateProfileRequest } from "@/shared/interfaces";
 import { withApiHandler } from "@/lib/api-handler";
 import { invalidateUserPdfCache } from "@/lib/supabase/db";
+import { logError } from "@/lib/log";
 
 export const PUT = withApiHandler({}, async ({ userId, req }) => {
   const admin = createAdmin();
@@ -23,7 +24,7 @@ export const PUT = withApiHandler({}, async ({ userId, req }) => {
   const { data, error } = await admin.from("profiles").upsert(upsertData, { onConflict: "id" }).select().single();
 
   if (error) {
-    console.error("Profile save error:", error);
+    logError("Profile save failed", error, { userId });
     return NextResponse.json({ error: "Erro ao salvar perfil." }, { status: 500 });
   }
 

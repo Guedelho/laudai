@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { PetRequest } from "@/shared/interfaces";
 import { withApiHandler } from "@/lib/api-handler";
+import { logError } from "@/lib/log";
 
 export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, params }) => {
   const { name, species, breed, age, ownerName, sex, neutered }: PetRequest = await req.json();
@@ -27,7 +28,7 @@ export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, pa
     .single();
 
   if (error) {
-    console.error("Pet update error:", error);
+    logError("Pet update failed", error, { userId, petId: params.id });
     return NextResponse.json({ error: "Erro ao atualizar paciente." }, { status: 500 });
   }
   return NextResponse.json({ pet });
@@ -38,7 +39,7 @@ export const DELETE = withApiHandler<{ id: string }>({}, async ({ userId, params
   const { error } = await admin.from("pets").delete().eq("id", params.id).eq("user_id", userId);
 
   if (error) {
-    console.error("Pet delete error:", error);
+    logError("Pet delete failed", error, { userId, petId: params.id });
     return NextResponse.json({ error: "Erro ao excluir paciente." }, { status: 500 });
   }
   return NextResponse.json({ ok: true });

@@ -1,4 +1,5 @@
 import { createAdmin } from "@/lib/supabase/admin";
+import { logError } from "@/lib/log";
 
 type Admin = ReturnType<typeof createAdmin>;
 
@@ -44,7 +45,7 @@ export async function findOrCreateVet(admin: Admin, clinicId: string, userId: st
  */
 export async function invalidateUserPdfCache(admin: Admin, userId: string): Promise<void> {
   const { error } = await admin.from("reports").update({ pdf_storage_path: null }).eq("user_id", userId);
-  if (error) console.error("PDF cache invalidation error:", error);
+  if (error) logError("PDF cache invalidation failed", error, { userId });
 }
 
 /**

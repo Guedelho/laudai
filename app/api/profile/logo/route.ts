@@ -4,6 +4,7 @@ import { parseProfileImage } from "@/lib/server-utils";
 import { SIGNED_URL_TTL } from "@/shared/constants";
 import { withApiHandler } from "@/lib/api-handler";
 import { invalidateUserPdfCache } from "@/lib/supabase/db";
+import { logError } from "@/lib/log";
 
 const BUCKET = "profile-logos";
 
@@ -36,14 +37,14 @@ export const POST = withApiHandler({}, async ({ userId, req }) => {
     .upload(storagePath, buf, { contentType: mime, upsert: true });
 
   if (uploadError) {
-    console.error("Logo upload error:", uploadError);
+    logError("Logo upload failed", uploadError, { userId });
     return NextResponse.json({ error: "Erro ao enviar logo." }, { status: 500 });
   }
 
   const { error: updateError } = await admin.from("profiles").update({ logo_url: storagePath }).eq("id", userId);
 
   if (updateError) {
-    console.error("Profile logo_url update error:", updateError);
+    logError("Profile logo_url update failed", updateError, { userId });
     return NextResponse.json({ error: "Erro ao salvar logo no perfil." }, { status: 500 });
   }
 

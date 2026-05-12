@@ -5,6 +5,7 @@ import { createAdmin } from "@/lib/supabase/admin";
 import { runGeneration } from "@/lib/report/worker";
 import { RATE_LIMITS } from "@/shared/constants";
 import { REPORT_STATUSES } from "@/shared/models";
+import { logError } from "@/lib/log";
 
 export const maxDuration = 300;
 
@@ -19,7 +20,7 @@ export const POST = withApiHandler<{ id: string }>(RATE_LIMITS.generate, async (
     .maybeSingle();
 
   if (error) {
-    console.error("DB read error:", error);
+    logError("Regenerate report read failed", error, { userId, reportId: params.id });
     return NextResponse.json({ error: "Erro ao recuperar laudo." }, { status: 500 });
   }
   if (!report) return NextResponse.json({ error: "Laudo não encontrado." }, { status: 404 });
