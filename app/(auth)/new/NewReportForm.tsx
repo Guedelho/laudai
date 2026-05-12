@@ -11,6 +11,7 @@ import { SPECIES_OPTIONS, SEX_OPTIONS, MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE } 
 import { listPets } from "@/lib/services/pets";
 import { listClinics, createClinic, addVet } from "@/lib/services/clinics";
 import { enqueueGeneration, uploadReportImages } from "@/lib/services/reports";
+import { redirectToDashboard } from "@/app/actions/reports";
 import { useIsClient } from "@/lib/use-is-client";
 
 export default function NewReportPage() {
@@ -263,7 +264,7 @@ export default function NewReportPage() {
         }
       }
 
-      window.location.assign("/dashboard");
+      await redirectToDashboard();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao enviar laudo.");
       setSubmitting(false);
