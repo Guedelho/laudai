@@ -36,7 +36,39 @@ export default function ReportList({ userId, initialReports }: Props) {
   const [toast, setToast] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const prevStatusRef = useRef<Map<string, ReportStatus>>(new Map(initialReports.map((r) => [r.id, r.status])));
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const loadMoreRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  loadMoreRef.current = async () => {
+    if (loadingMore || !hasMore || reports.length === 0) return;
+    setLoadingMore(true);
+    try {
+      const last = reports[reports.length - 1];
+      const more = await listReports(DASHBOARD_PAGE_SIZE, last.created_at);
+      setReports((prev) => {
+        const seen = new Set(prev.map((r) => r.id));
+        const additions = more.filter((r) => !seen.has(r.id));
+        for (const r of additions) prevStatusRef.current.set(r.id, r.status);
+        return [...prev, ...additions];
+      });
+      if (more.length < DASHBOARD_PAGE_SIZE) setHasMore(false);
+    } catch (err) {
+      console.error("Load more failed:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const sentinelRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMoreRef.current();
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -117,44 +149,6 @@ export default function ReportList({ userId, initialReports }: Props) {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore || reports.length === 0) return;
-    setLoadingMore(true);
-    try {
-      const last = reports[reports.length - 1];
-      const more = await listReports(DASHBOARD_PAGE_SIZE, last.created_at);
-      setReports((prev) => {
-        const seen = new Set(prev.map((r) => r.id));
-        const merged = [...prev];
-        for (const row of more) {
-          if (!seen.has(row.id)) {
-            merged.push(row);
-            prevStatusRef.current.set(row.id, row.status);
-          }
-        }
-        return merged;
-      });
-      if (more.length < DASHBOARD_PAGE_SIZE) setHasMore(false);
-    } catch (err) {
-      console.error("Load more failed:", err);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [loadingMore, hasMore, reports]);
-
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel || !hasMore || query.trim()) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) loadMore();
-      },
-      { rootMargin: "200px" },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [hasMore, loadMore, query]);
-
   const filtered = useMemo(() => {
     if (!query.trim()) return reports;
     const q = query.toLowerCase();
@@ -176,6 +170,8 @@ export default function ReportList({ userId, initialReports }: Props) {
       setRetryingId(null);
     }
   }
+
+  const showSentinel = !query.trim() && hasMore;
 
   return (
     <div className="space-y-4">
@@ -208,9 +204,16 @@ export default function ReportList({ userId, initialReports }: Props) {
               onRetry={() => handleRetry(report.id)}
             />
           ))}
-          {!query.trim() && hasMore && (
-            <div ref={sentinelRef} className="py-4 text-center text-xs text-gray-400">
-              {loadingMore ? "Carregando..." : "Role para carregar mais"}
+          {showSentinel && (
+            <div ref={sentinelRef} className="pt-2">
+              <button
+                type="button"
+                onClick={() => loadMoreRef.current()}
+                disabled={loadingMore}
+                className="w-full py-3 text-sm text-blue-600 hover:underline disabled:opacity-50"
+              >
+                {loadingMore ? "Carregando..." : "Carregar mais"}
+              </button>
             </div>
           )}
         </div>
