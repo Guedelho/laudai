@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { findOrCreateClinic, findOrCreateVet } from "@/lib/supabase/db";
 import { withApiHandler } from "@/lib/api-handler";
+import { ClinicRequest } from "@/shared/interfaces";
 
 export const GET = withApiHandler({}, async ({ userId }) => {
   const admin = createAdmin();
@@ -19,7 +20,7 @@ export const GET = withApiHandler({}, async ({ userId }) => {
 });
 
 export const POST = withApiHandler({}, async ({ userId, req }) => {
-  const { name, vetName } = await req.json();
+  const { name, vetName }: ClinicRequest = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: "Nome da clínica é obrigatório" }, { status: 400 });
 
   const admin = createAdmin();

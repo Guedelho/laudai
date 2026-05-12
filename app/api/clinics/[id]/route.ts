@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { withApiHandler } from "@/lib/api-handler";
+import { ClinicRequest } from "@/shared/interfaces";
 
 export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, params }) => {
-  const { name } = await req.json();
+  const { name }: ClinicRequest = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: "Nome da clínica é obrigatório" }, { status: 400 });
 
   const admin = createAdmin();

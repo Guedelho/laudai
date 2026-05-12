@@ -29,6 +29,15 @@ export interface PetRequest {
   ownerName: string;
 }
 
+export interface ClinicRequest {
+  name: string;
+  vetName?: string;
+}
+
+export interface ClinicVetRequest {
+  name: string;
+}
+
 export interface UpdateReportRequest {
   generatedContent: ParsedReport;
   petId?: string;

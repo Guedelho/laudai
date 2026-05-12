@@ -4,6 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { generateReport } from "@/lib/report/generate";
 import { createAdmin } from "@/lib/supabase/admin";
 import { reportCacheTag } from "@/lib/utils";
+import { logError } from "@/lib/log";
 import { REPORT_STATUSES, type PatientFields } from "@/shared/models";
 
 type Admin = ReturnType<typeof createAdmin>;
@@ -41,7 +42,7 @@ export async function runGeneration(
 
     if (error) throw error;
   } catch (err) {
-    console.error("Background generation failed:", err);
+    logError("Background generation failed", err, { reportId, userId });
     await supabase
       .from("reports")
       .update({

@@ -4,11 +4,6 @@ import { UpdateProfileRequest } from "@/shared/interfaces";
 import { withApiHandler } from "@/lib/api-handler";
 import { invalidateUserPdfCache } from "@/lib/supabase/db";
 
-export const GET = withApiHandler({}, async ({ userId }) => {
-  const { data } = await createAdmin().from("profiles").select("*").eq("id", userId).single();
-  return NextResponse.json(data ?? {});
-});
-
 export const PUT = withApiHandler({}, async ({ userId, req }) => {
   const admin = createAdmin();
   const body: UpdateProfileRequest = await req.json();

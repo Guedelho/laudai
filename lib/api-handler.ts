@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/supabase/auth";
 import { isSameOriginRequest } from "@/lib/csrf";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { logError } from "@/lib/log";
 
 type RateLimitOpts = { name: string; maxPerMinute: number };
 
@@ -48,7 +49,7 @@ export function withApiHandler<P = Record<string, never>>(
       const params = ctx ? ((await ctx.params) as P) : ({} as P);
       return await handler({ userId, req, params });
     } catch (err) {
-      console.error("API handler error:", err);
+      logError("API handler uncaught", err, { method: req.method, path: req.nextUrl.pathname });
       return NextResponse.json({ error: "Erro inesperado." }, { status: 500 });
     }
   };
