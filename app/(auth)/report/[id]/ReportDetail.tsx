@@ -105,6 +105,7 @@ export default function ReportDetail({
               editedParsed={editor.editedParsed}
               setEditedParsed={editor.setEditedParsed}
               updateSection={editor.updateSection}
+              removeSection={editor.removeSection}
               updateList={editor.updateList}
               addToList={editor.addToList}
               removeFromList={editor.removeFromList}

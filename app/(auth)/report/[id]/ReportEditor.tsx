@@ -101,6 +101,7 @@ interface EditorProps {
   editedParsed: ParsedReport;
   setEditedParsed: (p: ParsedReport) => void;
   updateSection: (i: number, value: string) => void;
+  removeSection: (i: number) => void;
   updateList: (key: ListKey, i: number, value: string) => void;
   addToList: (key: ListKey) => void;
   removeFromList: (key: ListKey, i: number) => void;
@@ -249,24 +250,34 @@ export function ReportEditorContent({
   editedParsed,
   setEditedParsed,
   updateSection,
+  removeSection,
   updateList,
   addToList,
   removeFromList,
 }: Pick<
   EditorProps,
-  "editedParsed" | "setEditedParsed" | "updateSection" | "updateList" | "addToList" | "removeFromList"
+  "editedParsed" | "setEditedParsed" | "updateSection" | "removeSection" | "updateList" | "addToList" | "removeFromList"
 >) {
   return (
     <div className="text-sm text-gray-800 leading-relaxed space-y-3">
       {editedParsed.sections.map((section, i) => (
         <div key={i}>
           <span className="font-semibold text-gray-900">{section.label}:</span>
-          <textarea
-            value={section.content}
-            onChange={(e) => updateSection(i, e.target.value)}
-            rows={3}
-            className={`${textareaCls} mt-1 block`}
-          />
+          <div className="mt-1 flex gap-1 items-start">
+            <textarea
+              value={section.content}
+              onChange={(e) => updateSection(i, e.target.value)}
+              rows={3}
+              className={`${textareaCls} flex-1`}
+            />
+            <button
+              type="button"
+              onClick={() => removeSection(i)}
+              className="text-red-400 hover:text-red-600 text-lg leading-none mt-1"
+            >
+              ×
+            </button>
+          </div>
         </div>
       ))}
 

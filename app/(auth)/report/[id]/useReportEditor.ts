@@ -76,6 +76,11 @@ export function useReportEditor(report: Report, onAfterImprimir: () => void) {
     setEditedParsed({ ...editedParsed, sections });
   }
 
+  function removeSection(i: number) {
+    const sections = editedParsed.sections.filter((_, idx) => idx !== i);
+    setEditedParsed({ ...editedParsed, sections });
+  }
+
   function updateList(key: ListKey, i: number, value: string) {
     const list = [...(editedParsed[key] ?? [])];
     list[i] = value;
@@ -150,6 +155,7 @@ export function useReportEditor(report: Report, onAfterImprimir: () => void) {
     selectClinic,
     selectVet,
     updateSection,
+    removeSection,
     updateList,
     addToList,
     removeFromList,
