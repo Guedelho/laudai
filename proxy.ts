@@ -1,7 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = new Set(["/login"]);
+const PUBLIC_EXACT = new Set(["/login"]);
+const PUBLIC_PREFIXES = ["/legal"];
+
+function isPublicPath(path: string): boolean {
+  return PUBLIC_EXACT.has(path) || PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix));
+}
 
 export default async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -28,7 +33,7 @@ export default async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
 
-  if (!user && !PUBLIC_PATHS.has(path) && !path.startsWith("/api/")) {
+  if (!user && !isPublicPath(path) && !path.startsWith("/api/")) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 

@@ -350,6 +350,13 @@ export default function NewReportPage() {
             <div>
               <label className="block text-xs text-gray-500 mb-1">Nome do responsável</label>
               <input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className={inputCls} required />
+              <p className="mt-1 text-[11px] text-gray-400">
+                Dados do tutor e achados do exame são enviados ao Google (Gemini) para geração do laudo. Veja a{" "}
+                <Link href="/legal/politica-de-privacidade" target="_blank" className="text-blue-600 hover:underline">
+                  Política de Privacidade
+                </Link>
+                .
+              </p>
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Espécie</label>

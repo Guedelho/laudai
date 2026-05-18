@@ -13,7 +13,7 @@ import { logError } from "@/lib/log";
 
 export const maxDuration = 300;
 
-export const POST = withApiHandler(RATE_LIMITS.generate, async ({ userId, req }) => {
+export const POST = withApiHandler({ ...RATE_LIMITS.generate, botId: true }, async ({ userId, req }) => {
   const [profile, body] = await Promise.all([getProfile(userId), req.json() as Promise<GenerateRequest>]);
 
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado. Complete seu cadastro." }, { status: 400 });

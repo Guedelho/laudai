@@ -20,3 +20,11 @@ export async function uploadSignature(file: File): Promise<void> {
 export async function removeSignature(): Promise<void> {
   await fetchOk("/api/profile/signature", { method: "DELETE" });
 }
+
+export async function deleteAccount(): Promise<void> {
+  await fetchOk("/api/account", { method: "DELETE" });
+}
+
+export function exportDataUrl(): string {
+  return "/api/account/export";
+}

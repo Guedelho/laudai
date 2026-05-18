@@ -28,6 +28,16 @@ export const RATE_LIMITS = {
   generate: { rateLimit: { name: "generate", maxPerMinute: 5 } },
 } as const;
 
+// ─── LGPD ────────────────────────────────────────────────────────────────────
+// Bumping a version invalidates prior consent and forces re-acceptance.
+
+export const LEGAL_VERSIONS = {
+  terms: "2026-05-18",
+  privacy_policy: "2026-05-18",
+} as const;
+
+export type LegalDocType = keyof typeof LEGAL_VERSIONS;
+
 // ─── Signed-URL TTLs (seconds) ──────────────────────────────────────────────
 
 export const SIGNED_URL_TTL = {

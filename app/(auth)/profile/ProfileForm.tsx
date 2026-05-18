@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as profileApi from "@/lib/services/profile";
@@ -65,7 +66,22 @@ export default function ProfileForm({
   const [logoError, setLogoError] = useState("");
   const [sigUploading, setSigUploading] = useState(false);
   const [sigError, setSigError] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const fontAbortRef = useRef<AbortController | null>(null);
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await profileApi.deleteAccount();
+      window.location.href = "/login";
+    } catch {
+      setDeleteError("Erro ao excluir conta. Tente novamente.");
+      setDeleting(false);
+    }
+  }
 
   useEffect(() => {
     const id = "google-signature-fonts";
@@ -246,6 +262,14 @@ export default function ProfileForm({
           />
         </div>
 
+        <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-600">
+          CPF e CRMV são exigidos para emissão do laudo. Consulte nossa{" "}
+          <Link href="/legal/politica-de-privacidade" target="_blank" className="text-blue-600 hover:underline">
+            Política de Privacidade
+          </Link>{" "}
+          para saber como tratamos esses dados.
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">CRMV</label>
           <p className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 bg-gray-50">
@@ -371,7 +395,49 @@ export default function ProfileForm({
         </div>
       </form>
 
-      <div className="pt-6 border-t border-gray-200">
+      <div className="pt-6 border-t border-gray-200 space-y-4">
+        <h2 className="text-sm font-semibold text-gray-900">Privacidade</h2>
+        <div className="flex flex-col gap-2">
+          <a href={profileApi.exportDataUrl()} className="text-sm text-blue-600 hover:underline w-fit" download>
+            Baixar meus dados (JSON)
+          </a>
+          {!deleteConfirm ? (
+            <button
+              type="button"
+              onClick={() => setDeleteConfirm(true)}
+              className="text-sm text-red-600 hover:underline w-fit"
+            >
+              Excluir minha conta
+            </button>
+          ) : (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 space-y-2">
+              <p className="text-xs text-red-900">
+                Excluir a conta apaga permanentemente seu perfil, laudos, imagens e PDFs. Esta ação é irreversível.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                  className="text-xs bg-red-600 text-white px-3 py-1.5 rounded hover:bg-red-700 disabled:opacity-50"
+                >
+                  {deleting ? "Excluindo..." : "Confirmar exclusão"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirm(false)}
+                  className="text-xs text-gray-600 hover:text-gray-900 px-3 py-1.5"
+                >
+                  Cancelar
+                </button>
+              </div>
+              {deleteError && <p className="text-xs text-red-600">{deleteError}</p>}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="pt-4 border-t border-gray-200">
         <form action={logout}>
           <button type="submit" className="text-sm text-gray-400 hover:text-gray-600">
             Sair da conta

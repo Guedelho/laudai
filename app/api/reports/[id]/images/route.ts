@@ -58,7 +58,7 @@ export const GET = withApiHandler<{ id: string }>({}, async ({ userId, params })
   return NextResponse.json({ images: withUrls.filter((img) => img.url !== null) });
 });
 
-export const POST = withApiHandler<{ id: string }>({}, async ({ userId, req, params }) => {
+export const POST = withApiHandler<{ id: string }>({ botId: true }, async ({ userId, req, params }) => {
   const id = params.id;
   const admin = createAdmin();
 

@@ -289,6 +289,27 @@ $$;
 revoke all on rate_limit_events from anon, authenticated;
 revoke all on function rate_limit_consume(text, uuid, int) from anon, authenticated;
 
+-- ─── consents (LGPD) ────────────────────────────────────────────────────────
+
+create table if not exists consents (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid references auth.users(id) on delete cascade not null,
+  type        text not null check (type in ('terms', 'privacy_policy')),
+  version     text not null,
+  accepted_at timestamptz not null default now(),
+  ip          inet
+);
+
+create index if not exists consents_user_id_idx on consents(user_id);
+
+alter table consents enable row level security;
+
+create policy "consents self read"
+  on consents
+  for select
+  to authenticated
+  using ((select auth.uid()) = user_id);
+
 -- ─── Storage buckets ────────────────────────────────────────────────────────
 -- Create via Supabase dashboard or API:
 --   report-images (private, 5 MB, image/jpeg + image/png + image/webp)

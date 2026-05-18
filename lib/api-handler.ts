@@ -1,6 +1,7 @@
 import "server-only";
 
 import { NextRequest, NextResponse } from "next/server";
+import { checkBotId } from "botid/server";
 import { getUserId } from "@/lib/supabase/auth";
 import { isSameOriginRequest } from "@/lib/csrf";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -17,6 +18,8 @@ interface Options {
   rateLimit?: RateLimitOpts;
   /** Default: enforce same-origin on non-GET/HEAD requests. */
   csrf?: boolean;
+  /** Verify request is not from a bot via Vercel BotID. Route must also be listed in instrumentation-client.ts. */
+  botId?: boolean;
 }
 
 const DEFAULT_RATE_LIMIT: RateLimitOpts = { name: "default", maxPerMinute: 60 };
@@ -31,6 +34,11 @@ export function withApiHandler<P = Record<string, never>>(
       const csrf = opts.csrf ?? csrfDefault;
       if (csrf && !isSameOriginRequest(req)) {
         return NextResponse.json({ error: "Origem inválida." }, { status: 403 });
+      }
+
+      if (opts.botId) {
+        const { isBot } = await checkBotId();
+        if (isBot) return NextResponse.json({ error: "Acesso negado." }, { status: 403 });
       }
 
       let userId = "";

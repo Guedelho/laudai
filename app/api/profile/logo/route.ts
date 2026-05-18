@@ -23,7 +23,7 @@ export const GET = withApiHandler({}, async ({ userId }) => {
   return NextResponse.redirect(data.signedUrl);
 });
 
-export const POST = withApiHandler({}, async ({ userId, req }) => {
+export const POST = withApiHandler({ botId: true }, async ({ userId, req }) => {
   const formData = await req.formData();
   const result = await parseProfileImage(formData.get("logo") as File | null);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });

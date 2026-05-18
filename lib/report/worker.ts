@@ -13,6 +13,8 @@ interface WorkerParams extends PatientFields {
   rawInput: string;
 }
 
+const GENERATION_TIMEOUT_MS = 5 * 60 * 1000;
+
 export async function runGeneration(
   supabase: Admin,
   reportId: string,
@@ -26,7 +28,15 @@ export async function runGeneration(
     .eq("user_id", userId);
 
   try {
-    const content = await generateReport(params);
+    const content = await Promise.race([
+      generateReport(params),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error("Tempo limite de geração excedido. Tente novamente.")),
+          GENERATION_TIMEOUT_MS,
+        ),
+      ),
+    ]);
 
     const { error } = await supabase
       .from("reports")
