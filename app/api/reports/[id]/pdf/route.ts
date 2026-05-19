@@ -212,5 +212,5 @@ export const GET = withApiHandler<{ id: string }>(
       },
     });
   },
-  { botId: false, rateLimit: { endpoint: "reports.pdf", max: 60, windowSec: 60 } },
+  { botId: false, rateLimit: { endpoint: "reports.pdf", max: 30, windowSec: 60 } },
 );

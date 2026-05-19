@@ -125,5 +125,5 @@ export const POST = withApiHandler(
 
     return NextResponse.json({ reportId: report.id });
   },
-  { rateLimit: { endpoint: "reports.generate", max: 20, windowSec: 60 } },
+  { rateLimit: { endpoint: "reports.generate", max: 10, windowSec: 60 } },
 );
