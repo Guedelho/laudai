@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { RealtimePostgresUpdatePayload } from "@supabase/supabase-js";
 import { SPECIALTIES } from "@/lib/report/templates";
@@ -80,17 +80,6 @@ export default function ReportList({ userId }: Props) {
       setLoadingMore(false);
     }
   };
-
-  const sentinelRef = useCallback((node: HTMLDivElement | null) => {
-    if (!node) return;
-    const observer = new IntersectionObserver((entries) => {
-      if (!entries[0]?.isIntersecting) return;
-      if (window.scrollY < 50) return;
-      loadMoreRef.current();
-    });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
 
   const hasInProgress = reports.some((r) => r.status === "pending" || r.status === "generating");
 
@@ -193,7 +182,7 @@ export default function ReportList({ userId }: Props) {
     }
   }
 
-  const showSentinel = !query.trim() && hasMore;
+  const showLoadMore = !query.trim() && hasMore;
 
   if (loadingInitial) return <LoadingSkeleton rows={DASHBOARD_PAGE_SIZE} />;
 
@@ -233,9 +222,16 @@ export default function ReportList({ userId }: Props) {
               onRetry={() => handleRetry(report.id)}
             />
           ))}
-          {showSentinel && (
-            <div ref={sentinelRef} className="py-4 text-center text-xs text-gray-500">
-              {loadingMore ? "Carregando..." : ""}
+          {showLoadMore && (
+            <div className="py-4 text-center">
+              <button
+                type="button"
+                onClick={() => loadMoreRef.current()}
+                disabled={loadingMore}
+                className="text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
+              >
+                {loadingMore ? "Carregando..." : "Carregar mais"}
+              </button>
             </div>
           )}
         </div>
