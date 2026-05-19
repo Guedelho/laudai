@@ -13,6 +13,8 @@ const LOADING_HTML = [
 ].join("");
 
 // Fetch in current tab (BotID headers attached) then hand the bytes to the popup as a blob URL.
+// Wrap the blob in a File so the PDF viewer's "Download" button uses the backend-provided
+// filename — blob URLs strip the original Content-Disposition.
 export async function openReportPdfTab(reportId: string): Promise<void> {
   const tab = window.open("", "_blank");
   if (!tab) return;
@@ -22,7 +24,9 @@ export async function openReportPdfTab(reportId: string): Promise<void> {
     const response = await fetch(`/api/reports/${reportId}/pdf`);
     if (!response.ok) throw new Error(`PDF fetch failed: ${response.status}`);
     const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
+    const filename = /filename="([^"]+)"/.exec(response.headers.get("Content-Disposition") ?? "")?.[1] ?? "laudo.pdf";
+    const file = new File([blob], filename, { type: "application/pdf" });
+    const url = URL.createObjectURL(file);
     tab.location.href = url;
   } catch (err) {
     tab.close();
