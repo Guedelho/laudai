@@ -26,8 +26,9 @@ All schema names, statuses, buckets, plan ids, audit actions, etc. live in const
 - **AI**: `lib/report/generate.ts` makes a single Gemini call per report (`gemini-3-flash-preview`) with a combined system prompt (sections + conclusion + verifier constraints). Streaming via `generateContentStream` with `responseMimeType: "application/json"` — chunks are concatenated server-side; the client never sees the stream. Retry with exponential backoff on transient errors (429/500/503/ECONNRESET). `temperature: 0`. Trechos derivados dos achados do usuário são marcados pelo modelo com `**...**`; `splitBoldSegments` (em `lib/utils.ts`) converte esses marcadores em runs em negrito tanto no PDF quanto na visualização.
 - **Async generation**: `POST /api/generate` validates input, inserts a `reports` row with `status='pending'`, schedules the Gemini call via Next.js `after()`, returns `{ reportId }` immediately. `lib/report/worker.ts` (`runGeneration`) flips the row through `generating → completed | failed` and calls `revalidateTag(reportCacheTag(id), "max")` on completion. The worker uses `Promise.race` with a 5-minute timeout — caught failures get reported back to the user fast. The dashboard subscribes to Supabase Realtime postgres_changes on `reports` (UPDATE only, filter `user_id=eq.<id>`) **while at least one visible row is pending/generating** — the channel is torn down once all rows settle. Failed laudos retry via `POST /api/reports/[id]/regenerate` (only allowed when `status='failed'`).
 - **Speech-to-text**: real-time via browser Web Speech API (`react-speech-recognition`). Mic + transcript in `NewReportForm.tsx`. Firefox shows a disabled state with tooltip; no server-side transcription.
-- **PDF**: `lib/report/pdf.ts` (pdfmake). Fonts fetched from CDN and cached module-level. Cached in `STORAGE_BUCKETS.reportPdfs` — cleared on report edit or image changes. PDFs are signed/served using the _original author's_ profile (logo, signature, CRMV stay theirs even when a teammate edits).
-- **Bot protection**: Vercel BotID is always-on for every route via `withApiHandler`. `instrumentation-client.ts` injects detection headers for all `/api/*` paths; `deepAnalysis` mode is enabled on `/api/generate` and `/api/reports/*/regenerate` (the Gemini-cost endpoints).
+- **PDF**: `lib/report/pdf.ts` (pdfmake). Fonts fetched from CDN and cached module-level. Cached in `STORAGE_BUCKETS.reportPdfs` with a `pdf_cached_at` timestamp; reads treat the cache as a miss after `PDF_CACHE_TTL_MS` (24h) and regenerate. Cache is also invalidated on report edit, image changes, and profile changes. PDFs are signed/served using the _original author's_ profile (logo, signature, CRMV stay theirs even when a teammate edits). Print/download flow uses `openReportPdfTab` (`lib/pdf-tab.ts`): fetch in current tab so BotID headers attach, then hand bytes to a popup as a blob URL — `window.open('/api/.../pdf')` directly would fail BotID (the new tab has no Next.js JS).
+- **Profile images** (logo/signature): served by `serveProfileImage` (`lib/profile-image.ts`) which streams bytes through the API route rather than redirecting to a signed URL. Browsers cache redirects, and the signed URL target expires after `SIGNED_URL_TTL.serverFetch` seconds, so cached redirects break. The route opts out of BotID (`{ botId: false }`) because `<img src>` is a browser-native request without BotID headers.
+- **Bot protection**: Vercel BotID is on by default for every `withApiHandler` route. Routes hit by browser-native mechanisms (`<img>`, `<a download>`, top-level navigation) opt out with `withApiHandler(..., { botId: false })` — currently `/api/profile/logo`, `/api/profile/signature`, `/api/account/export`. `instrumentation-client.ts` injects detection headers for all `/api/*` paths; `deepAnalysis` mode is enabled on `/api/generate` and `/api/reports/*/regenerate` (the Gemini-cost endpoints).
 - **Formatting**: Prettier + pre-commit hook via lint-staged. Run `npm run format` to format all files.
 - **Database**: Supabase Postgres (project `rgemiayidnumeotplozm`, region `sa-east-1`). Multi-tenant via `organizations`. Every domain table (`pets`, `clinics`, `clinic_vets`, `reports`, `report_images`) has `org_id NOT NULL` + `user_id NOT NULL`. RLS: reads scope by org membership (team-visible); mutations stay user_id-self (only creator edits). All FK / `user_id` / `org_id` columns are indexed.
 - **Storage**: Three private buckets — `STORAGE_BUCKETS.reportImages`, `STORAGE_BUCKETS.reportPdfs`, `STORAGE_BUCKETS.profileLogos`. RLS scopes anon-client access to `auth.uid() = first folder in path`. All writes via service role.
@@ -81,7 +82,7 @@ All authenticated pages live inside `app/(auth)/`. The route group layout handle
 
 ## API route conventions
 
-Wrap every handler in `withApiHandler` (`@/lib/api-handler`). It takes the handler as its single argument — no options. The context provided to handlers:
+Wrap every handler in `withApiHandler` (`@/lib/api-handler`). Signature: `withApiHandler(handler, opts?)` where `opts` is `{ botId?: boolean }` — defaults to BotID on. The context provided to handlers:
 
 - `userId` — authenticated user's id
 - `orgId` — user's primary org (via `getCurrentOrgId`)
@@ -89,7 +90,7 @@ Wrap every handler in `withApiHandler` (`@/lib/api-handler`). It takes the handl
 - `audit({ action, entityType, entityId, changes? })` — pre-bound to userId + orgId
 - `req`, `params` (params is already resolved — Next.js 16 Promise is awaited inside the wrapper)
 
-`withApiHandler` always runs: BotID check → auth → org lookup → 500 fallback. Cron routes don't use `withApiHandler` — they're plain `GET` exports gated by `Bearer ${CRON_SECRET}` (no user/org context).
+`withApiHandler` runs: BotID check (unless `{ botId: false }`) → auth → org lookup → 500 fallback. Cron routes don't use `withApiHandler` — they're plain `GET` exports gated by `Bearer ${CRON_SECRET}` (no user/org context).
 
 CSRF protection is handled by Supabase's `SameSite=Lax` cookies plus modern browser defaults — no custom check. Rate limiting is delegated to the Vercel Firewall (dashboard-configurable per route).
 
@@ -115,7 +116,7 @@ CSRF protection is handled by Supabase's `SameSite=Lax` cookies plus modern brow
 
 ## Data model
 
-- `status` ∈ `REPORT_STATUSES.{pending, generating, completed, failed}`. Set by `/api/generate` (`pending`), the worker (`generating` → terminal), regenerate (back to `pending`), or the stale-job sweeper (`failed`). Pre-async-migration rows default to `completed`.
+- `status` ∈ `REPORT_STATUSES.{pending, generating, completed, failed}`. Set by `/api/generate` (`pending`), the worker (`generating` → terminal), or regenerate (back to `pending`). Pre-async-migration rows default to `completed`. The worker's 5-minute `Promise.race` timeout catches Gemini hangs; there is no fallback cron sweeper for stuck rows.
 - `generated_content` — immutable LLM output. `null` until `status='completed'`. Set once.
 - `edited_content` — always the latest version. Starts equal to `generated_content` (same worker write). Updated on vet edits. Snapshots of every edit go to `report_versions`.
 - `updated_by` — populated by PATCH (last editor's user_id).

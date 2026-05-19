@@ -9,7 +9,7 @@ import { logError } from "@/lib/log";
 
 type Admin = ReturnType<typeof createAdmin>;
 
-export interface HandlerCtx<P> {
+interface HandlerCtx<P> {
   userId: string;
   orgId: string;
   req: NextRequest;

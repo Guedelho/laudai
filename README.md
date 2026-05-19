@@ -78,6 +78,7 @@ The dashboard subscribes to Supabase Realtime on the `reports` table and shows i
 **Reliability layers:**
 
 - The worker wraps the Gemini call in `Promise.race` with a 5-min timeout — failures surface within seconds.
+- Generated PDFs are cached in storage with a 24h TTL; reads after that regenerate from the (possibly edited) report.
 - Every report edit writes a snapshot to `report_versions` (append-only audit of laudo content).
 - Every CRUD across pets, clinics, reports, images, profile lands in `audit_log` (who did what when).
 
@@ -115,7 +116,7 @@ app/
     pets/ clinics/ profile/         # CRUD for sidebar entities
     consents/                       # POST — record terms/privacy acceptance
     account/                        # DELETE (schedule) / POST (cancel) / GET export
-    internal/sweep-deleted-accounts/ # Cron: 30-day account purge
+    internal/sweep-deleted-accounts/ # Cron: 30-day account purge (daily 03:00 UTC)
   legal/                            # Public privacy policy + terms
   login/ signup/                    # Auth pages (signup currently redirects)
 components/                         # AppHeader, Typeahead, ImageLightbox, ...
