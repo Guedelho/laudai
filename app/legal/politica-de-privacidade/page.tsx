@@ -3,7 +3,7 @@ export const metadata = {
 };
 
 const LAST_UPDATED = "18 de maio de 2026";
-const CONTACT_EMAIL = "mateus.guedelho@hellohippo.com";
+const CONTACT_EMAIL = "contato@laudai.vet";
 
 export default function PrivacyPolicyPage() {
   return (

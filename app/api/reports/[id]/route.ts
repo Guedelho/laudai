@@ -14,10 +14,32 @@ export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, pa
   const { generatedContent, patientFields, petId, clinicId, vetId }: UpdateReportRequest = await req.json();
   const owned = await resolveOwnedFks(admin, userId, { petId, clinicId, vetId });
 
+  const editedContent = JSON.stringify(generatedContent);
+
+  const { data: latestVersion } = await admin
+    .from("report_versions")
+    .select("version")
+    .eq("report_id", id)
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const nextVersion = (latestVersion?.version ?? 0) + 1;
+
+  const { error: versionError } = await admin
+    .from("report_versions")
+    .insert({ report_id: id, edited_by: userId, content: editedContent, version: nextVersion });
+
+  if (versionError) {
+    logError("Report version insert failed", versionError, { userId, reportId: id });
+    return NextResponse.json({ error: "Erro ao salvar laudo." }, { status: 500 });
+  }
+
   const { error } = await admin
     .from("reports")
     .update({
-      edited_content: JSON.stringify(generatedContent),
+      edited_content: editedContent,
+      updated_by: userId,
       ...patientFields,
       pdf_storage_path: null,
       ...(petId !== undefined ? { pet_id: owned.petId } : {}),
