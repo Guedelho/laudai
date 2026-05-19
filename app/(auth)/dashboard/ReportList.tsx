@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import type { RealtimePostgresUpdatePayload } from "@supabase/supabase-js";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { SPECIALTIES } from "@/lib/report/templates";
 import { ReportStatus, ReportSummary } from "@/shared/models";
 import { DASHBOARD_PAGE_SIZE } from "@/shared/constants";
@@ -82,35 +82,42 @@ export default function ReportList({ userId, orgId }: Props) {
     }
   };
 
-  const hasInProgress = reports.some((r) => r.status === "pending" || r.status === "generating");
-
   useEffect(() => {
-    if (!hasInProgress) return;
-
     const supabase = createClient();
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let cancelled = false;
 
-    function handleUpdate(payload: RealtimePostgresUpdatePayload<ReportRealtimeRow>) {
-      const row = payload.new;
-      if (row.deleted_at) {
-        prevStatusRef.current.delete(row.id);
-        setReports((prev) => prev.filter((r) => r.id !== row.id));
+    function handleChange(payload: RealtimePostgresChangesPayload<ReportRealtimeRow>) {
+      if (payload.eventType === "INSERT") {
+        const row = payload.new;
+        if (row.deleted_at) return;
+        prevStatusRef.current.set(row.id, row.status);
+        const summary = toSummary(row);
+        setReports((prev) => (prev.some((r) => r.id === summary.id) ? prev : [summary, ...prev]));
         return;
       }
-      const previous = prevStatusRef.current.get(row.id);
-      if (previous && previous !== "completed" && row.status === "completed") {
-        setToast(`Laudo de ${row.patient_name} pronto.`);
+
+      if (payload.eventType === "UPDATE") {
+        const row = payload.new;
+        if (row.deleted_at) {
+          prevStatusRef.current.delete(row.id);
+          setReports((prev) => prev.filter((r) => r.id !== row.id));
+          return;
+        }
+        const previous = prevStatusRef.current.get(row.id);
+        if (previous && previous !== "completed" && row.status === "completed") {
+          setToast(`Laudo de ${row.patient_name} pronto.`);
+        }
+        prevStatusRef.current.set(row.id, row.status);
+        const summary = toSummary(row);
+        setReports((prev) => {
+          const idx = prev.findIndex((r) => r.id === summary.id);
+          if (idx === -1) return [summary, ...prev];
+          const next = prev.slice();
+          next[idx] = summary;
+          return next;
+        });
       }
-      prevStatusRef.current.set(row.id, row.status);
-      const summary = toSummary(row);
-      setReports((prev) => {
-        const idx = prev.findIndex((r) => r.id === summary.id);
-        if (idx === -1) return prev;
-        const next = prev.slice();
-        next[idx] = summary;
-        return next;
-      });
     }
 
     async function init() {
@@ -121,8 +128,8 @@ export default function ReportList({ userId, orgId }: Props) {
         .channel(`reports:${orgId}`)
         .on(
           "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "reports", filter: `org_id=eq.${orgId}` },
-          handleUpdate,
+          { event: "*", schema: "public", table: "reports", filter: `org_id=eq.${orgId}` },
+          handleChange,
         )
         .subscribe((status, err) => {
           if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
@@ -137,7 +144,7 @@ export default function ReportList({ userId, orgId }: Props) {
       cancelled = true;
       if (channel) supabase.removeChannel(channel);
     };
-  }, [orgId, hasInProgress]);
+  }, [orgId]);
 
   useEffect(() => {
     if (!toast) return;
