@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import { runGeneration } from "@/lib/report/worker";
 import { getProfile } from "@/lib/supabase/auth";
 import { GenerateRequest } from "@/shared/interfaces";
-import { findOrCreatePet, resolveOwnedFks } from "@/lib/supabase/db";
+import { canWriteReport, findOrCreatePet, hasReportTypeAccess, resolveOwnedFks } from "@/lib/supabase/db";
 import { withApiHandler } from "@/lib/api-handler";
-import { TABLES } from "@/shared/constants";
+import { REPORT_TYPES, TABLES } from "@/shared/constants";
 import { REPORT_STATUSES } from "@/shared/models";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { logError } from "@/lib/log";
@@ -51,6 +51,16 @@ export const POST = withApiHandler(async ({ userId, orgId, admin, audit, req }) 
   }
   if (rawInput.length > 2_000)
     return NextResponse.json({ error: "Achados do exame muito longos. Máximo 2.000 caracteres." }, { status: 400 });
+
+  if (!Object.values(REPORT_TYPES).includes(specialty)) {
+    return NextResponse.json({ error: "Tipo de laudo inválido." }, { status: 400 });
+  }
+  if (!(await hasReportTypeAccess(admin, orgId, specialty))) {
+    return NextResponse.json({ error: "Sua organização não tem acesso a este tipo de laudo." }, { status: 403 });
+  }
+  if (!(await canWriteReport(admin, orgId, userId, specialty))) {
+    return NextResponse.json({ error: "Você não tem permissão para gerar este tipo de laudo." }, { status: 403 });
+  }
 
   const ownedFks = await resolveOwnedFks(admin, orgId, { petId, clinicId, vetId });
 

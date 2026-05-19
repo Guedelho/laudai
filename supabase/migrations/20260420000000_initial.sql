@@ -44,23 +44,37 @@ create policy "Users can manage their own profile"
 -- ═══════════════════════════════════════════════════════════════════════════
 
 create table if not exists plans (
-  id           text primary key,
-  display_name text not null,
-  description  text,
-  created_at   timestamptz not null default now(),
+  id         text primary key,
+  created_at timestamptz not null default now(),
   constraint plans_id_format check (id ~ '^[a-z0-9_]+$')
 );
 
-insert into plans (id, display_name, description) values
-  ('basic',        'Básico',       'Plano gratuito para uso individual.'),
-  ('professional', 'Profissional', 'Plano individual com geração prioritária e recursos avançados.'),
-  ('teams',        'Times',        'Plano para clínicas com múltiplos profissionais.')
+insert into plans (id) values ('individual'), ('team')
 on conflict (id) do nothing;
 
 -- Plans are public read so the upgrade UI can list them without a service-role hop.
 alter table plans enable row level security;
 
 create policy "plans public read" on plans for select to authenticated using (true);
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- report_types
+-- Catalog of laudo specialties (ultrassom, periodontal, …). Referenced by
+-- reports.specialty (FK) and gated per-org by organization_report_types.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+create table if not exists report_types (
+  id         text primary key,
+  created_at timestamptz not null default now(),
+  constraint report_types_id_format check (id ~ '^[a-z0-9_]+$')
+);
+
+insert into report_types (id) values ('ultrasound_abdominal'), ('periodontal_treatment')
+on conflict (id) do nothing;
+
+alter table report_types enable row level security;
+
+create policy "report_types public read" on report_types for select to authenticated using (true);
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- organizations + memberships
@@ -71,8 +85,8 @@ create table if not exists organizations (
   id            uuid primary key default gen_random_uuid(),
   name          text not null,
   slug          text unique not null,
-  plan          text not null default 'basic' references plans(id) on update cascade on delete restrict,
-  owner_user_id uuid references auth.users(id) on delete restrict not null,
+  plan          text not null default 'individual' references plans(id) on update cascade on delete restrict,
+  owner_user_id uuid references auth.users(id) on delete cascade not null,
   created_at    timestamptz not null default now(),
   deleted_at    timestamptz,
 
@@ -88,7 +102,7 @@ alter table organizations enable row level security;
 create table if not exists organization_members (
   org_id     uuid references organizations(id) on delete cascade not null,
   user_id    uuid references auth.users(id) on delete cascade not null,
-  role       text not null check (role in ('owner', 'admin', 'member')),
+  role       text not null check (role in ('owner', 'member')),
   invited_by uuid references auth.users(id),
   joined_at  timestamptz not null default now(),
   primary key (org_id, user_id)
@@ -141,25 +155,25 @@ create policy "members read same-org memberships"
   on organization_members for select to authenticated
   using (is_org_member((select auth.uid()), org_id));
 
-create policy "org_members insert by admin"
+create policy "org_members insert by owner"
   on organization_members for insert to authenticated
   with check (
     exists (
       select 1 from organization_members self
       where self.org_id = organization_members.org_id
         and self.user_id = (select auth.uid())
-        and self.role in ('owner', 'admin')
+        and self.role = 'owner'
     )
   );
 
-create policy "org_members update by admin"
+create policy "org_members update by owner"
   on organization_members for update to authenticated
   using (
     exists (
       select 1 from organization_members self
       where self.org_id = organization_members.org_id
         and self.user_id = (select auth.uid())
-        and self.role in ('owner', 'admin')
+        and self.role = 'owner'
     )
   )
   with check (
@@ -167,18 +181,18 @@ create policy "org_members update by admin"
       select 1 from organization_members self
       where self.org_id = organization_members.org_id
         and self.user_id = (select auth.uid())
-        and self.role in ('owner', 'admin')
+        and self.role = 'owner'
     )
   );
 
-create policy "org_members delete by admin"
+create policy "org_members delete by owner"
   on organization_members for delete to authenticated
   using (
     exists (
       select 1 from organization_members self
       where self.org_id = organization_members.org_id
         and self.user_id = (select auth.uid())
-        and self.role in ('owner', 'admin')
+        and self.role = 'owner'
     )
   );
 
@@ -186,7 +200,6 @@ create table if not exists organization_invitations (
   id          uuid primary key default gen_random_uuid(),
   org_id      uuid references organizations(id) on delete cascade not null,
   email       text not null,
-  role        text not null check (role in ('admin', 'member')),
   token       text unique not null,
   expires_at  timestamptz not null,
   invited_by  uuid references auth.users(id) not null,
@@ -211,25 +224,25 @@ create policy "members read org invitations"
     )
   );
 
-create policy "org_invitations insert by admin"
+create policy "org_invitations insert by owner"
   on organization_invitations for insert to authenticated
   with check (
     exists (
       select 1 from organization_members m
       where m.org_id = organization_invitations.org_id
         and m.user_id = (select auth.uid())
-        and m.role in ('owner', 'admin')
+        and m.role = 'owner'
     )
   );
 
-create policy "org_invitations update by admin"
+create policy "org_invitations update by owner"
   on organization_invitations for update to authenticated
   using (
     exists (
       select 1 from organization_members m
       where m.org_id = organization_invitations.org_id
         and m.user_id = (select auth.uid())
-        and m.role in ('owner', 'admin')
+        and m.role = 'owner'
     )
   )
   with check (
@@ -237,22 +250,75 @@ create policy "org_invitations update by admin"
       select 1 from organization_members m
       where m.org_id = organization_invitations.org_id
         and m.user_id = (select auth.uid())
-        and m.role in ('owner', 'admin')
+        and m.role = 'owner'
     )
   );
 
-create policy "org_invitations delete by admin"
+create policy "org_invitations delete by owner"
   on organization_invitations for delete to authenticated
   using (
     exists (
       select 1 from organization_members m
       where m.org_id = organization_invitations.org_id
         and m.user_id = (select auth.uid())
-        and m.role in ('owner', 'admin')
+        and m.role = 'owner'
     )
   );
 
--- Atomically create a solo (basic plan) org with the user as owner.
+-- ═══════════════════════════════════════════════════════════════════════════
+-- organization_report_types
+-- Per-org entitlements for laudo specialties. Generation endpoints check
+-- (org_id, report_type_id) here before allowing a new report. Service-role
+-- writes only — there are no insert/update/delete policies for end users.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+create table if not exists organization_report_types (
+  org_id         uuid not null references organizations(id) on delete cascade,
+  report_type_id text not null references report_types(id)  on update cascade on delete restrict,
+  -- null = permanent (paid). non-null = trial / time-bound grant. hasReportTypeAccess()
+  -- treats now() >= expires_at as no access.
+  expires_at     timestamptz,
+  primary key (org_id, report_type_id)
+);
+
+create index if not exists organization_report_types_org_idx on organization_report_types(org_id);
+create index if not exists organization_report_types_expires_idx
+  on organization_report_types(expires_at)
+  where expires_at is not null;
+
+alter table organization_report_types enable row level security;
+
+create policy "org members read entitlements"
+  on organization_report_types for select to authenticated
+  using (is_org_member((select auth.uid()), org_id));
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- member_specialties
+-- Per-(member, report_type) write grant. A user can write a laudo of type X
+-- in org O if they are the owner of O, or if (O, user, X) is present here
+-- and the org has an entitlement for X in organization_report_types.
+-- Service-role writes only; org members read.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+create table if not exists member_specialties (
+  org_id         uuid not null,
+  user_id        uuid not null,
+  report_type_id text not null references report_types(id) on update cascade on delete restrict,
+  primary key (org_id, user_id, report_type_id),
+  foreign key (org_id, user_id) references organization_members(org_id, user_id) on delete cascade
+);
+
+create index if not exists member_specialties_org_type_idx
+  on member_specialties(org_id, report_type_id);
+
+alter table member_specialties enable row level security;
+
+create policy "org members read specialties"
+  on member_specialties for select to authenticated
+  using (is_org_member((select auth.uid()), org_id));
+
+-- Atomically create a solo (individual plan) org, owner membership,
+-- and the default ultrasound entitlement.
 create or replace function create_solo_org(p_user_id uuid, p_name text, p_slug text)
 returns uuid
 language plpgsql
@@ -262,11 +328,16 @@ declare
   v_org_id uuid;
 begin
   insert into organizations (name, slug, plan, owner_user_id)
-  values (p_name, p_slug, 'basic', p_user_id)
+  values (p_name, p_slug, 'individual', p_user_id)
   returning id into v_org_id;
 
   insert into organization_members (org_id, user_id, role)
   values (v_org_id, p_user_id, 'owner');
+
+  -- 7-day trial on the default report type. Adjust the interval here when
+  -- changing trial length. NULL expires_at = permanent (paid) entitlement.
+  insert into organization_report_types (org_id, report_type_id, expires_at)
+  values (v_org_id, 'ultrasound_abdominal', now() + interval '7 days');
 
   return v_org_id;
 end;
@@ -405,7 +476,7 @@ create table if not exists reports (
   id                      uuid default gen_random_uuid() primary key,
   user_id                 uuid references auth.users(id) on delete cascade not null,
   org_id                  uuid references organizations(id) on delete cascade not null,
-  specialty               text not null,
+  specialty               text not null references report_types(id) on update cascade on delete restrict,
   patient_name            text not null,
   species                 text not null,
   breed                   text,
@@ -434,7 +505,6 @@ create table if not exists reports (
   created_at              timestamptz default now() not null,
   updated_at              timestamptz,
 
-  constraint reports_specialty_len         check (char_length(specialty) <= 50),
   constraint reports_patient_name_len      check (char_length(patient_name) <= 200),
   constraint reports_species_len           check (char_length(species) <= 100),
   constraint reports_breed_len             check (char_length(breed) <= 100),
@@ -459,6 +529,7 @@ create index if not exists reports_user_id_created_idx
 create index if not exists reports_org_id_idx      on reports(org_id);
 create index if not exists reports_org_created_idx on reports(org_id, created_at desc) where deleted_at is null;
 create index if not exists reports_updated_by_idx  on reports(updated_by);
+create index if not exists reports_specialty_idx   on reports(specialty);
 
 -- FK-direction lookups ("all reports for this pet/clinic/vet").
 create index if not exists reports_pet_id_idx    on reports(pet_id)    where pet_id    is not null;

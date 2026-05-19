@@ -3,7 +3,7 @@ import { getProfile } from "@/lib/supabase/auth";
 import { parseReportContent } from "@/lib/utils";
 import { generatePdfBuffer } from "@/lib/report/pdf";
 import { PdfData } from "@/shared/interfaces";
-import { Specialty } from "@/shared/models";
+import { ReportType } from "@/shared/models";
 import { SPECIALTIES } from "@/lib/report/templates";
 import { withApiHandler } from "@/lib/api-handler";
 import { PDF_CACHE_TTL_MS, SIGNED_URL_TTL, STORAGE_BUCKETS, TABLES } from "@/shared/constants";
@@ -58,7 +58,7 @@ function buildFilename(report: {
   return (
     [
       "Laudo",
-      SPECIALTIES[report.specialty as Specialty].abbr,
+      SPECIALTIES[report.specialty as ReportType].abbr,
       slugify(report.patient_name),
       slugify(report.owner_name),
       dateShort,
@@ -118,7 +118,7 @@ export const GET = withApiHandler<{ id: string }>(async ({ userId, orgId, admin,
     .eq("org_id", orgId)
     .order("created_at", { ascending: true });
 
-  const specialty = report.specialty as Specialty;
+  const specialty = report.specialty as ReportType;
   const dateSource = report.exam_date ? new Date(report.exam_date + "T12:00:00") : new Date(report.created_at);
   const date = dateSource.toLocaleDateString("pt-BR");
 

@@ -37,7 +37,10 @@ export const TABLES = {
   organizations: "organizations",
   organization_members: "organization_members",
   organization_invitations: "organization_invitations",
+  organization_report_types: "organization_report_types",
+  member_specialties: "member_specialties",
   plans: "plans",
+  report_types: "report_types",
   pets: "pets",
   clinics: "clinics",
   clinic_vets: "clinic_vets",
@@ -46,6 +49,18 @@ export const TABLES = {
   report_images: "report_images",
   consents: "consents",
   audit_log: "audit_log",
+} as const;
+
+export const REPORT_TYPES = {
+  ultrasound_abdominal: "ultrasound_abdominal",
+  periodontal_treatment: "periodontal_treatment",
+} as const;
+
+export type ReportType = (typeof REPORT_TYPES)[keyof typeof REPORT_TYPES];
+
+export const ORG_ROLES = {
+  owner: "owner",
+  member: "member",
 } as const;
 
 export const STORAGE_BUCKETS = {

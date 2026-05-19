@@ -1,4 +1,6 @@
-export type Specialty = "ultrasound_abdominal";
+import { ReportType } from "@/shared/constants";
+
+export type { ReportType };
 
 export interface ReportSection {
   label: string;
@@ -86,7 +88,7 @@ export interface ReportSummary {
   patient_name: string;
   owner_name: string;
   clinic_name: string;
-  specialty: Specialty;
+  specialty: ReportType;
   created_at: string;
   exam_date?: string;
   status: ReportStatus;
@@ -96,7 +98,7 @@ export interface ReportSummary {
 export interface Report {
   id: string;
   user_id: string;
-  specialty: Specialty;
+  specialty: ReportType;
   patient_name: string;
   species: string;
   breed: string;

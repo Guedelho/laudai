@@ -1,10 +1,15 @@
-import { Specialty } from "@/shared/models";
+import { ReportType } from "@/shared/models";
 
-export const SPECIALTIES: Record<Specialty, { label: string; reportTitle: string; abbr: string }> = {
+export const SPECIALTIES: Record<ReportType, { label: string; reportTitle: string; abbr: string }> = {
   ultrasound_abdominal: {
     label: "Ultrassonografia Abdominal",
     reportTitle: "RELATÓRIO ULTRASSONOGRÁFICO",
     abbr: "US",
+  },
+  periodontal_treatment: {
+    label: "Tratamento Periodontal",
+    reportTitle: "RELATÓRIO ODONTOLÓGICO",
+    abbr: "ODONTO",
   },
 };
 

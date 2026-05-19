@@ -7,12 +7,12 @@ import type {
   ClinicVet,
   ReportImage,
   ReportSummary,
-  Specialty,
+  ReportType,
 } from "./models";
 // ─── Request types ───────────────────────────────────────────────────────────
 
 export interface GenerateRequest extends ReportFields {
-  specialty: Specialty;
+  specialty: ReportType;
   rawInput: string;
   petId?: string;
   clinicId?: string;

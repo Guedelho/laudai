@@ -63,11 +63,20 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 
 ## Multi-tenancy
 
-Every user belongs to at least one organization. Solo users get an org-of-1 automatically (basic plan, owner role) — the concept is invisible until they invite a teammate.
+Every user belongs to at least one organization. Solo users get an org-of-1 automatically (individual plan, owner role, 7-day trial on `ultrasound_abdominal`) — the concept is invisible until they invite a teammate.
 
-- **Plans**: `basic`, `professional`, `teams` (seed rows; FK from `organizations.plan`)
-- **Roles**: `owner`, `admin`, `member` — one owner per org enforced by partial unique index
+- **Plans**: `individual`, `team` (seed rows; FK from `organizations.plan`)
+- **Roles**: `owner`, `member` — one owner per org. Team management (member CRUD + invitations) is owner-only at the RLS level.
 - **Scope**: reads are org-wide (team members see each other's data); mutations stay creator-only
+
+## Report-type entitlements
+
+Each report type (`report_types` catalog) is gated by two tables:
+
+- `organization_report_types(org_id, report_type_id, expires_at)` — what the org owns. `NULL expires_at` = paid; non-null = trial / time-bound.
+- `member_specialties(org_id, user_id, report_type_id)` — which members can write which types. Owners are implicit (god-mode within the org's entitlements); other members need a grant.
+
+`/api/generate` checks both. Solo signups receive a 7-day trial of `ultrasound_abdominal` via `create_solo_org`.
 
 ## How laudo generation works
 
@@ -130,17 +139,16 @@ lib/
   supabase/
     admin.ts client.ts server.ts    # Three Supabase client variants
     auth.ts                         # getUserId, getProfile, getCurrentOrgId
-    db.ts                           # find-or-create + resolveOwnedFks (org-scoped)
+    db.ts                           # find-or-create, resolveOwnedFks, hasReportTypeAccess, canWriteReport
   api-handler.ts                    # withApiHandler — provides orgId, admin, audit() to handlers
   audit.ts                          # logAudit + AUDIT_ACTIONS/AUDIT_ENTITIES
-  rate-limit.ts                     # Postgres-backed consumeRateLimit
   log.ts                            # Structured logError
   utils.ts server-utils.ts          # Helpers
 shared/
   models.ts                         # Domain types + REPORT_STATUSES
   interfaces.ts                     # API request/response types
-  constants.ts                      # TABLES, STORAGE_BUCKETS, LEGAL_VERSIONS,
-                                    # RATE_LIMITS, SIGNED_URL_TTL, SPECIES_OPTIONS, ...
+  constants.ts                      # TABLES, STORAGE_BUCKETS, LEGAL_VERSIONS, REPORT_TYPES,
+                                    # ORG_ROLES, SIGNED_URL_TTL, SPECIES_OPTIONS, ...
 supabase/
   migrations/                       # Single consolidated initial.sql (source of truth)
 proxy.ts                            # Auth gate (Next.js 16 middleware)

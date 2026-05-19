@@ -19,7 +19,10 @@ export const AUDIT_ENTITIES = {
   report: "report",
   report_image: "report_image",
   profile: "profile",
+  organization: "organization",
   organization_member: "organization_member",
+  organization_report_type: "organization_report_type",
+  member_specialty: "member_specialty",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];

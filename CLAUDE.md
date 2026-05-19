@@ -37,23 +37,32 @@ All schema names, statuses, buckets, plan ids, audit actions, etc. live in const
 
 ## Multi-tenancy
 
-Every user belongs to ≥1 organization. Solo users get an org-of-1 (basic plan, they are the owner) — invisible plumbing. The concept only surfaces in UI when they invite a teammate or upgrade.
+Every user belongs to ≥1 organization. Solo users get an org-of-1 (individual plan, they are the owner) — invisible plumbing. The concept only surfaces in UI when they invite a teammate or upgrade.
 
-- `organizations` — id, name, slug, plan (FK to `plans`), owner_user_id, deleted_at
-- `organization_members` — (org_id, user_id) PK, role ∈ {`owner`, `admin`, `member`}. Partial unique index ensures one owner per org
-- `organization_invitations` — pending invitations with token + expires_at; partial unique on (org_id, email) where not accepted
-- `plans` — catalog table seeded with `basic`, `professional`, `teams`. `organizations.plan` references it (FK, on update cascade)
+- `organizations` — id, name, slug, plan (FK to `plans`), owner_user_id (FK to `auth.users` with `on delete cascade` so the LGPD sweep can hard-delete the user without manual cleanup), deleted_at
+- `organization_members` — (org_id, user_id) PK, role ∈ {`owner`, `member`}. Partial unique index ensures one owner per org. Team management (member CRUD + invitations) is owner-only at the RLS level.
+- `organization_invitations` — pending invitations with token + expires_at; partial unique on (org_id, email) where not accepted. No role column — invitees join as `member` and the owner grants specialties separately.
+- `plans` — catalog table seeded with `individual`, `team`. ID-only; display labels live in code. `organizations.plan` references it (FK, on update cascade).
 
 Helpers:
 
 - `getCurrentOrgId(userId)` in `lib/supabase/auth.ts` — returns the user's primary org (owned first, then any membership). Until the org switcher is built, this is the "current" org for every request.
-- `create_solo_org(userId, name, slug)` — SQL function (revoked from anon/authenticated). Atomically inserts the org + owner membership.
+- `create_solo_org(userId, name, slug)` — SQL function (revoked from anon/authenticated). Atomically inserts the org + owner membership + a 7-day trial entitlement on `ultrasound_abdominal`.
 
-Plan enforcement (member counts, features) is **application-level** — no quotas in DB. Plans store only display metadata.
+Plan enforcement (member counts, features) is **application-level** — no quotas in DB.
+
+## Report-type entitlements
+
+Two layers gate `/api/generate`:
+
+- **Billing** (`organization_report_types(org_id, report_type_id, expires_at)`) — what the org owns. `NULL expires_at` = permanent (paid). Non-null = trial / time-bound grant. `hasReportTypeAccess()` in `lib/supabase/db.ts` rejects when `now() >= expires_at`. Solo signups land here with `expires_at = now() + 7 days` on `ultrasound_abdominal` — that's the 7-day trial.
+- **Permission** (`member_specialties(org_id, user_id, report_type_id)`) — which members can write which types. `canWriteReport()` short-circuits true for org owners (god-mode within the org's entitlements); otherwise it requires a grant row. Composite FK back to `organization_members(org_id, user_id)` so grants can only target actual members.
+
+The catalog `report_types(id)` is the FK target for both `reports.specialty` and the two gate tables (ID-only; display labels live in `SPECIALTIES` in `lib/report/templates.ts`). Today only `ultrasound_abdominal` has prompts/templates wired in `lib/report/generate.ts`; the `periodontal_treatment` catalog row exists but is not yet generatable end-to-end — keep that in mind before granting it.
 
 ## Audit log
 
-`audit_log` is the polymorphic append-only record of every create/update/delete on domain entities (`pet`, `clinic`, `clinic_vet`, `report`, `report_image`, `profile`, `organization_member`). Every mutation endpoint writes one via the `audit()` helper that `withApiHandler` provides in ctx (auto-bound to the request's userId + orgId).
+`audit_log` is the polymorphic append-only record of every create/update/delete on domain entities (`pet`, `clinic`, `clinic_vet`, `report`, `report_image`, `profile`, `organization`, `organization_member`, `organization_report_type`, `member_specialty`). Every mutation endpoint writes one via the `audit()` helper that `withApiHandler` provides in ctx (auto-bound to the request's userId + orgId).
 
 ```ts
 await audit({ action: AUDIT_ACTIONS.delete, entityType: AUDIT_ENTITIES.pet, entityId: id, changes: before });
