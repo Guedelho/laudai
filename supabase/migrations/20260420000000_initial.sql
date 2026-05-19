@@ -783,6 +783,57 @@ create or replace trigger reports_updated_at
   for each row execute function update_updated_at();
 
 -- ═══════════════════════════════════════════════════════════════════════════
+-- rate_limits
+-- Per-user fixed-window counter. Keyed by user_id so IP rotation can't sidestep
+-- the limit on an authenticated session. Service-role only (no RLS policies).
+-- ═══════════════════════════════════════════════════════════════════════════
+
+create table if not exists rate_limits (
+  user_id      uuid not null references auth.users(id) on delete cascade,
+  endpoint     text not null,
+  window_start timestamptz not null,
+  count        int not null default 1,
+  primary key (user_id, endpoint, window_start)
+);
+
+create index if not exists rate_limits_window_start_idx on rate_limits(window_start);
+
+alter table rate_limits enable row level security;
+
+create or replace function check_rate_limit(
+  p_user_id      uuid,
+  p_endpoint     text,
+  p_window_start timestamptz
+) returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_count int;
+begin
+  insert into rate_limits (user_id, endpoint, window_start, count)
+  values (p_user_id, p_endpoint, p_window_start, 1)
+  on conflict (user_id, endpoint, window_start)
+  do update set count = rate_limits.count + 1
+  returning count into v_count;
+  return v_count;
+end;
+$$;
+
+revoke all on function check_rate_limit(uuid, text, timestamptz) from public, anon, authenticated;
+
+create or replace function cleanup_rate_limits() returns void
+language sql
+security definer
+set search_path = public
+as $$
+  delete from rate_limits where window_start < now() - interval '1 hour';
+$$;
+
+revoke all on function cleanup_rate_limits() from public, anon, authenticated;
+
+-- ═══════════════════════════════════════════════════════════════════════════
 -- Permissions
 -- anon: no access. authenticated: SELECT only (further restricted by RLS).
 -- All writes go through API routes using the service role.
