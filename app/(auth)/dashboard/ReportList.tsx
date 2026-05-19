@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { REALTIME_POSTGRES_CHANGES_LISTEN_EVENT, type RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { SPECIALTIES } from "@/lib/report/templates";
-import { ReportStatus, ReportSummary } from "@/shared/models";
-import { DASHBOARD_PAGE_SIZE } from "@/shared/constants";
+import { REPORT_STATUSES, ReportStatus, ReportSummary } from "@/shared/models";
+import { DASHBOARD_PAGE_SIZE, TABLES } from "@/shared/constants";
 import { createClient } from "@/lib/supabase/client";
 import { listReports, regenerateReport } from "@/lib/services/reports";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
@@ -88,7 +88,7 @@ export default function ReportList({ userId, orgId }: Props) {
     let cancelled = false;
 
     function handleChange(payload: RealtimePostgresChangesPayload<ReportRealtimeRow>) {
-      if (payload.eventType === "INSERT") {
+      if (payload.eventType === REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.INSERT) {
         const row = payload.new;
         if (row.deleted_at) return;
         prevStatusRef.current.set(row.id, row.status);
@@ -97,7 +97,7 @@ export default function ReportList({ userId, orgId }: Props) {
         return;
       }
 
-      if (payload.eventType === "UPDATE") {
+      if (payload.eventType === REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE) {
         const row = payload.new;
         if (row.deleted_at) {
           prevStatusRef.current.delete(row.id);
@@ -105,7 +105,7 @@ export default function ReportList({ userId, orgId }: Props) {
           return;
         }
         const previous = prevStatusRef.current.get(row.id);
-        if (previous && previous !== "completed" && row.status === "completed") {
+        if (previous && previous !== REPORT_STATUSES.completed && row.status === REPORT_STATUSES.completed) {
           setToast(`Laudo de ${row.patient_name} pronto.`);
         }
         prevStatusRef.current.set(row.id, row.status);
@@ -128,7 +128,12 @@ export default function ReportList({ userId, orgId }: Props) {
         .channel(`reports:${orgId}`)
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "reports", filter: `org_id=eq.${orgId}` },
+          {
+            event: REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.ALL,
+            schema: "public",
+            table: TABLES.reports,
+            filter: `org_id=eq.${orgId}`,
+          },
           handleChange,
         )
         .subscribe((status, err) => {
@@ -259,8 +264,8 @@ export default function ReportList({ userId, orgId }: Props) {
 }
 
 function ReportRow({ report, retrying, onRetry }: { report: ReportSummary; retrying: boolean; onRetry: () => void }) {
-  const isPending = report.status === "pending" || report.status === "generating";
-  const isFailed = report.status === "failed";
+  const isPending = report.status === REPORT_STATUSES.pending || report.status === REPORT_STATUSES.generating;
+  const isFailed = report.status === REPORT_STATUSES.failed;
 
   const meta = (
     <>

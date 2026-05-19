@@ -5,7 +5,7 @@ import { createAdmin } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/supabase/auth";
 import { notFound } from "next/navigation";
 import { cacheTag, cacheLife } from "next/cache";
-import { Report } from "@/shared/models";
+import { Report, REPORT_STATUSES } from "@/shared/models";
 import { SIGNED_URL_TTL, STORAGE_BUCKETS, TABLES } from "@/shared/constants";
 import { reportCacheTag } from "@/lib/utils";
 import ReportDetail from "./ReportDetail";
@@ -52,7 +52,7 @@ async function ReportContents({ id, review }: { id: string; review: boolean }) {
   const { report, images } = await getReportData(id, orgId);
   if (!report) notFound();
 
-  if (report.status !== "completed" || !report.edited_content) {
+  if (report.status !== REPORT_STATUSES.completed || !report.edited_content) {
     return <PendingReport status={report.status} errorMessage={report.error_message} />;
   }
 
@@ -60,7 +60,7 @@ async function ReportContents({ id, review }: { id: string; review: boolean }) {
 }
 
 function PendingReport({ status, errorMessage }: { status: string; errorMessage: string | null }) {
-  const failed = status === "failed";
+  const failed = status === REPORT_STATUSES.failed;
   return (
     <main className="max-w-2xl mx-auto px-6 py-12 text-center">
       <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700 mb-8 inline-block">
