@@ -54,7 +54,7 @@ export default function DeleteReportButton({ reportId }: { reportId: string }) {
         setConfirming(true);
         setDeleteError("");
       }}
-      className="text-sm text-red-500 hover:text-red-700 print:hidden"
+      className="text-sm text-red-600 hover:text-red-700 print:hidden"
     >
       Excluir
     </button>

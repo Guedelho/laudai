@@ -40,7 +40,8 @@ function EditableList({
           <button
             type="button"
             onClick={() => onRemove(i)}
-            className="text-red-400 hover:text-red-600 text-lg leading-none mt-1"
+            aria-label="Remover linha"
+            className="text-red-600 hover:text-red-700 inline-flex items-center justify-center w-6 h-6 leading-none mt-0.5 shrink-0"
           >
             ×
           </button>
@@ -178,6 +179,7 @@ export function ReportEditorPatientFields({
           <select
             value={fields.sex}
             onChange={(e) => setFields({ ...fields, sex: e.target.value })}
+            aria-label="Sexo"
             className={inputCls}
           >
             {SEX_OPTIONS.map((o) => (
@@ -273,7 +275,8 @@ export function ReportEditorContent({
             <button
               type="button"
               onClick={() => removeSection(i)}
-              className="text-red-400 hover:text-red-600 text-lg leading-none mt-1"
+              aria-label="Remover linha"
+              className="text-red-600 hover:text-red-700 inline-flex items-center justify-center w-6 h-6 leading-none mt-0.5 shrink-0"
             >
               ×
             </button>

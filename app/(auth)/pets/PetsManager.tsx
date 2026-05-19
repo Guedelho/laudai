@@ -141,6 +141,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
               <select
                 value={species}
                 onChange={(e) => setSpecies(e.target.value)}
+                aria-label="Espécie"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {SPECIES_OPTIONS.map((o) => (
@@ -169,7 +170,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
               />
             </div>
           </div>
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-red-600">{error}</p>}
           <button
             type="submit"
             disabled={saving}
@@ -180,7 +181,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
         </form>
       )}
 
-      {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
+      {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
 
       {!pets.length && !showForm && (
         <div className="text-center py-16 text-gray-500">
@@ -218,6 +219,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                     <select
                       value={editFields.species ?? "Canina"}
                       onChange={(e) => setEditFields((f) => ({ ...f, species: e.target.value }))}
+                      aria-label="Espécie"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       {SPECIES_OPTIONS.map((o) => (
@@ -250,6 +252,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                     <select
                       value={editFields.sex}
                       onChange={(e) => setEditFields((f) => ({ ...f, sex: e.target.value }))}
+                      aria-label="Sexo"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       {SEX_OPTIONS.map((o) => (
@@ -269,7 +272,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                   />
                   Castrado(a)
                 </label>
-                {editError && <p className="text-sm text-red-500">{editError}</p>}
+                {editError && <p className="text-sm text-red-600">{editError}</p>}
                 <div className="flex gap-2">
                   <button
                     type="submit"
@@ -298,13 +301,13 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                   <p className="text-xs text-gray-500 mt-1">Responsável: {pet.owner_name}</p>
                 </div>
                 <div className="flex gap-3 shrink-0 mt-0.5">
-                  <button onClick={() => startEdit(pet)} className="text-xs text-blue-500 hover:text-blue-700">
+                  <button onClick={() => startEdit(pet)} className="text-xs text-blue-600 hover:text-blue-700">
                     Editar
                   </button>
                   <button
                     onClick={() => handleDelete(pet.id)}
                     disabled={deletingId === pet.id}
-                    className="text-xs text-red-500 hover:text-red-700 disabled:opacity-40"
+                    className="text-xs text-red-600 hover:text-red-700 disabled:opacity-40"
                   >
                     {deletingId === pet.id ? "Excluindo..." : "Excluir"}
                   </button>

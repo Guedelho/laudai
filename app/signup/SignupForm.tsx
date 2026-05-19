@@ -142,6 +142,7 @@ export default function SignupForm() {
               <select
                 value={crmvState}
                 onChange={(e) => setCrmvState(e.target.value)}
+                aria-label="Estado do CRMV"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {BR_STATES.map((s) => (
@@ -184,7 +185,7 @@ export default function SignupForm() {
             </span>
           </label>
 
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-red-600">{error}</p>}
           <button
             type="submit"
             disabled={loading}

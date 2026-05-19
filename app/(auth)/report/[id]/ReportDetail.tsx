@@ -68,7 +68,7 @@ export default function ReportDetail({
         </div>
       </div>
 
-      {editor.error && <p className="text-sm text-red-500 mb-4">{editor.error}</p>}
+      {editor.error && <p className="text-sm text-red-600 mb-4">{editor.error}</p>}
 
       {editing && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2 mb-4 text-sm text-yellow-700 animate-[fadeIn_0.2s_ease-out]">

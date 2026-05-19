@@ -147,7 +147,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
               />
             </div>
           </div>
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-red-600">{error}</p>}
           <button
             type="submit"
             disabled={saving}
@@ -158,7 +158,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
         </form>
       )}
 
-      {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
+      {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
 
       {!clinics.length && !showForm && (
         <div className="text-center py-16 text-gray-500">
@@ -199,7 +199,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
                         <button
                           onClick={() => handleRemoveVet(clinic.id, vet.id)}
                           disabled={removingVetId === vet.id}
-                          className="text-xs text-red-500 hover:text-red-700 disabled:opacity-40"
+                          className="text-xs text-red-600 hover:text-red-700 disabled:opacity-40"
                         >
                           {removingVetId === vet.id ? "Removendo..." : "Remover"}
                         </button>
@@ -226,7 +226,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
                   </form>
                 </div>
 
-                {editError && <p className="text-sm text-red-500">{editError}</p>}
+                {editError && <p className="text-sm text-red-600">{editError}</p>}
 
                 <button onClick={() => setEditingId(null)} className="text-sm text-gray-500 hover:text-gray-700">
                   Fechar
@@ -241,13 +241,13 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
                   )}
                 </div>
                 <div className="flex gap-3 shrink-0 mt-0.5">
-                  <button onClick={() => startEdit(clinic)} className="text-xs text-blue-500 hover:text-blue-700">
+                  <button onClick={() => startEdit(clinic)} className="text-xs text-blue-600 hover:text-blue-700">
                     Editar
                   </button>
                   <button
                     onClick={() => handleDelete(clinic.id)}
                     disabled={deletingId === clinic.id}
-                    className="text-xs text-red-500 hover:text-red-700 disabled:opacity-40"
+                    className="text-xs text-red-600 hover:text-red-700 disabled:opacity-40"
                   >
                     {deletingId === clinic.id ? "Excluindo..." : "Excluir"}
                   </button>

@@ -353,7 +353,12 @@ export default function NewReportPage() {
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Espécie</label>
-              <select value={species} onChange={(e) => setSpecies(e.target.value)} className={inputCls}>
+              <select
+                value={species}
+                onChange={(e) => setSpecies(e.target.value)}
+                aria-label="Espécie"
+                className={inputCls}
+              >
                 {SPECIES_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -363,7 +368,7 @@ export default function NewReportPage() {
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Sexo</label>
-              <select value={sex} onChange={(e) => setSex(e.target.value)} className={inputCls}>
+              <select value={sex} onChange={(e) => setSex(e.target.value)} aria-label="Sexo" className={inputCls}>
                 {SEX_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -513,7 +518,7 @@ export default function NewReportPage() {
           )}
         </div>
 
-        {(error || micPermissionError) && <p className="text-sm text-red-500">{error || micPermissionError}</p>}
+        {(error || micPermissionError) && <p className="text-sm text-red-600">{error || micPermissionError}</p>}
 
         <button
           type="submit"

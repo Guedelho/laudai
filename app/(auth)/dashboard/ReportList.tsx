@@ -287,7 +287,7 @@ function ReportRow({ report, retrying, onRetry }: { report: ReportSummary; retry
           </span>
         ) : isFailed ? (
           <div className="flex flex-col items-end gap-1">
-            <span className="text-xs text-red-500">Falhou</span>
+            <span className="text-xs text-red-600">Falhou</span>
             <button
               type="button"
               onClick={onRetry}

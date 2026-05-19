@@ -82,7 +82,7 @@ export default function ImageManager({
           )}
         </div>
 
-        {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
+        {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
 
         {images.length > 0 ? (
           <div className="grid grid-cols-2 gap-4">
