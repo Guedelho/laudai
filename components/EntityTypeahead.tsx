@@ -7,15 +7,12 @@ interface EntityTypeaheadProps<T> {
   onChange: (value: string) => void;
   items: T[];
   getLabel: (item: T) => string;
-  /**
-   * Fires whenever the value resolves to an entity (typed exact match or
-   * picked from the dropdown), or to null when it no longer matches any
-   * saved item. Use this to track FK state.
-   */
   onPick: (item: T | null) => void;
   placeholder?: string;
   className?: string;
   required?: boolean;
+  ariaLabel?: string;
+  id?: string;
 }
 
 export default function EntityTypeahead<T>({
@@ -27,6 +24,8 @@ export default function EntityTypeahead<T>({
   placeholder,
   className,
   required,
+  ariaLabel,
+  id,
 }: EntityTypeaheadProps<T>) {
   function findByLabel(label: string): T | null {
     const target = label.trim().toLowerCase();
@@ -46,6 +45,8 @@ export default function EntityTypeahead<T>({
       placeholder={placeholder}
       className={className}
       required={required}
+      ariaLabel={ariaLabel}
+      id={id}
     />
   );
 }

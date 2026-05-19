@@ -6,11 +6,12 @@ interface TypeaheadProps {
   value: string;
   onChange: (value: string) => void;
   suggestions: string[];
-  /** Fires when the user picks a suggestion from the dropdown (after onChange). */
   onSelect?: (value: string) => void;
   placeholder?: string;
   className?: string;
   required?: boolean;
+  ariaLabel?: string;
+  id?: string;
 }
 
 export default function Typeahead({
@@ -21,6 +22,8 @@ export default function Typeahead({
   placeholder,
   className,
   required,
+  ariaLabel,
+  id,
 }: TypeaheadProps) {
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -47,6 +50,7 @@ export default function Typeahead({
   return (
     <div ref={wrapperRef} className="relative">
       <input
+        id={id}
         type="text"
         value={value}
         onChange={(e) => {
@@ -61,6 +65,7 @@ export default function Typeahead({
         placeholder={placeholder}
         className={className}
         required={required}
+        aria-label={ariaLabel}
       />
       {showDropdown && (
         <ul className="absolute z-20 left-0 right-0 mt-1 max-h-40 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg">

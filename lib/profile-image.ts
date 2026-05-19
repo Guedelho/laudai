@@ -7,9 +7,7 @@ import { SIGNED_URL_TTL, STORAGE_BUCKETS } from "@/shared/constants";
 type Admin = ReturnType<typeof createAdmin>;
 
 // Stream through the route so the browser-cached URL stays stable (signed URLs expire).
-export async function serveProfileImage(admin: Admin, storagePath: string | null): Promise<NextResponse> {
-  if (!storagePath) return new NextResponse(null, { status: 404 });
-
+export async function serveProfileImage(admin: Admin, storagePath: string): Promise<NextResponse> {
   const { data: signed, error } = await admin.storage
     .from(STORAGE_BUCKETS.profileLogos)
     .createSignedUrl(storagePath, SIGNED_URL_TTL.serverFetch);

@@ -11,7 +11,8 @@ const BUCKET = STORAGE_BUCKETS.profileLogos;
 export const GET = withApiHandler(
   async ({ userId, admin }) => {
     const { data: profile } = await admin.from(TABLES.profiles).select("signature_image_url").eq("id", userId).single();
-    return serveProfileImage(admin, profile?.signature_image_url ?? null);
+    if (!profile?.signature_image_url) return new NextResponse(null, { status: 404 });
+    return serveProfileImage(admin, profile.signature_image_url);
   },
   { botId: false },
 );

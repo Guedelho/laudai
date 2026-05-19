@@ -204,6 +204,7 @@ export default function ReportList({ userId }: Props) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Buscar por paciente ou responsável..."
+        aria-label="Buscar laudos"
         className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
       />
 

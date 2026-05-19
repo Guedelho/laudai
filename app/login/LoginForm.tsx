@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
@@ -11,6 +11,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+  const emailId = useId();
+  const passwordId = useId();
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -35,8 +37,11 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label htmlFor={emailId} className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
             <input
+              id={emailId}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -45,8 +50,11 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+            <label htmlFor={passwordId} className="block text-sm font-medium text-gray-700 mb-1">
+              Senha
+            </label>
             <input
+              id={passwordId}
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
