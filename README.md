@@ -77,10 +77,9 @@ The dashboard subscribes to Supabase Realtime on the `reports` table and shows i
 
 **Reliability layers:**
 
-- The worker wraps the Gemini call in `Promise.race` with a 5-min timeout — most failures surface within seconds.
+- The worker wraps the Gemini call in `Promise.race` with a 5-min timeout — failures surface within seconds.
 - Every report edit writes a snapshot to `report_versions` (append-only audit of laudo content).
 - Every CRUD across pets, clinics, reports, images, profile lands in `audit_log` (who did what when).
-- A 15-min Vercel cron sweeps any row stuck in `generating` > 10 minutes to `failed`.
 
 ## LGPD compliance
 
@@ -95,7 +94,7 @@ The dashboard subscribes to Supabase Realtime on the `reports` table and shows i
 1. Push the repo to GitHub
 2. Import the project at [vercel.com/new](https://vercel.com/new)
 3. Under **Project Settings → Environment Variables**, add the values from `.env.example`, plus a random `CRON_SECRET` (long random string used as a Bearer token on the cron routes)
-4. Deploy — `vercel.json` registers both crons (stale-job + 30-day deletion sweep); `serverExternalPackages: ["pdfmake"]` is already set in `next.config.ts`
+4. Deploy — `vercel.json` registers the 30-day deletion sweep cron; `serverExternalPackages: ["pdfmake"]` is already set in `next.config.ts`
 
 ## Project structure
 
@@ -116,7 +115,6 @@ app/
     pets/ clinics/ profile/         # CRUD for sidebar entities
     consents/                       # POST — record terms/privacy acceptance
     account/                        # DELETE (schedule) / POST (cancel) / GET export
-    internal/sweep-stale-laudos/    # Cron: mark stuck jobs failed
     internal/sweep-deleted-accounts/ # Cron: 30-day account purge
   legal/                            # Public privacy policy + terms
   login/ signup/                    # Auth pages (signup currently redirects)
@@ -146,5 +144,5 @@ supabase/
   migrations/                       # Single consolidated initial.sql (source of truth)
 proxy.ts                            # Auth gate (Next.js 16 middleware)
 instrumentation-client.ts           # BotID protected routes
-vercel.json                         # Cron jobs (sweep-stale-laudos + sweep-deleted-accounts)
+vercel.json                         # Cron: sweep-deleted-accounts (daily 03:00 UTC)
 ```
