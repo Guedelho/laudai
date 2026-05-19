@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GENERATE_MODEL } from "@/shared/constants";
 import { buildDefaults, buildSingleCallPrompt } from "@/lib/report/templates";
+import { logInfo, logWarn } from "@/lib/log";
 import type { GenerateParams } from "@/shared/interfaces";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
@@ -27,6 +28,12 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> {
     } catch (err) {
       if (!isRetryable(err) || attempt === maxRetries) throw err;
       lastErr = err;
+      logWarn("Gemini retry", {
+        attempt: attempt + 1,
+        maxRetries,
+        delayMs: 1000 * (attempt + 1),
+        error: err instanceof Error ? err.message : String(err),
+      });
       await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
     }
   }
@@ -50,12 +57,20 @@ export async function generateReport(params: GenerateParams): Promise<string> {
     `${sex === "M" ? "Macho" : "Fêmea"}, ${neutered ? "castrado(a)" : "não castrado(a)"}, ` +
     `responsável: ${ownerName}.\n\nGere o laudo completo.`;
 
+  const startedAt = Date.now();
   const raw = await withRetry(async () => {
     const result = await model.generateContentStream(userMessage);
     let text = "";
+    let chunks = 0;
     for await (const chunk of result.stream) {
       text += chunk.text();
+      chunks += 1;
     }
+    logInfo("Gemini stream completed", {
+      durationMs: Date.now() - startedAt,
+      chunks,
+      bytes: text.length,
+    });
     return text;
   });
 
