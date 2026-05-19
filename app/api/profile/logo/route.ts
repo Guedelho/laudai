@@ -1,30 +1,16 @@
 import { NextResponse } from "next/server";
 import { parseProfileImage } from "@/lib/server-utils";
-import { SIGNED_URL_TTL, STORAGE_BUCKETS, TABLES } from "@/shared/constants";
+import { STORAGE_BUCKETS, TABLES } from "@/shared/constants";
 import { withApiHandler } from "@/lib/api-handler";
 import { invalidateUserPdfCache } from "@/lib/supabase/db";
+import { serveProfileImage } from "@/lib/profile-image";
 import { logError } from "@/lib/log";
 
 const BUCKET = STORAGE_BUCKETS.profileLogos;
 
 export const GET = withApiHandler(async ({ userId, admin }) => {
   const { data: profile } = await admin.from(TABLES.profiles).select("logo_url").eq("id", userId).single();
-  if (!profile?.logo_url) return new NextResponse(null, { status: 404 });
-
-  const { data: signed, error } = await admin.storage
-    .from(BUCKET)
-    .createSignedUrl(profile.logo_url, SIGNED_URL_TTL.serverFetch);
-  if (error || !signed?.signedUrl) return new NextResponse(null, { status: 404 });
-
-  const upstream = await fetch(signed.signedUrl);
-  if (!upstream.ok) return new NextResponse(null, { status: 404 });
-
-  return new NextResponse(await upstream.arrayBuffer(), {
-    headers: {
-      "Content-Type": upstream.headers.get("content-type") ?? "application/octet-stream",
-      "Cache-Control": "private, max-age=3600, must-revalidate",
-    },
-  });
+  return serveProfileImage(admin, profile?.logo_url ?? null);
 });
 
 export const POST = withApiHandler(async ({ userId, admin, req }) => {

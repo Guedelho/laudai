@@ -12,10 +12,24 @@ const LOADING_HTML = [
   '</style></head><body><div class="c"><div class="s"></div><h1>Laudai</h1><p>Preparando PDF...</p></div></body></html>',
 ].join("");
 
-/** Open the PDF for a report in a new tab, with a loading splash while it generates. */
-export function openReportPdfTab(reportId: string): void {
+/**
+ * Fetch the PDF from the current tab (BotID headers attached) then hand the
+ * bytes to a new tab as a blob URL. A naked window.open('/api/.../pdf') breaks
+ * because the new tab has no Next.js JS loaded yet, so no BotID headers.
+ */
+export async function openReportPdfTab(reportId: string): Promise<void> {
   const tab = window.open("", "_blank");
   if (!tab) return;
   tab.document.write(LOADING_HTML);
-  tab.location.href = `/api/reports/${reportId}/pdf`;
+
+  try {
+    const response = await fetch(`/api/reports/${reportId}/pdf`);
+    if (!response.ok) throw new Error(`PDF fetch failed: ${response.status}`);
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    tab.location.href = url;
+  } catch (err) {
+    tab.close();
+    throw err;
+  }
 }
