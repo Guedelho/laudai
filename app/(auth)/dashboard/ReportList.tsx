@@ -2,14 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
-  REALTIME_SUBSCRIBE_STATES,
-  type RealtimePostgresChangesPayload,
-} from "@supabase/supabase-js";
+import { REALTIME_SUBSCRIBE_STATES } from "@supabase/supabase-js";
 import { SPECIALTIES } from "@/lib/report/templates";
 import { REPORT_STATUSES, ReportSummary } from "@/shared/models";
-import { DASHBOARD_PAGE_SIZE, TABLES } from "@/shared/constants";
+import { DASHBOARD_PAGE_SIZE } from "@/shared/constants";
 import { createClient } from "@/lib/supabase/client";
 import { listReports, regenerateReport } from "@/lib/services/reports";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
@@ -19,7 +15,7 @@ interface Props {
   orgId: string;
 }
 
-type ReportRealtimeRow = ReportSummary & { deleted_at: string | null };
+type ReportRealtimeRow = ReportSummary & { event: "insert" | "update" | "delete"; deleted_at: string | null };
 
 function toSummary(row: ReportRealtimeRow): ReportSummary {
   return {
@@ -98,24 +94,16 @@ export default function ReportList({ userId, orgId }: Props) {
       setToast(`Laudo de ${row.patient_name} pronto.`);
     }
 
-    function handleChange(payload: RealtimePostgresChangesPayload<ReportRealtimeRow>) {
-      if (payload.eventType === REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.INSERT) {
-        const row = payload.new;
-        if (row.deleted_at) return;
-        const summary = toSummary(row);
-        setReports((prev) => (prev.some((r) => r.id === summary.id) ? prev : [summary, ...prev]));
-        maybeToastCompletion(row);
+    function handleChange(row: ReportRealtimeRow) {
+      if (row.event === "delete" || row.deleted_at) {
+        knownCompletedRef.current.delete(row.id);
+        setReports((prev) => prev.filter((r) => r.id !== row.id));
         return;
       }
-
-      if (payload.eventType === REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE) {
-        const row = payload.new;
-        if (row.deleted_at) {
-          knownCompletedRef.current.delete(row.id);
-          setReports((prev) => prev.filter((r) => r.id !== row.id));
-          return;
-        }
-        const summary = toSummary(row);
+      const summary = toSummary(row);
+      if (row.event === "insert") {
+        setReports((prev) => (prev.some((r) => r.id === summary.id) ? prev : [summary, ...prev]));
+      } else {
         setReports((prev) => {
           const idx = prev.findIndex((r) => r.id === summary.id);
           if (idx === -1) return [summary, ...prev];
@@ -123,8 +111,8 @@ export default function ReportList({ userId, orgId }: Props) {
           next[idx] = summary;
           return next;
         });
-        maybeToastCompletion(row);
       }
+      maybeToastCompletion(row);
     }
 
     async function init() {
@@ -132,17 +120,8 @@ export default function ReportList({ userId, orgId }: Props) {
       if (cancelled) return;
 
       channel = supabase
-        .channel(`reports:${orgId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.ALL,
-            schema: "public",
-            table: TABLES.reports,
-            filter: `org_id=eq.${orgId}`,
-          },
-          handleChange,
-        )
+        .channel(`org:${orgId}:reports`, { config: { private: true } })
+        .on<ReportRealtimeRow>("broadcast", { event: "report_changed" }, ({ payload }) => handleChange(payload))
         .subscribe((status, err) => {
           if (status === REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR || status === REALTIME_SUBSCRIBE_STATES.TIMED_OUT) {
             console.error(`Realtime channel ${status}`, err);

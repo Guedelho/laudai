@@ -73,7 +73,7 @@ Every user belongs to at least one organization. Solo users get an org-of-1 auto
 
 Generation is asynchronous. `POST /api/generate` inserts a `reports` row with `status='pending'`, schedules the Gemini call via Next.js `after()`, and returns `{ reportId }` in <300ms. The user is redirected to `/dashboard` immediately and can start another laudo while the worker runs.
 
-The dashboard subscribes to Supabase Realtime on the `reports` table and shows in-progress rows with a spinner. When the worker flips `status` to `completed`, a toast fires and the row becomes clickable. Failed laudos show a "Tentar novamente" button → `/api/reports/[id]/regenerate`.
+The dashboard subscribes to a private Supabase Realtime **Broadcast** channel (`org:<org_id>:reports`) and shows in-progress rows with a spinner. A Postgres trigger on the `reports` table emits `report_changed` events via `realtime.send()` whenever a row mutates, so all org members see updates as the worker flips `status` to `completed`. A toast fires and the row becomes clickable. Failed laudos show a "Tentar novamente" button → `/api/reports/[id]/regenerate`.
 
 **Reliability layers:**
 

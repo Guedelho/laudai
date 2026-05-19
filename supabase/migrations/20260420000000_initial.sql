@@ -102,6 +102,25 @@ create index if not exists organization_members_invited_by_idx on organization_m
 
 alter table organization_members enable row level security;
 
+-- Membership check, used by RLS policies that must not recurse through
+-- organization_members' own SELECT policy. SECURITY DEFINER + ownership by
+-- postgres bypasses RLS during the lookup.
+create or replace function is_org_member(p_user_id uuid, p_org_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.organization_members
+    where user_id = p_user_id and org_id = p_org_id
+  );
+$$;
+
+revoke all on function is_org_member(uuid, uuid) from public;
+grant execute on function is_org_member(uuid, uuid) to authenticated;
+
 -- Policies on organizations (defined after members table so EXISTS subqueries are valid).
 create policy "members read their orgs"
   on organizations for select to authenticated
@@ -120,12 +139,7 @@ create policy "owner updates own org"
 -- Policies on organization_members.
 create policy "members read same-org memberships"
   on organization_members for select to authenticated
-  using (
-    exists (
-      select 1 from organization_members self
-      where self.org_id = organization_members.org_id and self.user_id = (select auth.uid())
-    )
-  );
+  using (is_org_member((select auth.uid()), org_id));
 
 create policy "org_members insert by admin"
   on organization_members for insert to authenticated
@@ -470,16 +484,62 @@ create policy "org members read reports"
   on reports for select to authenticated
   using (exists (select 1 from organization_members m where m.org_id = reports.org_id and m.user_id = (select auth.uid())));
 
--- Enable Realtime so the dashboard can subscribe to status changes.
-do $$
+-- Realtime: broadcast report mutations to an org-scoped private channel.
+-- We use Broadcast (not postgres_changes) because postgres_changes evaluates
+-- the table's RLS in realtime.apply_rls, and the org_members policy chain
+-- can trip "infinite recursion" for recursive USING clauses.
+create or replace function broadcast_report_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_org_id uuid;
+  v_payload jsonb;
 begin
-  if not exists (
-    select 1 from pg_publication_tables
-    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'reports'
-  ) then
-    alter publication supabase_realtime add table reports;
-  end if;
-end $$;
+  v_org_id := coalesce(new.org_id, old.org_id);
+  v_payload := jsonb_build_object(
+    'event', lower(tg_op),
+    'id', coalesce(new.id, old.id),
+    'patient_name', coalesce(new.patient_name, old.patient_name),
+    'owner_name', coalesce(new.owner_name, old.owner_name),
+    'clinic_name', coalesce(new.clinic_name, old.clinic_name),
+    'specialty', coalesce(new.specialty, old.specialty),
+    'created_at', coalesce(new.created_at, old.created_at),
+    'exam_date', coalesce(new.exam_date, old.exam_date),
+    'status', coalesce(new.status, old.status),
+    'error_message', coalesce(new.error_message, old.error_message),
+    'deleted_at', coalesce(new.deleted_at, old.deleted_at)
+  );
+
+  perform realtime.send(
+    v_payload,
+    'report_changed',
+    'org:' || v_org_id::text || ':reports',
+    true
+  );
+
+  return null;
+end;
+$$;
+
+revoke all on function broadcast_report_change() from public, anon, authenticated;
+
+create trigger reports_broadcast
+after insert or update or delete on reports
+for each row execute function broadcast_report_change();
+
+-- Authorize org members to receive broadcasts on their org's reports topic.
+create policy "org members receive report broadcasts"
+  on realtime.messages for select to authenticated
+  using (
+    realtime.topic() like 'org:%:reports'
+    and is_org_member(
+      (select auth.uid()),
+      nullif(split_part(realtime.topic(), ':', 2), '')::uuid
+    )
+  );
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- report_versions
