@@ -6,7 +6,7 @@ import { PdfData } from "@/shared/interfaces";
 import { Specialty } from "@/shared/models";
 import { SPECIALTIES } from "@/lib/report/templates";
 import { withApiHandler } from "@/lib/api-handler";
-import { SIGNED_URL_TTL, STORAGE_BUCKETS, TABLES } from "@/shared/constants";
+import { PDF_CACHE_TTL_MS, SIGNED_URL_TTL, STORAGE_BUCKETS, TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 import sharp from "sharp";
 
@@ -72,7 +72,7 @@ export const GET = withApiHandler<{ id: string }>(async ({ userId, orgId, admin,
   const { data: report } = await admin
     .from(TABLES.reports)
     .select(
-      "user_id, patient_name, species, breed, age, sex, neutered, owner_name, clinic_name, responsible_vet, specialty, exam_date, created_at, edited_content, pdf_storage_path",
+      "user_id, patient_name, species, breed, age, sex, neutered, owner_name, clinic_name, responsible_vet, specialty, exam_date, created_at, edited_content, pdf_storage_path, pdf_cached_at",
     )
     .eq("id", id)
     .eq("org_id", orgId)
@@ -84,7 +84,9 @@ export const GET = withApiHandler<{ id: string }>(async ({ userId, orgId, admin,
 
   const filename = buildFilename(report);
 
-  if (report.pdf_storage_path) {
+  const cacheFresh = report.pdf_cached_at && Date.now() - new Date(report.pdf_cached_at).getTime() < PDF_CACHE_TTL_MS;
+
+  if (report.pdf_storage_path && cacheFresh) {
     try {
       const { data: signed } = await admin.storage
         .from(PDF_BUCKET)
@@ -192,7 +194,11 @@ export const GET = withApiHandler<{ id: string }>(async ({ userId, orgId, admin,
       contentType: "application/pdf",
       upsert: true,
     });
-    await admin.from(TABLES.reports).update({ pdf_storage_path: storagePath }).eq("id", id).eq("org_id", orgId);
+    await admin
+      .from(TABLES.reports)
+      .update({ pdf_storage_path: storagePath, pdf_cached_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("org_id", orgId);
   } catch (err) {
     logError("Failed to cache PDF", err, { userId, reportId: params.id });
   }

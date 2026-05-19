@@ -64,3 +64,6 @@ export const SIGNED_URL_TTL = {
   /** One-shot fetch within the same request handler. */
   oneShot: 60,
 } as const;
+
+/** Cached PDFs older than this are treated as a miss and regenerated. */
+export const PDF_CACHE_TTL_MS = 24 * 60 * 60 * 1000;

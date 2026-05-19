@@ -335,6 +335,7 @@ create table if not exists reports (
   edited_content          text,
   exam_date               date,
   pdf_storage_path        text,
+  pdf_cached_at           timestamptz,
   deleted_at              timestamptz,
   pet_id                  uuid references pets(id) on delete set null,
   clinic_id               uuid references clinics(id) on delete set null,
