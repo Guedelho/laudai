@@ -12,6 +12,7 @@ import LoadingSkeleton from "@/components/LoadingSkeleton";
 
 interface Props {
   userId: string;
+  orgId: string;
 }
 
 type ReportRealtimeRow = ReportSummary & { deleted_at: string | null };
@@ -30,7 +31,7 @@ function toSummary(row: ReportRealtimeRow): ReportSummary {
   };
 }
 
-export default function ReportList({ userId }: Props) {
+export default function ReportList({ userId, orgId }: Props) {
   const [query, setQuery] = useState("");
   const [reports, setReports] = useState<ReportSummary[]>([]);
   const [hasMore, setHasMore] = useState(false);
@@ -117,10 +118,10 @@ export default function ReportList({ userId }: Props) {
       if (cancelled) return;
 
       channel = supabase
-        .channel(`reports:${userId}`)
+        .channel(`reports:${orgId}`)
         .on(
           "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "reports", filter: `user_id=eq.${userId}` },
+          { event: "UPDATE", schema: "public", table: "reports", filter: `org_id=eq.${orgId}` },
           handleUpdate,
         )
         .subscribe((status, err) => {
@@ -136,7 +137,7 @@ export default function ReportList({ userId }: Props) {
       cancelled = true;
       if (channel) supabase.removeChannel(channel);
     };
-  }, [userId, hasInProgress]);
+  }, [orgId, hasInProgress]);
 
   useEffect(() => {
     if (!toast) return;

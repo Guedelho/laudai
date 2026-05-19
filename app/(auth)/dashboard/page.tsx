@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentOrgId } from "@/lib/supabase/auth";
 import ReportList from "./ReportList";
 import Loading from "./loading";
 
@@ -8,7 +9,8 @@ async function DashboardContents() {
     data: { user },
   } = await (await createClient()).auth.getUser();
   if (!user) return null;
-  return <ReportList userId={user.id} />;
+  const orgId = await getCurrentOrgId(user.id);
+  return <ReportList userId={user.id} orgId={orgId} />;
 }
 
 export default function DashboardPage() {
