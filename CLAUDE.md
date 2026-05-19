@@ -8,73 +8,139 @@
 
 - **Internal code** (types, variables, functions, files, routes): use "report" (English).
 - **UI copy** (labels, error messages, placeholders): use "laudo" (Portuguese).
-- DB tables: `reports`, `report_images`. Storage buckets: `report-images`, `report-pdfs`.
+
+## Constants — never use string literals for these
+
+All schema names, statuses, buckets, plan ids, audit actions, etc. live in const objects. Always import + use them.
+
+- `TABLES.*` (e.g. `TABLES.reports`, `TABLES.audit_log`) — `shared/constants.ts`
+- `STORAGE_BUCKETS.*` (`reportImages`, `reportPdfs`, `profileLogos`) — `shared/constants.ts`
+- `REPORT_STATUSES.*` — `shared/models.ts`
+- `AUDIT_ACTIONS.*`, `AUDIT_ENTITIES.*` — `lib/audit.ts`
+- `LEGAL_VERSIONS.*` (terms / privacy_policy version timestamps)
+- `RATE_LIMITS.*` (override the 60/min default)
+- `SIGNED_URL_TTL.*` (`display` / `serverFetch` / `oneShot`)
 
 ## Stack
 
-- **Next.js 16 App Router** — Tailwind 4 (PostCSS-based, no `tailwind.config.*`), Supabase SSR via `@supabase/ssr`
-- **AI**: `lib/report/generate.ts` makes a single Gemini call per report (`gemini-3-flash-preview`) with a combined system prompt (sections + conclusion + verifier constraints). Streaming via `generateContentStream` with `responseMimeType: "application/json"` — chunks are concatenated server-side; the client never sees the stream. Retry with exponential backoff on transient errors (429/500/503/ECONNRESET). Generation uses `temperature: 0`. Trechos derivados dos achados do usuário são marcados pelo modelo com `**...**`; `splitBoldSegments` (em `lib/utils.ts`) converte esses marcadores em runs em negrito tanto no PDF quanto na visualização.
-- **Async generation**: laudo generation runs as a background task. `POST /api/generate` validates input, inserts a `reports` row with `status='pending'`, schedules the Gemini call via Next.js `after()`, and returns `{ reportId }` immediately. `lib/report/worker.ts` (`runGeneration`) flips the row through `generating → completed | failed` and calls `revalidateTag(reportCacheTag(id), "max")` on completion. Status enum lives in `REPORT_STATUSES` (`shared/models.ts`) — write through it, never inline strings. The dashboard subscribes to Supabase Realtime postgres_changes on `reports` (UPDATE only, filter `user_id=eq.<id>`) **while at least one visible row is pending/generating** — the channel is torn down once all rows settle. A completion toast fires when a row flips into `completed`. Failed laudos retry via `POST /api/reports/[id]/regenerate` (uses the heavier `RATE_LIMITS.generate` bucket; only allowed when `status='failed'`). A 15-minute Vercel cron (`/api/internal/sweep-stale-laudos`, gated by `Bearer ${CRON_SECRET}`) marks rows stuck in `generating` for more than 10 minutes as `failed`.
-- **Speech-to-text**: real-time via the browser Web Speech API (wrapped by `react-speech-recognition`). The mic button and live transcript live in `NewReportForm.tsx`. Firefox falls through to a disabled state with a tooltip; there is no server-side transcription endpoint.
-- **PDF**: `lib/report/pdf.ts` (pdfmake). Fonts fetched from CDN and cached module-level. Generated PDFs are cached in the `report-pdfs` bucket — cleared on report edit or image changes.
-- **Formatting**: Prettier with pre-commit hook via lint-staged. Run `npm run format` to format all files.
-- **Database**: Supabase Postgres (project `rgemiayidnumeotplozm`, region `sa-east-1`). RLS on every table with `(select auth.uid()) = user_id` scoped to `authenticated` role. All FK and user_id columns are indexed.
-- **Storage**: Three private buckets — `report-images` (exam images), `report-pdfs` (cached PDFs), `profile-logos` (logos + signatures). All have RLS policies scoping access to `auth.uid() = folder name`. All access via service role in API routes.
-- **Auth**: Supabase Auth via cookies (SSR). `proxy.ts` (middleware) syncs session and redirects unauthenticated users to `/login`. API routes use `getUserId()` from `@/lib/supabase/auth` — cookie-only, no manual Bearer tokens.
-- **Deployment**: Vercel. Git auto-deploy may be disconnected — use `vercel --prod` to deploy manually. Push via HTTPS as `guedelho`.
+- **Next.js 16 App Router** — Tailwind 4 (PostCSS-based, no `tailwind.config.*`), Supabase SSR via `@supabase/ssr`. `cacheComponents: true`.
+- **AI**: `lib/report/generate.ts` makes a single Gemini call per report (`gemini-3-flash-preview`) with a combined system prompt (sections + conclusion + verifier constraints). Streaming via `generateContentStream` with `responseMimeType: "application/json"` — chunks are concatenated server-side; the client never sees the stream. Retry with exponential backoff on transient errors (429/500/503/ECONNRESET). `temperature: 0`. Trechos derivados dos achados do usuário são marcados pelo modelo com `**...**`; `splitBoldSegments` (em `lib/utils.ts`) converte esses marcadores em runs em negrito tanto no PDF quanto na visualização.
+- **Async generation**: `POST /api/generate` validates input, inserts a `reports` row with `status='pending'`, schedules the Gemini call via Next.js `after()`, returns `{ reportId }` immediately. `lib/report/worker.ts` (`runGeneration`) flips the row through `generating → completed | failed` and calls `revalidateTag(reportCacheTag(id), "max")` on completion. The worker uses `Promise.race` with a 5-minute timeout — caught failures get reported back to the user fast. The dashboard subscribes to Supabase Realtime postgres_changes on `reports` (UPDATE only, filter `user_id=eq.<id>`) **while at least one visible row is pending/generating** — the channel is torn down once all rows settle. Failed laudos retry via `POST /api/reports/[id]/regenerate` (heavier `RATE_LIMITS.generate` bucket, only allowed when `status='failed'`). The 15-min Vercel cron `/api/internal/sweep-stale-laudos` is the safety net for any row stuck in `generating` > 10 minutes (gated by `Bearer ${CRON_SECRET}`).
+- **Speech-to-text**: real-time via browser Web Speech API (`react-speech-recognition`). Mic + transcript in `NewReportForm.tsx`. Firefox shows a disabled state with tooltip; no server-side transcription.
+- **PDF**: `lib/report/pdf.ts` (pdfmake). Fonts fetched from CDN and cached module-level. Cached in `STORAGE_BUCKETS.reportPdfs` — cleared on report edit or image changes. PDFs are signed/served using the _original author's_ profile (logo, signature, CRMV stay theirs even when a teammate edits).
+- **Bot protection**: Vercel BotID — `instrumentation-client.ts` registers protected routes (generate, regenerate, image upload, profile logo/signature). Server-side check is wired into `withApiHandler` via `{ botId: true }`. `deepAnalysis` enabled on the two generation routes.
+- **Formatting**: Prettier + pre-commit hook via lint-staged. Run `npm run format` to format all files.
+- **Database**: Supabase Postgres (project `rgemiayidnumeotplozm`, region `sa-east-1`). Multi-tenant via `organizations`. Every domain table (`pets`, `clinics`, `clinic_vets`, `reports`, `report_images`) has `org_id NOT NULL` + `user_id NOT NULL`. RLS: reads scope by org membership (team-visible); mutations stay user_id-self (only creator edits). All FK / `user_id` / `org_id` columns are indexed.
+- **Storage**: Three private buckets — `STORAGE_BUCKETS.reportImages`, `STORAGE_BUCKETS.reportPdfs`, `STORAGE_BUCKETS.profileLogos`. RLS scopes anon-client access to `auth.uid() = first folder in path`. All writes via service role.
+- **Auth**: Supabase Auth via cookies (SSR). `proxy.ts` syncs session and redirects unauthenticated users to `/login` (except `/legal/*`). `/signup` exists but is disabled — page redirects to `/login`. `withApiHandler` uses `getUserId()` from `@/lib/supabase/auth` — cookie-only, no Bearer tokens.
+- **Deployment**: Vercel. Git auto-deploy is enabled — pushes to `main` deploy automatically. Personal repo (`Guedelho/laudai`); push as the `Guedelho` gh account.
+
+## Multi-tenancy
+
+Every user belongs to ≥1 organization. Solo users get an org-of-1 (basic plan, they are the owner) — invisible plumbing. The concept only surfaces in UI when they invite a teammate or upgrade.
+
+- `organizations` — id, name, slug, plan (FK to `plans`), owner_user_id, deleted_at
+- `organization_members` — (org_id, user_id) PK, role ∈ {`owner`, `admin`, `member`}. Partial unique index ensures one owner per org
+- `organization_invitations` — pending invitations with token + expires_at; partial unique on (org_id, email) where not accepted
+- `plans` — catalog table seeded with `basic`, `professional`, `teams`. `organizations.plan` references it (FK, on update cascade)
+
+Helpers:
+
+- `getCurrentOrgId(userId)` in `lib/supabase/auth.ts` — returns the user's primary org (owned first, then any membership). Until the org switcher is built, this is the "current" org for every request.
+- `create_solo_org(userId, name, slug)` — SQL function (revoked from anon/authenticated). Atomically inserts the org + owner membership.
+
+Plan enforcement (member counts, features) is **application-level** — no quotas in DB. Plans store only display metadata.
+
+## Audit log
+
+`audit_log` is the polymorphic append-only record of every create/update/delete on domain entities (`pet`, `clinic`, `clinic_vet`, `report`, `report_image`, `profile`, `organization_member`). Every mutation endpoint writes one via the `audit()` helper that `withApiHandler` provides in ctx (auto-bound to the request's userId + orgId).
+
+```ts
+await audit({ action: AUDIT_ACTIONS.delete, entityType: AUDIT_ENTITIES.pet, entityId: id, changes: before });
+```
+
+RLS: org members read; insert is gated to `user_id = auth.uid()` (no impersonation). No UPDATE/DELETE policies — entries are immutable for authenticated users.
+
+## Report version history
+
+`report_versions` is append-only. PATCH `/api/reports/[id]` looks up the current max version, inserts a snapshot of the new `edited_content` as `version + 1`, then updates `reports.edited_content` + `updated_by` in place. The "latest" view is always `reports.edited_content` — `report_versions` is only read on "Ver histórico" / compliance export. Versioning started May 2026; earlier edits were not reconstructed.
+
+## 30-day deletion (LGPD)
+
+`DELETE /api/account` does **not** immediately purge. It sets `profiles.deletion_scheduled_at = now()` and returns 202. The user can still log in and `POST /api/account` to cancel (clears the timestamp). Daily at 03:00 UTC, `/api/internal/sweep-deleted-accounts` finds rows past `now() - 30 days` and hard-deletes: storage objects in all three buckets + `admin.auth.admin.deleteUser` (which cascades DB rows via FKs).
 
 ## Page structure
 
-All authenticated pages live inside `app/(auth)/`. The route group layout handles auth check + `<AppHeader />` + outer wrapper.
+All authenticated pages live inside `app/(auth)/`. The route group layout handles auth check + `<AppHeader />` + outer wrapper. Public pages: `/login`, `/legal/*` (politica-de-privacidade, termos-de-uso), `/signup` (disabled, redirects to `/login`).
 
-1. **Auth**: Middleware (`proxy.ts`) redirects to `/login`. Layout (`app/(auth)/layout.tsx`) double-checks with `getUser()` inside an `<AuthGate>` Suspense boundary. Pages call `getUser()` only to get `user.id` for queries — return `null` if not authenticated (layout already redirected).
-2. **Data**: Use `createAdmin()` for all server-side queries (never the anon client).
-3. **No inline JSX**: Page files must be thin — fetch data, pass props to a client component.
-4. **Loading**: Every page directory must have a `loading.tsx`.
+1. **Auth**: `proxy.ts` redirects unauthenticated users to `/login`. Layout (`app/(auth)/layout.tsx`) double-checks with `getUser()` inside an `<AuthGate>` Suspense boundary. Pages call `getUser()` only to get `user.id` for queries — return `null` if not authenticated.
+2. **Data**: Use `createAdmin()` for all server-side queries (never the anon client). Scope reads by `org_id` via `getCurrentOrgId(user.id)`.
+3. **No inline JSX**: Page files are thin — fetch data, pass props to a client component.
+4. **Loading**: Every page directory has a `loading.tsx`.
 5. **Errors**: `app/(auth)/error.tsx` catches page-level errors. `app/(auth)/report/[id]/not-found.tsx` for missing reports.
-6. **Cache Components**: `cacheComponents: true` in `next.config.ts`. Cached server functions use `'use cache'` + `cacheTag` + `cacheLife` (see `app/(auth)/report/[id]/page.tsx`). Runtime data access (cookies, headers, `usePathname`) must live inside a `<Suspense>` boundary so the static shell can render.
+6. **Cache Components**: Cached server functions use `'use cache'` + `cacheTag` + `cacheLife` (see `app/(auth)/report/[id]/page.tsx`). Runtime data access (cookies, headers, `usePathname`) must live inside a `<Suspense>` boundary so the static shell can render.
 
 ## API route conventions
 
-- Wrap every handler in `withApiHandler` (`@/lib/api-handler`). It handles: auth (`getUserId`), CSRF (Sec-Fetch-Site, on by default for non-GET), rate limiting (default **60/min per authenticated user**, Postgres-backed via the `rate_limit_consume` SQL function), and a generic 500 fallback. Override the default by passing a `RATE_LIMITS.<name>` from `shared/constants.ts` (e.g. `RATE_LIMITS.generate` for the 5/min Gemini bucket). Pass `{ publicAccess: true }` to skip auth + rate limit.
-- Data: `createAdmin()` — never the anon client.
-- FK ownership: when accepting `petId` / `clinicId` / `vetId` from a client body, run them through `resolveOwnedFks` (`@/lib/supabase/db`) before persisting — drops any id that doesn't belong to the caller.
-- Image validation: Server-side via `sharp` magic-byte detection (not `file.type`).
-- Errors: Log with `console.error`, return generic Portuguese message to client. Never leak internal details.
-- Cache invalidation in route handlers: `revalidateTag(reportCacheTag(id), "max")` (stale-while-revalidate). Use the `reportCacheTag` helper from `@/lib/utils` — never hand-build the `report-${id}` string. `updateTag` is reserved for Server Actions and is not used here.
-- Profile mutations call `invalidateUserPdfCache(admin, userId)` to clear cached PDFs (logo/signature/name/CRMV are baked into the PDF).
-- Signed-URL TTLs are centralised in `SIGNED_URL_TTL` (`shared/constants.ts`): `display` (browsing), `serverFetch` (cached PDF re-fetch), `oneShot` (single-request asset hydration).
+Wrap every handler in `withApiHandler` (`@/lib/api-handler`). The context provided to handlers:
+
+- `userId` — empty string when `publicAccess: true`
+- `orgId` — empty string when `publicAccess: true`; otherwise the user's primary org
+- `admin` — service-role Supabase client (one per request)
+- `audit({ action, entityType, entityId, changes? })` — pre-bound to userId + orgId
+- `req`, `params` (params is already resolved — Next.js 16 Promise is awaited inside the wrapper)
+
+`withApiHandler` handles: auth, CSRF (Sec-Fetch-Site, on by default for non-GET/HEAD), rate limiting (default 60/min/user; pass `RATE_LIMITS.<name>` to override), BotID (`{ botId: true }` — also add the route to `instrumentation-client.ts`), and a generic 500 fallback. Pass `{ publicAccess: true }` to skip auth + rate limit (e.g. cron routes that authenticate via `CRON_SECRET`).
+
+**Scope rules:**
+
+- Reads: filter by `org_id` (team-visible). Use `.eq("org_id", orgId)`.
+- Mutations (UPDATE/DELETE): filter by `user_id` (only the row's author can mutate). Use `.eq("user_id", userId)`.
+- Inserts: always set both `user_id: userId` and `org_id: orgId`.
+- FK ownership: `resolveOwnedFks(admin, orgId, ids)` filters incoming petId/clinicId/vetId to those in the caller's org.
+
+**Other:**
+
+- Image validation: server-side via `sharp` magic-byte detection (not `file.type`).
+- Errors: `logError("...", err, { userId, ... })` from `@/lib/log` (structured JSON to stdout — Vercel parses). Return generic Portuguese message to the client.
+- Cache invalidation: `revalidateTag(reportCacheTag(id), "max")` — never hand-build `report-${id}` strings.
+- Profile mutations call `invalidateUserPdfCache(admin, userId)` to clear cached PDFs (logo/signature/name/CRMV are baked into the PDF, per author).
 
 ## Client-side conventions
 
-- Auth is handled via cookies (`@supabase/ssr`) — no manual auth headers needed on fetch calls.
-- API calls: use typed functions from `lib/services/` (pets, clinics, reports, profile, transcribe) — never inline `fetch()` in components.
-- JSON requests: add `"Content-Type": "application/json"`. FormData requests need no extra headers (browser sets multipart boundary).
+- Auth via cookies (`@supabase/ssr`) — no manual auth headers on fetch calls.
+- API calls: typed functions in `lib/services/` (pets, clinics, reports, profile) — never inline `fetch()` in components.
+- JSON requests: add `"Content-Type": "application/json"`. FormData requests need no extra headers.
 
 ## Data model
 
-- `status` — `pending | generating | completed | failed`. Set by `/api/generate` (`pending`), the worker (`generating` → terminal), `/api/reports/[id]/regenerate` (back to `pending`), or the stale-job sweeper (`failed`). Pre-existing rows from before the async migration default to `completed`.
-- `generated_content` — immutable LLM output, populated by the background worker. `null` until `status='completed'`. Set once, never updated.
-- `edited_content` — always the latest version. Starts equal to `generated_content` (set in the same worker write), updated on vet edits. All reads use `edited_content`. `null` until `status='completed'`.
-- `error_message`, `generation_started_at`, `generation_completed_at` — populated by the worker. `error_message` is shown verbatim in the dashboard retry row.
+- `status` ∈ `REPORT_STATUSES.{pending, generating, completed, failed}`. Set by `/api/generate` (`pending`), the worker (`generating` → terminal), regenerate (back to `pending`), or the stale-job sweeper (`failed`). Pre-async-migration rows default to `completed`.
+- `generated_content` — immutable LLM output. `null` until `status='completed'`. Set once.
+- `edited_content` — always the latest version. Starts equal to `generated_content` (same worker write). Updated on vet edits. Snapshots of every edit go to `report_versions`.
+- `updated_by` — populated by PATCH (last editor's user_id).
+- `error_message`, `generation_started_at`, `generation_completed_at` — populated by the worker.
 - `raw_input` — original vet findings, immutable.
-- Reports remain editable after generation via the "Editar" button; the PATCH route accepts updates with no immutability gate.
-- Reports are historical documents. All patient, clinic, and vet data is stored as snapshot text on the report row — display always reads from these snapshot columns, never from joined tables. `reports` also has silent reference FK columns (`pet_id`, `clinic_id`, `vet_id`) that are stored at generation time and persisted on save, used exclusively to write updates back to the source entities (`pets`, `clinics`, `clinic_vets`) on each save — never for display. Imprimir saves the snapshot, writes back to source entities via the stored IDs, opens the PDF in a new tab, and switches back to view mode; the user can re-enter edit mode any time via "Editar".
+- `org_id` — every domain row (pets, clinics, clinic_vets, reports, report_images) — FK to organizations, NOT NULL.
+- Reports remain editable after generation. PATCH writes a `report_versions` snapshot, updates `edited_content`, `updated_by`, drops `pdf_storage_path`.
+- Reports are historical documents. Patient/clinic/vet data is **snapshot text** on the report row — display always reads from these snapshot columns, never from joined tables. The silent FK columns (`pet_id`, `clinic_id`, `vet_id`) write back to source entities on save — never used for display.
+- Profile uniqueness: `cpf` is UNIQUE; `(crmv, crmv_state)` is UNIQUE. Prevents one vet from holding multiple accounts.
 - Profile fields `cpf`, `crmv`, `crmv_state` are immutable after first profile creation.
 - All patient/report fields (`breed`, `age`, `sex`, `neutered`, `clinicName`, `responsibleVet`, `examDate`) are required — never nullable.
 - Dropdown options (`SPECIES_OPTIONS`, `SEX_OPTIONS`, `sexLabel`) centralized in `shared/constants.ts`.
 
 ## Types
 
-- Shared field sets: `PatientFields`, `ReportFields` in `shared/models.ts` — reuse via `extends` instead of repeating fields.
+- Shared field sets: `PatientFields`, `ReportFields` in `shared/models.ts` — reuse via `extends`.
 - API request bodies: `GenerateRequest`, `PetRequest`, `UpdateReportRequest`, `UpdateProfileRequest` — always type `req.json()`.
-- API response bodies: `GenerateResponse` (`{ reportId? }`) and the other `*Response` types in `shared/interfaces.ts`. `ApiResponse` is the base error-bearing shape.
-- Status: write via `REPORT_STATUSES.<x>` (the const object in `shared/models.ts`), read via the `ReportStatus` union.
+- API response bodies in `shared/interfaces.ts`. `ApiResponse` is the base error-bearing shape.
+- Status: write via `REPORT_STATUSES.<x>`, read via the `ReportStatus` union.
 - Required field validation: use a `required` array + loop, not repeated if/return blocks.
 
 ## Rules
 
 - Do not add inline comments unless the logic is genuinely non-obvious.
 - Do not create new files when editing an existing one suffices.
-- Do not use `@react-pdf/renderer` — it has been removed from the project.
+- Do not use `@react-pdf/renderer` — removed from the project.
 - No dead code, no engineering for the future. If it's not called, delete it.
+- Never use string literals for table names, bucket names, or enum values — use the const objects above.
+- The Next.js 16 "params is async — add await" validator hook is a false positive on `withApiHandler` routes. The wrapper pre-awaits `ctx.params`; handlers receive the resolved object.
