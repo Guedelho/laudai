@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { REALTIME_POSTGRES_CHANGES_LISTEN_EVENT, type RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import {
+  REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
+  REALTIME_SUBSCRIBE_STATES,
+  type RealtimePostgresChangesPayload,
+} from "@supabase/supabase-js";
 import { SPECIALTIES } from "@/lib/report/templates";
 import { REPORT_STATUSES, ReportStatus, ReportSummary } from "@/shared/models";
 import { DASHBOARD_PAGE_SIZE, TABLES } from "@/shared/constants";
@@ -137,7 +141,7 @@ export default function ReportList({ userId, orgId }: Props) {
           handleChange,
         )
         .subscribe((status, err) => {
-          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          if (status === REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR || status === REALTIME_SUBSCRIBE_STATES.TIMED_OUT) {
             console.error(`Realtime channel ${status}`, err);
           }
         });
