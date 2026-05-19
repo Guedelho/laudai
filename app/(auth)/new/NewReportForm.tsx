@@ -350,13 +350,6 @@ export default function NewReportPage() {
             <div>
               <label className="block text-xs text-gray-500 mb-1">Nome do responsável</label>
               <input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className={inputCls} required />
-              <p className="mt-1 text-[11px] text-gray-400">
-                Dados do tutor e achados do exame são enviados ao Google (Gemini) para geração do laudo. Veja a{" "}
-                <Link href="/legal/politica-de-privacidade" target="_blank" className="text-blue-600 hover:underline">
-                  Política de Privacidade
-                </Link>
-                .
-              </p>
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Espécie</label>
@@ -456,7 +449,7 @@ export default function NewReportPage() {
             className={`${inputCls} resize-none`}
             required
           />
-          <p className={`text-xs text-right ${rawInput.length >= 1800 ? "text-amber-500" : "text-gray-400"}`}>
+          <p className={`text-xs text-right ${rawInput.length >= 1800 ? "text-amber-600" : "text-gray-500"}`}>
             {rawInput.length}/2000
           </p>
         </div>
@@ -467,7 +460,7 @@ export default function NewReportPage() {
             <p className="text-sm font-semibold text-gray-700">
               Imagens do exame
               {selectedFiles.length > 0 && (
-                <span className="ml-2 text-xs font-normal text-gray-400">{selectedFiles.length}/30</span>
+                <span className="ml-2 text-xs font-normal text-gray-500">{selectedFiles.length}/30</span>
               )}
             </p>
             <button
@@ -509,7 +502,7 @@ export default function NewReportPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 italic">Nenhuma imagem selecionada</p>
+            <p className="text-sm text-gray-500 italic">Nenhuma imagem selecionada</p>
           )}
           {lightboxIndex !== null && (
             <ImageLightbox
@@ -539,6 +532,14 @@ export default function NewReportPage() {
             "Gerar Laudo"
           )}
         </button>
+
+        <p className="text-[11px] text-gray-500 text-center">
+          Dados do tutor e achados do exame são enviados ao Google (Gemini) para geração do laudo. Veja a{" "}
+          <Link href="/legal/politica-de-privacidade" target="_blank" className="text-blue-600 hover:underline">
+            Política de Privacidade
+          </Link>
+          .
+        </p>
       </form>
     </main>
   );

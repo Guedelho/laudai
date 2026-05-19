@@ -22,11 +22,11 @@ function RichText({ text }: { text: string }) {
 function BulletList({ title, items, className }: { title: string; items: string[]; className?: string }) {
   return (
     <div className={className}>
-      <h4 className="font-semibold text-gray-900 text-sm mb-2">{title}</h4>
+      <h3 className="font-semibold text-gray-900 text-sm mb-2">{title}</h3>
       <ul className="space-y-1.5 ml-1">
         {items.map((line, i) => (
           <li key={i} className="flex gap-2 text-justify">
-            <span className="text-gray-400 shrink-0">•</span>
+            <span className="text-gray-500 shrink-0">•</span>
             <span>
               <RichText text={line} />
             </span>
@@ -74,7 +74,7 @@ export default function ReportContent({ parsedReport }: { parsedReport: ParsedRe
 
       {parsedReport.observations?.length ? (
         <div className="mt-3">
-          <h4 className="font-semibold text-gray-900 text-sm mb-2">OBS:</h4>
+          <h3 className="font-semibold text-gray-900 text-sm mb-2">OBS:</h3>
           {parsedReport.observations.map((line, i) => (
             <p key={i} className="mb-1 text-justify">
               <RichText text={line} />

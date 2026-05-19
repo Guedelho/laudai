@@ -105,7 +105,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900">Pacientes</h2>
+        <h1 className="text-xl font-semibold text-gray-900">Pacientes</h1>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
@@ -183,7 +183,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
       {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
 
       {!pets.length && !showForm && (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-gray-500">
           <p>Nenhum paciente cadastrado ainda</p>
         </div>
       )}
@@ -295,7 +295,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                     {pet.species} · {pet.breed} · {pet.age} · {sexLabel(pet.sex)}
                     {pet.neutered ? " · Castrado(a)" : ""}
                   </p>
-                  <p className="text-xs text-gray-400 mt-1">Responsável: {pet.owner_name}</p>
+                  <p className="text-xs text-gray-500 mt-1">Responsável: {pet.owner_name}</p>
                 </div>
                 <div className="flex gap-3 shrink-0 mt-0.5">
                   <button onClick={() => startEdit(pet)} className="text-xs text-blue-500 hover:text-blue-700">

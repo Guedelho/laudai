@@ -10,7 +10,7 @@ import ReportContent from "./ReportContent";
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-1.5">
-      <span className="text-gray-400 shrink-0">{label}</span>
+      <span className="text-gray-500 shrink-0">{label}</span>
       <span className="text-gray-900">{value}</span>
     </div>
   );
@@ -47,7 +47,7 @@ export function ReportViewerInfo({ fields, displayDate }: { fields: ReportFields
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 animate-[fadeIn_0.4s_ease-out]">
       <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-2 text-sm">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Paciente</h3>
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Paciente</h2>
         <InfoItem label="Nome:" value={fields.patientName} />
         <InfoItem label="Espécie:" value={fields.species} />
         <InfoItem label="Raça:" value={fields.breed} />
@@ -56,7 +56,7 @@ export function ReportViewerInfo({ fields, displayDate }: { fields: ReportFields
         <InfoItem label="Castrado(a):" value={fields.neutered ? "Sim" : "Não"} />
       </div>
       <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-2 text-sm">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Atendimento</h3>
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Atendimento</h2>
         <InfoItem label="Responsável:" value={fields.ownerName} />
         <InfoItem label="Clínica:" value={fields.clinicName} />
         <InfoItem label="Médico:" value={fields.responsibleVet} />

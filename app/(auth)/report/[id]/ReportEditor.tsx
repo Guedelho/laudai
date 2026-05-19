@@ -28,7 +28,7 @@ function EditableList({
 }) {
   return (
     <div>
-      <h4 className="font-semibold text-gray-900 text-sm mb-2">{title}</h4>
+      <h3 className="font-semibold text-gray-900 text-sm mb-2">{title}</h3>
       {items.map((line, i) => (
         <div key={i} className="mb-2 flex gap-1 items-start">
           <textarea
@@ -136,7 +136,7 @@ export function ReportEditorPatientFields({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Paciente</h3>
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Paciente</h2>
         <div>
           <label className="block text-xs text-gray-500 mb-1">Nome</label>
           <EntityTypeahead<Pet>
@@ -201,7 +201,7 @@ export function ReportEditorPatientFields({
         </div>
       </div>
       <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Atendimento</h3>
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Atendimento</h2>
         <div>
           <label className="block text-xs text-gray-500 mb-1">Responsável</label>
           <input

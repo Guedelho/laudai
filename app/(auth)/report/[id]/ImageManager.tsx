@@ -62,7 +62,7 @@ export default function ImageManager({
           <p className="text-sm font-semibold text-gray-700">
             Imagens do exame
             {images.length > 0 && (
-              <span className="ml-2 text-xs font-normal text-gray-400">
+              <span className="ml-2 text-xs font-normal text-gray-500">
                 {images.length}/{MAX_REPORT_IMAGES}
               </span>
             )}
@@ -115,7 +115,7 @@ export default function ImageManager({
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-400 italic">Nenhuma imagem adicionada</p>
+          <p className="text-sm text-gray-500 italic">Nenhuma imagem adicionada</p>
         )}
       </div>
 

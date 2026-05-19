@@ -43,7 +43,7 @@ export default function ReportDetail({
     <main className="max-w-3xl mx-auto px-6 py-8">
       <div className="flex items-start justify-between mb-8 animate-[fadeIn_0.3s_ease-out]">
         <div>
-          <Link href="/dashboard" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+          <Link href="/dashboard" className="text-xs text-gray-500 hover:text-gray-600 transition-colors">
             ← Voltar aos laudos
           </Link>
           <h1 className="text-xl font-bold text-gray-900 mt-2">{editor.fields.patientName}</h1>
@@ -51,7 +51,7 @@ export default function ReportDetail({
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
               {SPECIALTIES[report.specialty].label}
             </span>
-            <span className="text-xs text-gray-400">{displayDate}</span>
+            <span className="text-xs text-gray-500">{displayDate}</span>
           </div>
         </div>
         <div className="flex items-center gap-2 mt-1">

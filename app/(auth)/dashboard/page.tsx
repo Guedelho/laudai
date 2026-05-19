@@ -14,7 +14,7 @@ async function DashboardContents() {
 export default function DashboardPage() {
   return (
     <main className="max-w-3xl mx-auto px-6 py-8">
-      <h2 className="text-xl font-semibold text-gray-900 mb-6">Laudos Recentes</h2>
+      <h1 className="text-xl font-semibold text-gray-900 mb-6">Laudos Recentes</h1>
       <Suspense fallback={<Loading />}>
         <DashboardContents />
       </Suspense>

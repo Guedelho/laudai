@@ -40,7 +40,17 @@ export default function ReportList({ userId }: Props) {
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<ReportSummary[] | null>(null);
   const [searching, setSearching] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
   const prevStatusRef = useRef<Map<string, ReportStatus>>(new Map());
+
+  useEffect(() => {
+    if (hasScrolled) return;
+    const onScroll = () => {
+      if (window.scrollY > 50) setHasScrolled(true);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [hasScrolled]);
 
   useEffect(() => {
     let cancelled = false;
@@ -191,7 +201,7 @@ export default function ReportList({ userId }: Props) {
     }
   }
 
-  const showSentinel = !query.trim() && hasMore;
+  const showSentinel = !query.trim() && hasMore && hasScrolled;
 
   if (loadingInitial) return <LoadingSkeleton rows={DASHBOARD_PAGE_SIZE} />;
 
@@ -206,14 +216,14 @@ export default function ReportList({ userId }: Props) {
       />
 
       {query.trim() && searching && !searchResults ? (
-        <div className="text-center py-16 text-gray-400 text-sm">Buscando...</div>
+        <div className="text-center py-16 text-gray-500 text-sm">Buscando...</div>
       ) : !displayList.length ? (
         query.trim() ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-gray-500">
             <p>Nenhum resultado para &ldquo;{query}&rdquo;</p>
           </div>
         ) : (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-gray-500">
             <p className="text-lg mb-2">Nenhum laudo gerado ainda</p>
             <Link href="/new" className="text-blue-600 text-sm hover:underline">
               Gerar primeiro laudo
@@ -231,7 +241,7 @@ export default function ReportList({ userId }: Props) {
             />
           ))}
           {showSentinel && (
-            <div ref={sentinelRef} className="py-4 text-center text-xs text-gray-400">
+            <div ref={sentinelRef} className="py-4 text-center text-xs text-gray-500">
               {loadingMore ? "Carregando..." : ""}
             </div>
           )}
@@ -263,7 +273,7 @@ function ReportRow({ report, retrying, onRetry }: { report: ReportSummary; retry
       <p className="text-sm text-gray-500">
         {SPECIALTIES[report.specialty].label} · {report.clinic_name}
       </p>
-      <p className="text-xs text-gray-400 mt-1">
+      <p className="text-xs text-gray-500 mt-1">
         Criado: {new Date(report.created_at).toLocaleDateString("pt-BR")}
         {report.exam_date && <> · Exame: {new Date(report.exam_date + "T12:00:00").toLocaleDateString("pt-BR")}</>}
       </p>

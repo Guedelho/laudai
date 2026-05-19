@@ -116,7 +116,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900">Clínicas</h2>
+        <h1 className="text-xl font-semibold text-gray-900">Clínicas</h1>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
@@ -161,7 +161,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
       {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
 
       {!clinics.length && !showForm && (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-gray-500">
           <p>Nenhuma clínica cadastrada ainda</p>
         </div>
       )}
@@ -206,7 +206,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
                       </div>
                     ))}
                     {clinic.clinic_vets.length === 0 && (
-                      <p className="text-xs text-gray-400">Nenhum médico cadastrado</p>
+                      <p className="text-xs text-gray-500">Nenhum médico cadastrado</p>
                     )}
                   </div>
                   <form onSubmit={handleAddVet} className="flex gap-2 mt-2">

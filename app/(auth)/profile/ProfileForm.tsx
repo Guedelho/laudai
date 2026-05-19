@@ -231,7 +231,7 @@ export default function ProfileForm({
               className="max-h-48 w-full object-contain rounded border border-gray-200 bg-gray-50 p-2"
             />
           ) : (
-            <div className="h-48 w-full rounded border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-sm text-gray-400">
+            <div className="h-48 w-full rounded border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-sm text-gray-500">
               Sem logo
             </div>
           )}
@@ -246,7 +246,7 @@ export default function ProfileForm({
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
         </div>
         {logoError && <p className="mt-1 text-xs text-red-600">{logoError}</p>}
-        <p className="mt-1 text-xs text-gray-400">JPEG ou PNG · máx. 5 MB</p>
+        <p className="mt-1 text-xs text-gray-500">JPEG ou PNG · máx. 5 MB</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -260,14 +260,6 @@ export default function ProfileForm({
             placeholder="Dra. Tatiana Brasil"
             required
           />
-        </div>
-
-        <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-600">
-          CPF e CRMV são exigidos para emissão do laudo. Consulte nossa{" "}
-          <Link href="/legal/politica-de-privacidade" target="_blank" className="text-blue-600 hover:underline">
-            Política de Privacidade
-          </Link>{" "}
-          para saber como tratamos esses dados.
         </div>
 
         <div>
@@ -304,7 +296,7 @@ export default function ProfileForm({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Assinatura no laudo</label>
-          <p className="text-xs text-gray-400 mb-3">
+          <p className="text-xs text-gray-500 mb-3">
             Escolha uma fonte manuscrita ou envie uma imagem da sua assinatura.
           </p>
 
@@ -332,7 +324,7 @@ export default function ProfileForm({
                     : "border-gray-200 bg-white hover:border-gray-300"
                 }`}
               >
-                <p className="text-xs text-gray-400 mb-1">{f.label}</p>
+                <p className="text-xs text-gray-500 mb-1">{f.label}</p>
                 <div style={{ fontFamily: f.css, fontSize: 26, lineHeight: 1.8 }}>{signature || fullName}</div>
               </button>
             ))}
@@ -346,15 +338,15 @@ export default function ProfileForm({
                 sigSrc ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white hover:border-gray-300"
               }`}
             >
-              <p className="text-xs text-gray-400 mb-1">Imagem personalizada</p>
+              <p className="text-xs text-gray-500 mb-1">Imagem personalizada</p>
               {sigSrc ? (
                 <div className="flex items-center justify-between">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={sigSrc} alt="Assinatura" className="max-h-16 object-contain" />
-                  <span className="text-xs text-gray-400">Alterar</span>
+                  <span className="text-xs text-gray-500">Alterar</span>
                 </div>
               ) : (
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-gray-500">
                   {sigUploading ? "Enviando..." : "Enviar foto ou scan da assinatura"}
                 </p>
               )}
@@ -375,7 +367,7 @@ export default function ProfileForm({
                 if (sigSrc) handleRemoveSignatureImage();
                 else handleFontSelect(signatureFont);
               }}
-              className="mt-2 text-xs text-gray-400 hover:text-gray-600"
+              className="mt-2 text-xs text-gray-500 hover:text-gray-600"
             >
               Remover assinatura
             </button>
@@ -393,6 +385,14 @@ export default function ProfileForm({
           {saved && <span className="text-sm text-green-600">Salvo com sucesso!</span>}
           {saveError && <span className="text-sm text-red-600">{saveError}</span>}
         </div>
+
+        <p className="text-[11px] text-gray-500">
+          CPF e CRMV são exigidos para emissão do laudo. Consulte nossa{" "}
+          <Link href="/legal/politica-de-privacidade" target="_blank" className="text-blue-600 hover:underline">
+            Política de Privacidade
+          </Link>{" "}
+          para saber como tratamos esses dados.
+        </p>
       </form>
 
       <div className="pt-6 border-t border-gray-200 space-y-4">
@@ -439,7 +439,7 @@ export default function ProfileForm({
 
       <div className="pt-4 border-t border-gray-200">
         <form action={logout}>
-          <button type="submit" className="text-sm text-gray-400 hover:text-gray-600">
+          <button type="submit" className="text-sm text-gray-500 hover:text-gray-600">
             Sair da conta
           </button>
         </form>
