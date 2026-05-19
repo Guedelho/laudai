@@ -8,10 +8,13 @@ import { logError } from "@/lib/log";
 
 const BUCKET = STORAGE_BUCKETS.profileLogos;
 
-export const GET = withApiHandler(async ({ userId, admin }) => {
-  const { data: profile } = await admin.from(TABLES.profiles).select("signature_image_url").eq("id", userId).single();
-  return serveProfileImage(admin, profile?.signature_image_url ?? null);
-});
+export const GET = withApiHandler(
+  async ({ userId, admin }) => {
+    const { data: profile } = await admin.from(TABLES.profiles).select("signature_image_url").eq("id", userId).single();
+    return serveProfileImage(admin, profile?.signature_image_url ?? null);
+  },
+  { botId: false },
+);
 
 export const POST = withApiHandler(async ({ userId, admin, req }) => {
   const formData = await req.formData();

@@ -11,7 +11,14 @@ async function signed(admin: Admin, bucket: string, path: string | null): Promis
   return data?.signedUrl ?? null;
 }
 
-export const GET = withApiHandler(async ({ userId }) => {
+export const GET = withApiHandler(
+  async ({ userId }) => {
+    return doExport(userId);
+  },
+  { botId: false },
+);
+
+async function doExport(userId: string) {
   const admin = createAdmin();
 
   const [profileRes, reportsRes, petsRes, clinicsRes, vetsRes, consentsRes, imagesRes] = await Promise.all([
@@ -74,4 +81,4 @@ export const GET = withApiHandler(async ({ userId }) => {
       "Content-Disposition": `attachment; filename="laudai-export-${userId}-${date}.json"`,
     },
   });
-});
+}

@@ -6,11 +6,7 @@ import { SIGNED_URL_TTL, STORAGE_BUCKETS } from "@/shared/constants";
 
 type Admin = ReturnType<typeof createAdmin>;
 
-/**
- * Stream a private profile-logos object through the API route instead of
- * redirecting to a short-lived signed URL — browsers cache redirects and the
- * cached target expires after SIGNED_URL_TTL.serverFetch seconds.
- */
+// Stream through the route so the browser-cached URL stays stable (signed URLs expire).
 export async function serveProfileImage(admin: Admin, storagePath: string | null): Promise<NextResponse> {
   if (!storagePath) return new NextResponse(null, { status: 404 });
 

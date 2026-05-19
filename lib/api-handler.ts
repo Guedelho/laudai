@@ -25,13 +25,18 @@ export interface HandlerCtx<P> {
 
 type Handler<P> = (ctx: HandlerCtx<P>) => Promise<Response>;
 
+// Pass { botId: false } for routes loaded by <img>/<a download>/top-level navigation
+// — those can't carry BotID headers. Cookies still gate access.
 export function withApiHandler<P = Record<string, never>>(
   handler: Handler<P>,
+  opts: { botId?: boolean } = {},
 ): (req: NextRequest, ctx?: { params: Promise<P> }) => Promise<Response> {
   return async (req, ctx) => {
     try {
-      const { isBot } = await checkBotId();
-      if (isBot) return NextResponse.json({ error: "Acesso negado." }, { status: 403 });
+      if (opts.botId !== false) {
+        const { isBot } = await checkBotId();
+        if (isBot) return NextResponse.json({ error: "Acesso negado." }, { status: 403 });
+      }
 
       const userId = await getUserId();
       if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

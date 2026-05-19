@@ -40,17 +40,7 @@ export default function ReportList({ userId }: Props) {
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<ReportSummary[] | null>(null);
   const [searching, setSearching] = useState(false);
-  const [hasScrolled, setHasScrolled] = useState(false);
   const prevStatusRef = useRef<Map<string, ReportStatus>>(new Map());
-
-  useEffect(() => {
-    if (hasScrolled) return;
-    const onScroll = () => {
-      if (window.scrollY > 50) setHasScrolled(true);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [hasScrolled]);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,7 +84,9 @@ export default function ReportList({ userId }: Props) {
   const sentinelRef = useCallback((node: HTMLDivElement | null) => {
     if (!node) return;
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0]?.isIntersecting) loadMoreRef.current();
+      if (!entries[0]?.isIntersecting) return;
+      if (window.scrollY < 50) return;
+      loadMoreRef.current();
     });
     observer.observe(node);
     return () => observer.disconnect();
@@ -201,7 +193,7 @@ export default function ReportList({ userId }: Props) {
     }
   }
 
-  const showSentinel = !query.trim() && hasMore && hasScrolled;
+  const showSentinel = !query.trim() && hasMore;
 
   if (loadingInitial) return <LoadingSkeleton rows={DASHBOARD_PAGE_SIZE} />;
 

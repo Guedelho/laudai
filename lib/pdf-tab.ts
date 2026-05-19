@@ -12,11 +12,7 @@ const LOADING_HTML = [
   '</style></head><body><div class="c"><div class="s"></div><h1>Laudai</h1><p>Preparando PDF...</p></div></body></html>',
 ].join("");
 
-/**
- * Fetch the PDF from the current tab (BotID headers attached) then hand the
- * bytes to a new tab as a blob URL. A naked window.open('/api/.../pdf') breaks
- * because the new tab has no Next.js JS loaded yet, so no BotID headers.
- */
+// Fetch in current tab (BotID headers attached) then hand the bytes to the popup as a blob URL.
 export async function openReportPdfTab(reportId: string): Promise<void> {
   const tab = window.open("", "_blank");
   if (!tab) return;
