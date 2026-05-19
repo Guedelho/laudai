@@ -13,8 +13,9 @@ const LOADING_HTML = [
 ].join("");
 
 // Fetch in current tab (BotID headers attached) then hand the bytes to the popup as a blob URL.
-// Wrap the blob in a File so the PDF viewer's "Download" button uses the backend-provided
-// filename — blob URLs strip the original Content-Disposition.
+// Blob URLs strip Content-Disposition, so the PDF viewer's "Download" button would otherwise
+// save as the blob UUID. Appending the filename to the URL fragment is the trick Chrome's
+// PDF viewer respects when picking the save name.
 export async function openReportPdfTab(reportId: string): Promise<void> {
   const tab = window.open("", "_blank");
   if (!tab) return;
@@ -26,7 +27,7 @@ export async function openReportPdfTab(reportId: string): Promise<void> {
     const blob = await response.blob();
     const filename = /filename="([^"]+)"/.exec(response.headers.get("Content-Disposition") ?? "")?.[1] ?? "laudo.pdf";
     const file = new File([blob], filename, { type: "application/pdf" });
-    const url = URL.createObjectURL(file);
+    const url = URL.createObjectURL(file) + "#" + encodeURIComponent(filename);
     tab.location.href = url;
   } catch (err) {
     tab.close();
