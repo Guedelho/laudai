@@ -8,7 +8,7 @@ import {
   type RealtimePostgresChangesPayload,
 } from "@supabase/supabase-js";
 import { SPECIALTIES } from "@/lib/report/templates";
-import { REPORT_STATUSES, ReportStatus, ReportSummary } from "@/shared/models";
+import { REPORT_STATUSES, ReportSummary } from "@/shared/models";
 import { DASHBOARD_PAGE_SIZE, TABLES } from "@/shared/constants";
 import { createClient } from "@/lib/supabase/client";
 import { listReports, regenerateReport } from "@/lib/services/reports";
@@ -45,7 +45,7 @@ export default function ReportList({ userId, orgId }: Props) {
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<ReportSummary[] | null>(null);
   const [searching, setSearching] = useState(false);
-  const prevStatusRef = useRef<Map<string, ReportStatus>>(new Map());
+  const knownCompletedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -54,7 +54,7 @@ export default function ReportList({ userId, orgId }: Props) {
         if (cancelled) return;
         setReports(data);
         setHasMore(data.length === DASHBOARD_PAGE_SIZE);
-        prevStatusRef.current = new Map(data.map((r) => [r.id, r.status]));
+        for (const r of data) if (r.status === REPORT_STATUSES.completed) knownCompletedRef.current.add(r.id);
       })
       .catch((err) => console.error("Initial dashboard load failed:", err))
       .finally(() => {
@@ -75,7 +75,7 @@ export default function ReportList({ userId, orgId }: Props) {
       setReports((prev) => {
         const seen = new Set(prev.map((r) => r.id));
         const additions = more.filter((r) => !seen.has(r.id));
-        for (const r of additions) prevStatusRef.current.set(r.id, r.status);
+        for (const r of additions) if (r.status === REPORT_STATUSES.completed) knownCompletedRef.current.add(r.id);
         return [...prev, ...additions];
       });
       if (more.length < DASHBOARD_PAGE_SIZE) setHasMore(false);
@@ -91,28 +91,30 @@ export default function ReportList({ userId, orgId }: Props) {
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let cancelled = false;
 
+    function maybeToastCompletion(row: ReportRealtimeRow) {
+      if (row.status !== REPORT_STATUSES.completed) return;
+      if (knownCompletedRef.current.has(row.id)) return;
+      knownCompletedRef.current.add(row.id);
+      setToast(`Laudo de ${row.patient_name} pronto.`);
+    }
+
     function handleChange(payload: RealtimePostgresChangesPayload<ReportRealtimeRow>) {
       if (payload.eventType === REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.INSERT) {
         const row = payload.new;
         if (row.deleted_at) return;
-        prevStatusRef.current.set(row.id, row.status);
         const summary = toSummary(row);
         setReports((prev) => (prev.some((r) => r.id === summary.id) ? prev : [summary, ...prev]));
+        maybeToastCompletion(row);
         return;
       }
 
       if (payload.eventType === REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE) {
         const row = payload.new;
         if (row.deleted_at) {
-          prevStatusRef.current.delete(row.id);
+          knownCompletedRef.current.delete(row.id);
           setReports((prev) => prev.filter((r) => r.id !== row.id));
           return;
         }
-        const previous = prevStatusRef.current.get(row.id);
-        if (previous && previous !== REPORT_STATUSES.completed && row.status === REPORT_STATUSES.completed) {
-          setToast(`Laudo de ${row.patient_name} pronto.`);
-        }
-        prevStatusRef.current.set(row.id, row.status);
         const summary = toSummary(row);
         setReports((prev) => {
           const idx = prev.findIndex((r) => r.id === summary.id);
@@ -121,6 +123,7 @@ export default function ReportList({ userId, orgId }: Props) {
           next[idx] = summary;
           return next;
         });
+        maybeToastCompletion(row);
       }
     }
 
