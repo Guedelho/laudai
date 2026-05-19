@@ -11,7 +11,7 @@ async function signed(admin: Admin, bucket: string, path: string | null): Promis
   return data?.signedUrl ?? null;
 }
 
-export const GET = withApiHandler({}, async ({ userId }) => {
+export const GET = withApiHandler(async ({ userId }) => {
   const admin = createAdmin();
 
   const [profileRes, reportsRes, petsRes, clinicsRes, vetsRes, consentsRes, imagesRes] = await Promise.all([

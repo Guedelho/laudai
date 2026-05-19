@@ -20,14 +20,6 @@ export const MAX_REPORT_IMAGES = 50;
 export const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 export const DASHBOARD_PAGE_SIZE = 5;
 
-// ─── Rate-limit overrides ──────────────────────────────────────────────────
-// withApiHandler applies a default 60/min bucket per user. Routes that need a
-// tighter or looser limit pass one of these instead.
-
-export const RATE_LIMITS = {
-  generate: { rateLimit: { name: "generate", maxPerMinute: 5 } },
-} as const;
-
 // ─── LGPD ────────────────────────────────────────────────────────────────────
 // Bumping a version invalidates prior consent and forces re-acceptance.
 
@@ -54,7 +46,6 @@ export const TABLES = {
   report_images: "report_images",
   consents: "consents",
   audit_log: "audit_log",
-  rate_limit_events: "rate_limit_events",
 } as const;
 
 export const STORAGE_BUCKETS = {

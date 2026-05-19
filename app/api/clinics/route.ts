@@ -6,7 +6,7 @@ import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 
-export const GET = withApiHandler({}, async ({ userId, orgId, admin }) => {
+export const GET = withApiHandler(async ({ userId, orgId, admin }) => {
   const { data: clinics, error } = await admin
     .from(TABLES.clinics)
     .select("*, clinic_vets(*)")
@@ -20,7 +20,7 @@ export const GET = withApiHandler({}, async ({ userId, orgId, admin }) => {
   return NextResponse.json({ clinics });
 });
 
-export const POST = withApiHandler({}, async ({ userId, orgId, admin, audit, req }) => {
+export const POST = withApiHandler(async ({ userId, orgId, admin, audit, req }) => {
   const { name, vetName }: ClinicRequest = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: "Nome da clínica é obrigatório" }, { status: 400 });
 

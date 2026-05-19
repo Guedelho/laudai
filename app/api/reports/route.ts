@@ -6,7 +6,7 @@ import { logError } from "@/lib/log";
 const MAX_LIMIT = 50;
 const MAX_SEARCH_LEN = 100;
 
-export const GET = withApiHandler({}, async ({ userId, orgId, admin, req }) => {
+export const GET = withApiHandler(async ({ userId, orgId, admin, req }) => {
   const url = new URL(req.url);
   const requestedLimit = Number.parseInt(url.searchParams.get("limit") ?? "5", 10);
   const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), MAX_LIMIT) : 5;

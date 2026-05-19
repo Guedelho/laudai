@@ -5,7 +5,7 @@ import { ClinicVetRequest } from "@/shared/interfaces";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { TABLES } from "@/shared/constants";
 
-export const POST = withApiHandler<{ id: string }>({}, async ({ userId, orgId, admin, audit, params, req }) => {
+export const POST = withApiHandler<{ id: string }>(async ({ userId, orgId, admin, audit, params, req }) => {
   const clinicId = params.id;
   const { name }: ClinicVetRequest = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: "Nome é obrigatório" }, { status: 400 });

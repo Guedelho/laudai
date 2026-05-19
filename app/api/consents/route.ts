@@ -8,7 +8,7 @@ interface ConsentRequest {
   version: string;
 }
 
-export const POST = withApiHandler({}, async ({ userId, admin, req }) => {
+export const POST = withApiHandler(async ({ userId, admin, req }) => {
   const { type, version } = (await req.json()) as ConsentRequest;
 
   if (type !== "terms" && type !== "privacy_policy") {

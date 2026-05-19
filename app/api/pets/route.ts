@@ -6,7 +6,7 @@ import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 
-export const GET = withApiHandler({}, async ({ userId, orgId, admin }) => {
+export const GET = withApiHandler(async ({ userId, orgId, admin }) => {
   const { data: pets, error } = await admin
     .from(TABLES.pets)
     .select("*")
@@ -20,7 +20,7 @@ export const GET = withApiHandler({}, async ({ userId, orgId, admin }) => {
   return NextResponse.json({ pets });
 });
 
-export const POST = withApiHandler({}, async ({ userId, orgId, admin, audit, req }) => {
+export const POST = withApiHandler(async ({ userId, orgId, admin, audit, req }) => {
   const { name, species, breed, age, sex, neutered, ownerName }: PetRequest = await req.json();
   if (!name || !species || !ownerName) {
     return NextResponse.json({ error: "Campos obrigatórios: nome, espécie, tutor" }, { status: 400 });

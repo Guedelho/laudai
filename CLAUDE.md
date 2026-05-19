@@ -18,17 +18,16 @@ All schema names, statuses, buckets, plan ids, audit actions, etc. live in const
 - `REPORT_STATUSES.*` — `shared/models.ts`
 - `AUDIT_ACTIONS.*`, `AUDIT_ENTITIES.*` — `lib/audit.ts`
 - `LEGAL_VERSIONS.*` (terms / privacy_policy version timestamps)
-- `RATE_LIMITS.*` (override the 60/min default)
 - `SIGNED_URL_TTL.*` (`display` / `serverFetch` / `oneShot`)
 
 ## Stack
 
 - **Next.js 16 App Router** — Tailwind 4 (PostCSS-based, no `tailwind.config.*`), Supabase SSR via `@supabase/ssr`. `cacheComponents: true`.
 - **AI**: `lib/report/generate.ts` makes a single Gemini call per report (`gemini-3-flash-preview`) with a combined system prompt (sections + conclusion + verifier constraints). Streaming via `generateContentStream` with `responseMimeType: "application/json"` — chunks are concatenated server-side; the client never sees the stream. Retry with exponential backoff on transient errors (429/500/503/ECONNRESET). `temperature: 0`. Trechos derivados dos achados do usuário são marcados pelo modelo com `**...**`; `splitBoldSegments` (em `lib/utils.ts`) converte esses marcadores em runs em negrito tanto no PDF quanto na visualização.
-- **Async generation**: `POST /api/generate` validates input, inserts a `reports` row with `status='pending'`, schedules the Gemini call via Next.js `after()`, returns `{ reportId }` immediately. `lib/report/worker.ts` (`runGeneration`) flips the row through `generating → completed | failed` and calls `revalidateTag(reportCacheTag(id), "max")` on completion. The worker uses `Promise.race` with a 5-minute timeout — caught failures get reported back to the user fast. The dashboard subscribes to Supabase Realtime postgres_changes on `reports` (UPDATE only, filter `user_id=eq.<id>`) **while at least one visible row is pending/generating** — the channel is torn down once all rows settle. Failed laudos retry via `POST /api/reports/[id]/regenerate` (heavier `RATE_LIMITS.generate` bucket, only allowed when `status='failed'`). The 15-min Vercel cron `/api/internal/sweep-stale-laudos` is the safety net for any row stuck in `generating` > 10 minutes (gated by `Bearer ${CRON_SECRET}`).
+- **Async generation**: `POST /api/generate` validates input, inserts a `reports` row with `status='pending'`, schedules the Gemini call via Next.js `after()`, returns `{ reportId }` immediately. `lib/report/worker.ts` (`runGeneration`) flips the row through `generating → completed | failed` and calls `revalidateTag(reportCacheTag(id), "max")` on completion. The worker uses `Promise.race` with a 5-minute timeout — caught failures get reported back to the user fast. The dashboard subscribes to Supabase Realtime postgres_changes on `reports` (UPDATE only, filter `user_id=eq.<id>`) **while at least one visible row is pending/generating** — the channel is torn down once all rows settle. Failed laudos retry via `POST /api/reports/[id]/regenerate` (only allowed when `status='failed'`). The 15-min Vercel cron `/api/internal/sweep-stale-laudos` is the safety net for function crashes mid-generation (gated by `Bearer ${CRON_SECRET}`).
 - **Speech-to-text**: real-time via browser Web Speech API (`react-speech-recognition`). Mic + transcript in `NewReportForm.tsx`. Firefox shows a disabled state with tooltip; no server-side transcription.
 - **PDF**: `lib/report/pdf.ts` (pdfmake). Fonts fetched from CDN and cached module-level. Cached in `STORAGE_BUCKETS.reportPdfs` — cleared on report edit or image changes. PDFs are signed/served using the _original author's_ profile (logo, signature, CRMV stay theirs even when a teammate edits).
-- **Bot protection**: Vercel BotID — `instrumentation-client.ts` registers protected routes (generate, regenerate, image upload, profile logo/signature). Server-side check is wired into `withApiHandler` via `{ botId: true }`. `deepAnalysis` enabled on the two generation routes.
+- **Bot protection**: Vercel BotID is always-on for every route via `withApiHandler`. `instrumentation-client.ts` injects detection headers for all `/api/*` paths; `deepAnalysis` mode is enabled on `/api/generate` and `/api/reports/*/regenerate` (the Gemini-cost endpoints).
 - **Formatting**: Prettier + pre-commit hook via lint-staged. Run `npm run format` to format all files.
 - **Database**: Supabase Postgres (project `rgemiayidnumeotplozm`, region `sa-east-1`). Multi-tenant via `organizations`. Every domain table (`pets`, `clinics`, `clinic_vets`, `reports`, `report_images`) has `org_id NOT NULL` + `user_id NOT NULL`. RLS: reads scope by org membership (team-visible); mutations stay user_id-self (only creator edits). All FK / `user_id` / `org_id` columns are indexed.
 - **Storage**: Three private buckets — `STORAGE_BUCKETS.reportImages`, `STORAGE_BUCKETS.reportPdfs`, `STORAGE_BUCKETS.profileLogos`. RLS scopes anon-client access to `auth.uid() = first folder in path`. All writes via service role.
@@ -82,15 +81,17 @@ All authenticated pages live inside `app/(auth)/`. The route group layout handle
 
 ## API route conventions
 
-Wrap every handler in `withApiHandler` (`@/lib/api-handler`). The context provided to handlers:
+Wrap every handler in `withApiHandler` (`@/lib/api-handler`). It takes the handler as its single argument — no options. The context provided to handlers:
 
-- `userId` — empty string when `publicAccess: true`
-- `orgId` — empty string when `publicAccess: true`; otherwise the user's primary org
+- `userId` — authenticated user's id
+- `orgId` — user's primary org (via `getCurrentOrgId`)
 - `admin` — service-role Supabase client (one per request)
 - `audit({ action, entityType, entityId, changes? })` — pre-bound to userId + orgId
 - `req`, `params` (params is already resolved — Next.js 16 Promise is awaited inside the wrapper)
 
-`withApiHandler` handles: auth, CSRF (Sec-Fetch-Site, on by default for non-GET/HEAD), rate limiting (default 60/min/user; pass `RATE_LIMITS.<name>` to override), BotID (`{ botId: true }` — also add the route to `instrumentation-client.ts`), and a generic 500 fallback. Pass `{ publicAccess: true }` to skip auth + rate limit (e.g. cron routes that authenticate via `CRON_SECRET`).
+`withApiHandler` always runs: BotID check → auth → org lookup → 500 fallback. Cron routes don't use `withApiHandler` — they're plain `GET` exports gated by `Bearer ${CRON_SECRET}` (no user/org context).
+
+CSRF protection is handled by Supabase's `SameSite=Lax` cookies plus modern browser defaults — no custom check. Rate limiting is delegated to the Vercel Firewall (dashboard-configurable per route).
 
 **Scope rules:**
 

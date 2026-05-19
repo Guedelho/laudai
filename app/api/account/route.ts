@@ -3,7 +3,7 @@ import { withApiHandler } from "@/lib/api-handler";
 import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 
-export const DELETE = withApiHandler({}, async ({ userId, admin }) => {
+export const DELETE = withApiHandler(async ({ userId, admin }) => {
   const { error } = await admin
     .from(TABLES.profiles)
     .update({ deletion_scheduled_at: new Date().toISOString() })
@@ -17,7 +17,7 @@ export const DELETE = withApiHandler({}, async ({ userId, admin }) => {
   return new NextResponse(null, { status: 202 });
 });
 
-export const POST = withApiHandler({}, async ({ userId, admin }) => {
+export const POST = withApiHandler(async ({ userId, admin }) => {
   const { error } = await admin.from(TABLES.profiles).update({ deletion_scheduled_at: null }).eq("id", userId);
 
   if (error) {

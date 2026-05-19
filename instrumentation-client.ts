@@ -4,8 +4,10 @@ initBotId({
   protect: [
     { path: "/api/generate", method: "POST", advancedOptions: { checkLevel: "deepAnalysis" } },
     { path: "/api/reports/*/regenerate", method: "POST", advancedOptions: { checkLevel: "deepAnalysis" } },
-    { path: "/api/reports/*/images", method: "POST" },
-    { path: "/api/profile/logo", method: "POST" },
-    { path: "/api/profile/signature", method: "POST" },
+    { path: "/api/*", method: "GET" },
+    { path: "/api/*", method: "POST" },
+    { path: "/api/*", method: "PATCH" },
+    { path: "/api/*", method: "PUT" },
+    { path: "/api/*", method: "DELETE" },
   ],
 });

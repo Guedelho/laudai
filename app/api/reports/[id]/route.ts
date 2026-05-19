@@ -8,7 +8,7 @@ import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 
-export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, orgId, admin, audit, params, req }) => {
+export const PATCH = withApiHandler<{ id: string }>(async ({ userId, orgId, admin, audit, params, req }) => {
   const id = params.id;
   const { generatedContent, patientFields, petId, clinicId, vetId }: UpdateReportRequest = await req.json();
   const owned = await resolveOwnedFks(admin, orgId, { petId, clinicId, vetId });
@@ -95,7 +95,7 @@ export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, orgId, 
   return NextResponse.json({ ok: true });
 });
 
-export const DELETE = withApiHandler<{ id: string }>({}, async ({ userId, admin, audit, params }) => {
+export const DELETE = withApiHandler<{ id: string }>(async ({ userId, admin, audit, params }) => {
   const id = params.id;
   const { error } = await admin
     .from(TABLES.reports)

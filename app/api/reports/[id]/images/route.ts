@@ -33,7 +33,7 @@ async function getSignedUrl(admin: ReturnType<typeof createAdmin>, storagePath: 
   return data.signedUrl;
 }
 
-export const GET = withApiHandler<{ id: string }>({}, async ({ userId, orgId, admin, params }) => {
+export const GET = withApiHandler<{ id: string }>(async ({ userId, orgId, admin, params }) => {
   const id = params.id;
 
   const { data: images, error } = await admin
@@ -55,92 +55,89 @@ export const GET = withApiHandler<{ id: string }>({}, async ({ userId, orgId, ad
   return NextResponse.json({ images: withUrls.filter((img) => img.url !== null) });
 });
 
-export const POST = withApiHandler<{ id: string }>(
-  { botId: true },
-  async ({ userId, orgId, admin, audit, req, params }) => {
-    const id = params.id;
+export const POST = withApiHandler<{ id: string }>(async ({ userId, orgId, admin, audit, req, params }) => {
+  const id = params.id;
 
-    const { data: report } = await admin
-      .from(TABLES.reports)
-      .select("id, org_id")
-      .eq("id", id)
-      .eq("org_id", orgId)
-      .single();
-    if (!report) return NextResponse.json({ error: "Laudo não encontrado." }, { status: 404 });
+  const { data: report } = await admin
+    .from(TABLES.reports)
+    .select("id, org_id")
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .single();
+  if (!report) return NextResponse.json({ error: "Laudo não encontrado." }, { status: 404 });
 
-    const formData = await req.formData();
-    const files = formData.getAll("images") as File[];
+  const formData = await req.formData();
+  const files = formData.getAll("images") as File[];
 
-    if (!files.length) return NextResponse.json({ error: "No images provided" }, { status: 400 });
+  if (!files.length) return NextResponse.json({ error: "No images provided" }, { status: 400 });
 
-    const { count: existingCount } = await admin
-      .from(TABLES.report_images)
-      .select("*", { count: "exact", head: true })
-      .eq("report_id", id)
-      .eq("org_id", orgId);
+  const { count: existingCount } = await admin
+    .from(TABLES.report_images)
+    .select("*", { count: "exact", head: true })
+    .eq("report_id", id)
+    .eq("org_id", orgId);
 
-    if ((existingCount ?? 0) + files.length > MAX_REPORT_IMAGES) {
-      return NextResponse.json(
-        { error: `Limite de ${MAX_REPORT_IMAGES} imagens por laudo. Atual: ${existingCount ?? 0}.` },
-        { status: 400 },
-      );
-    }
-
-    const fileData = await Promise.all(
-      files.map(async (file) => {
-        if (file.size > MAX_IMAGE_FILE_SIZE) {
-          return { validationError: `Arquivo muito grande (máx 5MB): ${file.name}` } as const;
-        }
-        const buf = Buffer.from(await file.arrayBuffer());
-        const detected = await detectImageFormat(buf);
-        if (!detected) {
-          return { validationError: `Formato não suportado: ${file.name}. Use JPEG, PNG ou WebP.` } as const;
-        }
-        return { buf, mime: detected.mime, ext: detected.ext, name: file.name };
-      }),
+  if ((existingCount ?? 0) + files.length > MAX_REPORT_IMAGES) {
+    return NextResponse.json(
+      { error: `Limite de ${MAX_REPORT_IMAGES} imagens por laudo. Atual: ${existingCount ?? 0}.` },
+      { status: 400 },
     );
+  }
 
-    const invalid = fileData.find((d) => "validationError" in d);
-    if (invalid && "validationError" in invalid) {
-      return NextResponse.json({ error: invalid.validationError }, { status: 400 });
-    }
+  const fileData = await Promise.all(
+    files.map(async (file) => {
+      if (file.size > MAX_IMAGE_FILE_SIZE) {
+        return { validationError: `Arquivo muito grande (máx 5MB): ${file.name}` } as const;
+      }
+      const buf = Buffer.from(await file.arrayBuffer());
+      const detected = await detectImageFormat(buf);
+      if (!detected) {
+        return { validationError: `Formato não suportado: ${file.name}. Use JPEG, PNG ou WebP.` } as const;
+      }
+      return { buf, mime: detected.mime, ext: detected.ext, name: file.name };
+    }),
+  );
 
-    const validFiles = fileData as Array<{ buf: Buffer; mime: string; ext: string; name: string }>;
-    const results = await Promise.all(
-      validFiles.map(async ({ buf, mime, ext, name }) => {
-        const imageId = crypto.randomUUID();
-        const storagePath = `${userId}/${id}/${imageId}.${ext}`;
+  const invalid = fileData.find((d) => "validationError" in d);
+  if (invalid && "validationError" in invalid) {
+    return NextResponse.json({ error: invalid.validationError }, { status: 400 });
+  }
 
-        const { error: uploadError } = await admin.storage.from(BUCKET).upload(storagePath, buf, { contentType: mime });
-        if (uploadError) {
-          logError("Image upload failed", uploadError, { userId, reportId: params.id });
-          throw new Error("Erro ao enviar imagem.");
-        }
+  const validFiles = fileData as Array<{ buf: Buffer; mime: string; ext: string; name: string }>;
+  const results = await Promise.all(
+    validFiles.map(async ({ buf, mime, ext, name }) => {
+      const imageId = crypto.randomUUID();
+      const storagePath = `${userId}/${id}/${imageId}.${ext}`;
 
-        const { data: record, error: dbError } = await admin
-          .from(TABLES.report_images)
-          .insert({ report_id: id, user_id: userId, org_id: orgId, storage_path: storagePath, file_name: name })
-          .select()
-          .single();
+      const { error: uploadError } = await admin.storage.from(BUCKET).upload(storagePath, buf, { contentType: mime });
+      if (uploadError) {
+        logError("Image upload failed", uploadError, { userId, reportId: params.id });
+        throw new Error("Erro ao enviar imagem.");
+      }
 
-        if (dbError) {
-          logError("Image DB insert failed", dbError, { userId, reportId: params.id });
-          await admin.storage.from(BUCKET).remove([storagePath]);
-          throw new Error("Erro ao registrar imagem.");
-        }
+      const { data: record, error: dbError } = await admin
+        .from(TABLES.report_images)
+        .insert({ report_id: id, user_id: userId, org_id: orgId, storage_path: storagePath, file_name: name })
+        .select()
+        .single();
 
-        await audit({
-          action: AUDIT_ACTIONS.create,
-          entityType: AUDIT_ENTITIES.report_image,
-          entityId: record.id,
-          changes: record,
-        });
-        return { ...record, url: await getSignedUrl(admin, storagePath) };
-      }),
-    );
+      if (dbError) {
+        logError("Image DB insert failed", dbError, { userId, reportId: params.id });
+        await admin.storage.from(BUCKET).remove([storagePath]);
+        throw new Error("Erro ao registrar imagem.");
+      }
 
-    revalidateTag(reportCacheTag(id), "max");
-    await admin.from(TABLES.reports).update({ pdf_storage_path: null }).eq("id", id).eq("org_id", orgId);
-    return NextResponse.json({ images: results });
-  },
-);
+      await audit({
+        action: AUDIT_ACTIONS.create,
+        entityType: AUDIT_ENTITIES.report_image,
+        entityId: record.id,
+        changes: record,
+      });
+      return { ...record, url: await getSignedUrl(admin, storagePath) };
+    }),
+  );
+
+  revalidateTag(reportCacheTag(id), "max");
+  await admin.from(TABLES.reports).update({ pdf_storage_path: null }).eq("id", id).eq("org_id", orgId);
+  return NextResponse.json({ images: results });
+});

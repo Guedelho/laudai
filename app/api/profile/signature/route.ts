@@ -7,7 +7,7 @@ import { logError } from "@/lib/log";
 
 const BUCKET = STORAGE_BUCKETS.profileLogos;
 
-export const GET = withApiHandler({}, async ({ userId, admin }) => {
+export const GET = withApiHandler(async ({ userId, admin }) => {
   const { data: profile } = await admin.from(TABLES.profiles).select("signature_image_url").eq("id", userId).single();
   if (!profile?.signature_image_url) return new NextResponse(null, { status: 404 });
 
@@ -19,7 +19,7 @@ export const GET = withApiHandler({}, async ({ userId, admin }) => {
   return NextResponse.redirect(data.signedUrl);
 });
 
-export const POST = withApiHandler({ botId: true }, async ({ userId, admin, req }) => {
+export const POST = withApiHandler(async ({ userId, admin, req }) => {
   const formData = await req.formData();
   const result = await parseProfileImage(formData.get("signature") as File | null);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
@@ -50,7 +50,7 @@ export const POST = withApiHandler({ botId: true }, async ({ userId, admin, req 
   return NextResponse.json({ ok: true });
 });
 
-export const DELETE = withApiHandler({}, async ({ userId, admin }) => {
+export const DELETE = withApiHandler(async ({ userId, admin }) => {
   const { error } = await admin.from(TABLES.profiles).update({ signature_image_url: null }).eq("id", userId);
 
   if (error) {

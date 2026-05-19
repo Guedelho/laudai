@@ -8,7 +8,7 @@ import { logError } from "@/lib/log";
 
 const BUCKET = STORAGE_BUCKETS.reportImages;
 
-export const DELETE = withApiHandler<{ id: string; imageId: string }>({}, async ({ userId, admin, audit, params }) => {
+export const DELETE = withApiHandler<{ id: string; imageId: string }>(async ({ userId, admin, audit, params }) => {
   const { id, imageId } = params;
 
   const { data: image } = await admin

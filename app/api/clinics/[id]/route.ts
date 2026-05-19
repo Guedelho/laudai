@@ -5,7 +5,7 @@ import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 
-export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, admin, audit, params, req }) => {
+export const PATCH = withApiHandler<{ id: string }>(async ({ userId, admin, audit, params, req }) => {
   const { name }: ClinicRequest = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: "Nome da clínica é obrigatório" }, { status: 400 });
 
@@ -39,7 +39,7 @@ export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, admin, 
   return NextResponse.json({ clinic });
 });
 
-export const DELETE = withApiHandler<{ id: string }>({}, async ({ userId, admin, audit, params }) => {
+export const DELETE = withApiHandler<{ id: string }>(async ({ userId, admin, audit, params }) => {
   const { data: before } = await admin
     .from(TABLES.clinics)
     .select("*")

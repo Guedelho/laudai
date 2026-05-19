@@ -6,7 +6,7 @@ import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 
-export const PUT = withApiHandler({}, async ({ userId, admin, audit, req }) => {
+export const PUT = withApiHandler(async ({ userId, admin, audit, req }) => {
   const body: UpdateProfileRequest = await req.json();
   const { full_name, signature_font, signature_image_url, signature } = body;
 

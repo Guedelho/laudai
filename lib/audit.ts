@@ -26,7 +26,7 @@ export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 export type AuditEntity = (typeof AUDIT_ENTITIES)[keyof typeof AUDIT_ENTITIES];
 
 interface LogAuditArgs {
-  orgId: string | null;
+  orgId: string;
   userId: string;
   action: AuditAction;
   entityType: AuditEntity;
