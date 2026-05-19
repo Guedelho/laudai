@@ -11,12 +11,9 @@ async function signed(admin: Admin, bucket: string, path: string | null): Promis
   return data?.signedUrl ?? null;
 }
 
-export const GET = withApiHandler(
-  async ({ userId }) => {
-    return doExport(userId);
-  },
-  { botId: false },
-);
+export const GET = withApiHandler(async ({ userId }) => {
+  return doExport(userId);
+});
 
 async function doExport(userId: string) {
   const admin = createAdmin();

@@ -398,9 +398,13 @@ export default function ProfileForm({
       <div className="pt-6 border-t border-gray-200 space-y-4">
         <h2 className="text-sm font-semibold text-gray-900">Privacidade</h2>
         <div className="flex flex-col gap-2">
-          <a href={profileApi.exportDataUrl()} className="text-sm text-blue-600 hover:underline w-fit" download>
+          <button
+            type="button"
+            onClick={() => profileApi.downloadAccountExport()}
+            className="text-sm text-blue-600 hover:underline w-fit text-left"
+          >
             Baixar meus dados (JSON)
-          </a>
+          </button>
           {!deleteConfirm ? (
             <button
               type="button"

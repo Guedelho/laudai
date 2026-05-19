@@ -25,6 +25,17 @@ export async function deleteAccount(): Promise<void> {
   await fetchOk("/api/account", { method: "DELETE" });
 }
 
-export function exportDataUrl(): string {
-  return "/api/account/export";
+export async function downloadAccountExport(): Promise<void> {
+  const res = await fetch("/api/account/export");
+  if (!res.ok) throw new Error("Falha ao exportar dados.");
+  const filename = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1] ?? "laudai-export.json";
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
