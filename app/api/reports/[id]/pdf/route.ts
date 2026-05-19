@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
 import { getProfile } from "@/lib/supabase/auth";
-import { createAdmin } from "@/lib/supabase/admin";
 import { parseReportContent } from "@/lib/utils";
 import { generatePdfBuffer } from "@/lib/report/pdf";
 import { PdfData } from "@/shared/interfaces";
 import { Specialty } from "@/shared/models";
 import { SPECIALTIES } from "@/lib/report/templates";
 import { withApiHandler } from "@/lib/api-handler";
-import { SIGNED_URL_TTL } from "@/shared/constants";
+import { SIGNED_URL_TTL, STORAGE_BUCKETS, TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 import sharp from "sharp";
 
-const IMAGES_BUCKET = "report-images";
-const PDF_BUCKET = "report-pdfs";
+const IMAGES_BUCKET = STORAGE_BUCKETS.reportImages;
+const PDF_BUCKET = STORAGE_BUCKETS.reportPdfs;
 const SUPPORTED_MIME = new Set(["image/jpeg", "image/jpg", "image/png"]);
 
 function slugify(s: string) {
@@ -69,24 +68,24 @@ function buildFilename(report: {
 
 export const GET = withApiHandler<{ id: string }>(
   { rateLimit: { name: "pdf", maxPerMinute: 5 } },
-  async ({ userId, params }) => {
+  async ({ userId, orgId, admin, params }) => {
     const id = params.id;
-    const admin = createAdmin();
 
     const { data: report } = await admin
-      .from("reports")
+      .from(TABLES.reports)
       .select(
-        "patient_name, species, breed, age, sex, neutered, owner_name, clinic_name, responsible_vet, specialty, exam_date, created_at, edited_content, pdf_storage_path",
+        "user_id, patient_name, species, breed, age, sex, neutered, owner_name, clinic_name, responsible_vet, specialty, exam_date, created_at, edited_content, pdf_storage_path",
       )
       .eq("id", id)
-      .eq("user_id", userId)
+      .eq("org_id", orgId)
       .single();
 
     if (!report) return NextResponse.json({ error: "Laudo não encontrado." }, { status: 404 });
 
+    const pdfAuthorUserId = report.user_id;
+
     const filename = buildFilename(report);
 
-    // Serve cached PDF if available
     if (report.pdf_storage_path) {
       try {
         const { data: signed } = await admin.storage
@@ -109,15 +108,14 @@ export const GET = withApiHandler<{ id: string }>(
       }
     }
 
-    // Generate PDF
-    const profile = await getProfile(userId);
+    const profile = await getProfile(pdfAuthorUserId);
     if (!profile) return NextResponse.json({ error: "Perfil não encontrado." }, { status: 400 });
 
     const { data: rawImages } = await admin
-      .from("report_images")
+      .from(TABLES.report_images)
       .select("storage_path")
       .eq("report_id", id)
-      .eq("user_id", userId)
+      .eq("org_id", orgId)
       .order("created_at", { ascending: true });
 
     const specialty = report.specialty as Specialty;
@@ -145,11 +143,11 @@ export const GET = withApiHandler<{ id: string }>(
     if (profile.logo_url) {
       try {
         const { data: logoSigned } = await admin.storage
-          .from("profile-logos")
+          .from(STORAGE_BUCKETS.profileLogos)
           .createSignedUrl(profile.logo_url, SIGNED_URL_TTL.oneShot);
         if (logoSigned?.signedUrl) logoBase64 = await fetchAsBase64(logoSigned.signedUrl);
       } catch (err) {
-        logError("Failed to fetch user logo", err, { userId });
+        logError("Failed to fetch user logo", err, { userId: pdfAuthorUserId });
       }
     }
 
@@ -157,7 +155,7 @@ export const GET = withApiHandler<{ id: string }>(
     if (profile.signature_image_url) {
       try {
         const { data: sigSigned } = await admin.storage
-          .from("profile-logos")
+          .from(STORAGE_BUCKETS.profileLogos)
           .createSignedUrl(profile.signature_image_url, SIGNED_URL_TTL.oneShot);
         if (sigSigned?.signedUrl) signatureImageBase64 = await fetchAsBase64(sigSigned.signedUrl);
       } catch (err) {
@@ -190,14 +188,13 @@ export const GET = withApiHandler<{ id: string }>(
 
     const buffer = await generatePdfBuffer(pdfData);
 
-    // Cache the PDF in storage
-    const storagePath = `${userId}/${id}/${filename}`;
+    const storagePath = `${pdfAuthorUserId}/${id}/${filename}`;
     try {
       await admin.storage.from(PDF_BUCKET).upload(storagePath, Buffer.from(buffer), {
         contentType: "application/pdf",
         upsert: true,
       });
-      await admin.from("reports").update({ pdf_storage_path: storagePath }).eq("id", id).eq("user_id", userId);
+      await admin.from(TABLES.reports).update({ pdf_storage_path: storagePath }).eq("id", id).eq("org_id", orgId);
     } catch (err) {
       logError("Failed to cache PDF", err, { userId, reportId: params.id });
     }

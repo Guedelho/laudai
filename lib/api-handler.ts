@@ -2,23 +2,36 @@ import "server-only";
 
 import { NextRequest, NextResponse } from "next/server";
 import { checkBotId } from "botid/server";
-import { getUserId } from "@/lib/supabase/auth";
+import { getUserId, getCurrentOrgId } from "@/lib/supabase/auth";
 import { isSameOriginRequest } from "@/lib/csrf";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { createAdmin } from "@/lib/supabase/admin";
+import { logAudit, type AuditAction, type AuditEntity } from "@/lib/audit";
 import { logError } from "@/lib/log";
 
 type RateLimitOpts = { name: string; maxPerMinute: number };
+type Admin = ReturnType<typeof createAdmin>;
 
-type Handler<P> = (ctx: { userId: string; req: NextRequest; params: P }) => Promise<Response>;
+export interface HandlerCtx<P> {
+  userId: string;
+  orgId: string;
+  req: NextRequest;
+  params: P;
+  admin: Admin;
+  audit: (args: {
+    action: AuditAction;
+    entityType: AuditEntity;
+    entityId: string;
+    changes?: Record<string, unknown> | null;
+  }) => Promise<void>;
+}
+
+type Handler<P> = (ctx: HandlerCtx<P>) => Promise<Response>;
 
 interface Options {
-  /** Skip auth check (defaults to false). */
   publicAccess?: boolean;
-  /** Per-user rate limit. Defaults to DEFAULT_RATE_LIMIT for authenticated routes. */
   rateLimit?: RateLimitOpts;
-  /** Default: enforce same-origin on non-GET/HEAD requests. */
   csrf?: boolean;
-  /** Verify request is not from a bot via Vercel BotID. Route must also be listed in instrumentation-client.ts. */
   botId?: boolean;
 }
 
@@ -42,10 +55,12 @@ export function withApiHandler<P = Record<string, never>>(
       }
 
       let userId = "";
+      let orgId = "";
       if (!opts.publicAccess) {
         const id = await getUserId();
         if (!id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         userId = id;
+        orgId = await getCurrentOrgId(userId);
       }
 
       const rateLimit = opts.publicAccess ? opts.rateLimit : (opts.rateLimit ?? DEFAULT_RATE_LIMIT);
@@ -55,7 +70,10 @@ export function withApiHandler<P = Record<string, never>>(
       }
 
       const params = ctx ? ((await ctx.params) as P) : ({} as P);
-      return await handler({ userId, req, params });
+      const admin = createAdmin();
+      const audit: HandlerCtx<P>["audit"] = (args) => logAudit(admin, { orgId: orgId || null, userId, ...args });
+
+      return await handler({ userId, orgId, req, params, admin, audit });
     } catch (err) {
       logError("API handler uncaught", err, { method: req.method, path: req.nextUrl.pathname });
       return NextResponse.json({ error: "Erro inesperado." }, { status: 500 });

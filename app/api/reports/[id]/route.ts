@@ -1,23 +1,22 @@
 import { NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { reportCacheTag } from "@/lib/utils";
-import { createAdmin } from "@/lib/supabase/admin";
 import { UpdateReportRequest } from "@/shared/interfaces";
 import { withApiHandler } from "@/lib/api-handler";
 import { resolveOwnedFks } from "@/lib/supabase/db";
+import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
+import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 
-export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, params }) => {
+export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, orgId, admin, audit, params, req }) => {
   const id = params.id;
-  const admin = createAdmin();
-
   const { generatedContent, patientFields, petId, clinicId, vetId }: UpdateReportRequest = await req.json();
-  const owned = await resolveOwnedFks(admin, userId, { petId, clinicId, vetId });
+  const owned = await resolveOwnedFks(admin, orgId, { petId, clinicId, vetId });
 
   const editedContent = JSON.stringify(generatedContent);
 
   const { data: latestVersion } = await admin
-    .from("report_versions")
+    .from(TABLES.report_versions)
     .select("version")
     .eq("report_id", id)
     .order("version", { ascending: false })
@@ -27,7 +26,7 @@ export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, pa
   const nextVersion = (latestVersion?.version ?? 0) + 1;
 
   const { error: versionError } = await admin
-    .from("report_versions")
+    .from(TABLES.report_versions)
     .insert({ report_id: id, edited_by: userId, content: editedContent, version: nextVersion });
 
   if (versionError) {
@@ -36,7 +35,7 @@ export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, pa
   }
 
   const { error } = await admin
-    .from("reports")
+    .from(TABLES.reports)
     .update({
       edited_content: editedContent,
       updated_by: userId,
@@ -58,7 +57,7 @@ export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, pa
     [
       owned.petId &&
         admin
-          .from("pets")
+          .from(TABLES.pets)
           .update({
             name: patientFields.patient_name,
             species: patientFields.species,
@@ -69,33 +68,37 @@ export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, pa
             owner_name: patientFields.owner_name,
           })
           .eq("id", owned.petId)
-          .eq("user_id", userId),
+          .eq("org_id", orgId),
       owned.clinicId &&
         admin
-          .from("clinics")
+          .from(TABLES.clinics)
           .update({ name: patientFields.clinic_name })
           .eq("id", owned.clinicId)
-          .eq("user_id", userId),
+          .eq("org_id", orgId),
       owned.vetId &&
         admin
-          .from("clinic_vets")
+          .from(TABLES.clinic_vets)
           .update({ name: patientFields.responsible_vet })
           .eq("id", owned.vetId)
-          .eq("user_id", userId),
+          .eq("org_id", orgId),
     ].filter(Boolean),
   );
 
   revalidateTag(reportCacheTag(id), "max");
   revalidatePath("/dashboard");
+  await audit({
+    action: AUDIT_ACTIONS.update,
+    entityType: AUDIT_ENTITIES.report,
+    entityId: id,
+    changes: { patientFields, version: nextVersion },
+  });
   return NextResponse.json({ ok: true });
 });
 
-export const DELETE = withApiHandler<{ id: string }>({}, async ({ userId, params }) => {
+export const DELETE = withApiHandler<{ id: string }>({}, async ({ userId, admin, audit, params }) => {
   const id = params.id;
-  const admin = createAdmin();
-
   const { error } = await admin
-    .from("reports")
+    .from(TABLES.reports)
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id)
     .eq("user_id", userId);
@@ -107,5 +110,6 @@ export const DELETE = withApiHandler<{ id: string }>({}, async ({ userId, params
 
   revalidateTag(reportCacheTag(id), "max");
   revalidatePath("/dashboard");
+  await audit({ action: AUDIT_ACTIONS.delete, entityType: AUDIT_ENTITIES.report, entityId: id });
   return NextResponse.json({ ok: true });
 });

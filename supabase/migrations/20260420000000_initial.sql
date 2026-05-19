@@ -6,27 +6,29 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 
 create table if not exists profiles (
-  id                  uuid primary key references auth.users(id) on delete cascade,
-  full_name           text,
-  crmv                text,
-  cpf                 text,
-  crmv_state          text,
-  logo_url            text,
-  signature_font      text,
-  signature           text,
-  signature_image_url text,
-  created_at          timestamptz default now() not null,
+  id                     uuid primary key references auth.users(id) on delete cascade,
+  full_name              text,
+  crmv                   text,
+  cpf                    text,
+  crmv_state             text,
+  logo_url               text,
+  signature_font         text,
+  signature              text,
+  signature_image_url    text,
+  deletion_scheduled_at  timestamptz,
+  created_at             timestamptz default now() not null,
 
   constraint profiles_full_name_len check (char_length(full_name) <= 200),
   constraint profiles_cpf_len check (char_length(cpf) <= 14),
   constraint profiles_crmv_len check (char_length(crmv) <= 20),
   constraint profiles_crmv_state_len check (char_length(crmv_state) <= 2),
 
-  -- Anti-abuse: one CPF and one (CRMV, state) per real person.
-  -- NULLs allowed (multiple NULLs OK in Postgres by default).
   constraint profiles_cpf_unique unique (cpf),
   constraint profiles_crmv_unique unique (crmv, crmv_state)
 );
+
+create index if not exists profiles_deletion_scheduled_idx
+  on profiles(deletion_scheduled_at) where deletion_scheduled_at is not null;
 
 alter table profiles enable row level security;
 
@@ -495,6 +497,49 @@ create policy "Users can delete their own report images"
 create policy "org members read report_images"
   on report_images for select to authenticated
   using (exists (select 1 from organization_members m where m.org_id = report_images.org_id and m.user_id = (select auth.uid())));
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- audit_log
+-- General-purpose CRUD log across pets, clinics, clinic_vets, reports,
+-- report_images, profile, organization_member. App-level instrumentation:
+-- mutation endpoints call logAudit() after a successful write. Append-only.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+create table if not exists audit_log (
+  id          uuid primary key default gen_random_uuid(),
+  org_id      uuid references organizations(id) on delete cascade,
+  user_id     uuid references auth.users(id),
+  action      text not null check (action in ('create', 'update', 'delete')),
+  entity_type text not null check (entity_type ~ '^[a-z_]+$'),
+  entity_id   uuid not null,
+  changes     jsonb,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists audit_log_org_idx    on audit_log(org_id, created_at desc);
+create index if not exists audit_log_entity_idx on audit_log(entity_type, entity_id);
+create index if not exists audit_log_user_idx   on audit_log(user_id);
+
+alter table audit_log enable row level security;
+
+create policy "org members read audit"
+  on audit_log for select to authenticated
+  using (
+    exists (
+      select 1 from organization_members m
+      where m.org_id = audit_log.org_id and m.user_id = (select auth.uid())
+    )
+  );
+
+create policy "org members insert audit"
+  on audit_log for insert to authenticated
+  with check (
+    user_id = (select auth.uid())
+    and exists (
+      select 1 from organization_members m
+      where m.org_id = audit_log.org_id and m.user_id = (select auth.uid())
+    )
+  );
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- consents (LGPD)

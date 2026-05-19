@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { REPORT_STATUSES } from "@/shared/models";
+import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 
 const STALE_MINUTES = 10;
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
   const supabase = createAdmin();
 
   const { data, error } = await supabase
-    .from("reports")
+    .from(TABLES.reports)
     .update({
       status: REPORT_STATUSES.failed,
       error_message: "Timeout — tente novamente.",

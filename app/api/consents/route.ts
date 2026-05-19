@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { createAdmin } from "@/lib/supabase/admin";
 import { withApiHandler } from "@/lib/api-handler";
-import { LEGAL_VERSIONS, type LegalDocType } from "@/shared/constants";
+import { LEGAL_VERSIONS, TABLES, type LegalDocType } from "@/shared/constants";
 import { logError } from "@/lib/log";
 
 interface ConsentRequest {
@@ -9,9 +8,8 @@ interface ConsentRequest {
   version: string;
 }
 
-export const POST = withApiHandler({}, async ({ userId, req }) => {
-  const body = (await req.json()) as ConsentRequest;
-  const { type, version } = body;
+export const POST = withApiHandler({}, async ({ userId, admin, req }) => {
+  const { type, version } = (await req.json()) as ConsentRequest;
 
   if (type !== "terms" && type !== "privacy_policy") {
     return NextResponse.json({ error: "Tipo de consentimento inválido." }, { status: 400 });
@@ -21,8 +19,7 @@ export const POST = withApiHandler({}, async ({ userId, req }) => {
   }
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
-  const admin = createAdmin();
-  const { error } = await admin.from("consents").insert({ user_id: userId, type, version, ip });
+  const { error } = await admin.from(TABLES.consents).insert({ user_id: userId, type, version, ip });
 
   if (error) {
     logError("Consent insert failed", error, { userId, type, version });

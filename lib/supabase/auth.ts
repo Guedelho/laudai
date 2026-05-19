@@ -15,3 +15,15 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   const { data } = await admin.from("profiles").select("*").eq("id", userId).single();
   return data ?? null;
 }
+
+export async function getCurrentOrgId(userId: string): Promise<string> {
+  const admin = createAdmin();
+  const { data } = await admin.from("organization_members").select("org_id, role").eq("user_id", userId);
+
+  if (!data || data.length === 0) {
+    throw new Error(`No organization for user ${userId}`);
+  }
+
+  const owned = data.find((m) => m.role === "owner");
+  return (owned ?? data[0]).org_id;
+}

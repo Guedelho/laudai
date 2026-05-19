@@ -2,29 +2,30 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
+import { getCurrentOrgId } from "@/lib/supabase/auth";
 import { notFound } from "next/navigation";
 import { cacheTag, cacheLife } from "next/cache";
 import { Report } from "@/shared/models";
-import { SIGNED_URL_TTL } from "@/shared/constants";
+import { SIGNED_URL_TTL, STORAGE_BUCKETS, TABLES } from "@/shared/constants";
 import { reportCacheTag } from "@/lib/utils";
 import ReportDetail from "./ReportDetail";
 import Loading from "./loading";
 
-const BUCKET = "report-images";
+const BUCKET = STORAGE_BUCKETS.reportImages;
 
-async function getReportData(id: string, userId: string) {
+async function getReportData(id: string, orgId: string) {
   "use cache";
   cacheTag(reportCacheTag(id));
   cacheLife({ revalidate: SIGNED_URL_TTL.display, expire: SIGNED_URL_TTL.display });
 
   const admin = createAdmin();
   const [{ data: report }, { data: rawImages }] = await Promise.all([
-    admin.from("reports").select("*").eq("id", id).eq("user_id", userId).is("deleted_at", null).single(),
+    admin.from(TABLES.reports).select("*").eq("id", id).eq("org_id", orgId).is("deleted_at", null).single(),
     admin
-      .from("report_images")
+      .from(TABLES.report_images)
       .select("*")
       .eq("report_id", id)
-      .eq("user_id", userId)
+      .eq("org_id", orgId)
       .order("created_at", { ascending: true }),
   ]);
 
@@ -47,7 +48,8 @@ async function ReportContents({ id, review }: { id: string; review: boolean }) {
   } = await (await createClient()).auth.getUser();
   if (!user) return null;
 
-  const { report, images } = await getReportData(id, user.id);
+  const orgId = await getCurrentOrgId(user.id);
+  const { report, images } = await getReportData(id, orgId);
   if (!report) notFound();
 
   if (report.status !== "completed" || !report.edited_content) {

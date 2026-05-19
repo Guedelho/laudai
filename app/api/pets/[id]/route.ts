@@ -1,18 +1,26 @@
 import { NextResponse } from "next/server";
-import { createAdmin } from "@/lib/supabase/admin";
 import { PetRequest } from "@/shared/interfaces";
 import { withApiHandler } from "@/lib/api-handler";
+import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
+import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 
-export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, params }) => {
+export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, admin, audit, params, req }) => {
   const { name, species, breed, age, ownerName, sex, neutered }: PetRequest = await req.json();
   if (!name?.trim() || !species?.trim() || !ownerName?.trim()) {
     return NextResponse.json({ error: "Campos obrigatórios: nome, espécie, tutor" }, { status: 400 });
   }
 
-  const admin = createAdmin();
+  const { data: before } = await admin
+    .from(TABLES.pets)
+    .select("*")
+    .eq("id", params.id)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!before) return NextResponse.json({ error: "Paciente não encontrado." }, { status: 404 });
+
   const { data: pet, error } = await admin
-    .from("pets")
+    .from(TABLES.pets)
     .update({
       name: name.trim(),
       species: species.trim(),
@@ -31,16 +39,31 @@ export const PATCH = withApiHandler<{ id: string }>({}, async ({ userId, req, pa
     logError("Pet update failed", error, { userId, petId: params.id });
     return NextResponse.json({ error: "Erro ao atualizar paciente." }, { status: 500 });
   }
+
+  await audit({
+    action: AUDIT_ACTIONS.update,
+    entityType: AUDIT_ENTITIES.pet,
+    entityId: pet.id,
+    changes: { before, after: pet },
+  });
   return NextResponse.json({ pet });
 });
 
-export const DELETE = withApiHandler<{ id: string }>({}, async ({ userId, params }) => {
-  const admin = createAdmin();
-  const { error } = await admin.from("pets").delete().eq("id", params.id).eq("user_id", userId);
+export const DELETE = withApiHandler<{ id: string }>({}, async ({ userId, admin, audit, params }) => {
+  const { data: before } = await admin
+    .from(TABLES.pets)
+    .select("*")
+    .eq("id", params.id)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!before) return NextResponse.json({ error: "Paciente não encontrado." }, { status: 404 });
+
+  const { error } = await admin.from(TABLES.pets).delete().eq("id", params.id).eq("user_id", userId);
 
   if (error) {
     logError("Pet delete failed", error, { userId, petId: params.id });
     return NextResponse.json({ error: "Erro ao excluir paciente." }, { status: 500 });
   }
+  await audit({ action: AUDIT_ACTIONS.delete, entityType: AUDIT_ENTITIES.pet, entityId: params.id, changes: before });
   return NextResponse.json({ ok: true });
 });

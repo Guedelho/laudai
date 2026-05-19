@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
+import { TABLES } from "@/shared/constants";
 import ProfileForm from "./ProfileForm";
 
 export default async function ProfilePage() {
@@ -9,7 +10,7 @@ export default async function ProfilePage() {
   if (!user) return null;
 
   const admin = createAdmin();
-  const { data: profile } = await admin.from("profiles").select("*").eq("id", user.id).single();
+  const { data: profile } = await admin.from(TABLES.profiles).select("*").eq("id", user.id).single();
 
   return (
     <main className="flex items-start justify-center px-4 py-10">

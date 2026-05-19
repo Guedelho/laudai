@@ -38,6 +38,31 @@ export const LEGAL_VERSIONS = {
 
 export type LegalDocType = keyof typeof LEGAL_VERSIONS;
 
+// ─── Schema names ───────────────────────────────────────────────────────────
+
+export const TABLES = {
+  profiles: "profiles",
+  organizations: "organizations",
+  organization_members: "organization_members",
+  organization_invitations: "organization_invitations",
+  plans: "plans",
+  pets: "pets",
+  clinics: "clinics",
+  clinic_vets: "clinic_vets",
+  reports: "reports",
+  report_versions: "report_versions",
+  report_images: "report_images",
+  consents: "consents",
+  audit_log: "audit_log",
+  rate_limit_events: "rate_limit_events",
+} as const;
+
+export const STORAGE_BUCKETS = {
+  reportImages: "report-images",
+  reportPdfs: "report-pdfs",
+  profileLogos: "profile-logos",
+} as const;
+
 // ─── Signed-URL TTLs (seconds) ──────────────────────────────────────────────
 
 export const SIGNED_URL_TTL = {

@@ -4,6 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { generateReport } from "@/lib/report/generate";
 import { createAdmin } from "@/lib/supabase/admin";
 import { reportCacheTag } from "@/lib/utils";
+import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 import { REPORT_STATUSES, type PatientFields } from "@/shared/models";
 
@@ -22,7 +23,7 @@ export async function runGeneration(
   params: WorkerParams,
 ): Promise<void> {
   await supabase
-    .from("reports")
+    .from(TABLES.reports)
     .update({ status: REPORT_STATUSES.generating, generation_started_at: new Date().toISOString() })
     .eq("id", reportId)
     .eq("user_id", userId);
@@ -39,7 +40,7 @@ export async function runGeneration(
     ]);
 
     const { error } = await supabase
-      .from("reports")
+      .from(TABLES.reports)
       .update({
         status: REPORT_STATUSES.completed,
         generated_content: content,
@@ -54,7 +55,7 @@ export async function runGeneration(
   } catch (err) {
     logError("Background generation failed", err, { reportId, userId });
     await supabase
-      .from("reports")
+      .from(TABLES.reports)
       .update({
         status: REPORT_STATUSES.failed,
         error_message: err instanceof Error ? err.message : "Erro ao gerar laudo.",

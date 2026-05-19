@@ -1,36 +1,31 @@
 import { NextResponse } from "next/server";
-import { createAdmin } from "@/lib/supabase/admin";
 import { parseProfileImage } from "@/lib/server-utils";
-import { SIGNED_URL_TTL } from "@/shared/constants";
+import { SIGNED_URL_TTL, STORAGE_BUCKETS, TABLES } from "@/shared/constants";
 import { withApiHandler } from "@/lib/api-handler";
 import { invalidateUserPdfCache } from "@/lib/supabase/db";
 import { logError } from "@/lib/log";
 
-const BUCKET = "profile-logos";
+const BUCKET = STORAGE_BUCKETS.profileLogos;
 
-export const GET = withApiHandler({}, async ({ userId }) => {
-  const admin = createAdmin();
-  const { data: profile } = await admin.from("profiles").select("signature_image_url").eq("id", userId).single();
-
+export const GET = withApiHandler({}, async ({ userId, admin }) => {
+  const { data: profile } = await admin.from(TABLES.profiles).select("signature_image_url").eq("id", userId).single();
   if (!profile?.signature_image_url) return new NextResponse(null, { status: 404 });
 
   const { data, error } = await admin.storage
     .from(BUCKET)
     .createSignedUrl(profile.signature_image_url, SIGNED_URL_TTL.serverFetch);
-
   if (error || !data?.signedUrl) return new NextResponse(null, { status: 404 });
 
   return NextResponse.redirect(data.signedUrl);
 });
 
-export const POST = withApiHandler({ botId: true }, async ({ userId, req }) => {
+export const POST = withApiHandler({ botId: true }, async ({ userId, admin, req }) => {
   const formData = await req.formData();
   const result = await parseProfileImage(formData.get("signature") as File | null);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 
   const { buf, ext, mime } = result;
   const storagePath = `${userId}/signature.${ext}`;
-  const admin = createAdmin();
 
   const { error: uploadError } = await admin.storage
     .from(BUCKET)
@@ -42,7 +37,7 @@ export const POST = withApiHandler({ botId: true }, async ({ userId, req }) => {
   }
 
   const { error: updateError } = await admin
-    .from("profiles")
+    .from(TABLES.profiles)
     .update({ signature_image_url: storagePath, signature_font: null })
     .eq("id", userId);
 
@@ -55,9 +50,8 @@ export const POST = withApiHandler({ botId: true }, async ({ userId, req }) => {
   return NextResponse.json({ ok: true });
 });
 
-export const DELETE = withApiHandler({}, async ({ userId }) => {
-  const admin = createAdmin();
-  const { error } = await admin.from("profiles").update({ signature_image_url: null }).eq("id", userId);
+export const DELETE = withApiHandler({}, async ({ userId, admin }) => {
+  const { error } = await admin.from(TABLES.profiles).update({ signature_image_url: null }).eq("id", userId);
 
   if (error) {
     logError("Signature remove failed", error, { userId });

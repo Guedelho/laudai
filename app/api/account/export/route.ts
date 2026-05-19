@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { withApiHandler } from "@/lib/api-handler";
-import { SIGNED_URL_TTL } from "@/shared/constants";
+import { SIGNED_URL_TTL, STORAGE_BUCKETS, TABLES } from "@/shared/constants";
 
 type Admin = ReturnType<typeof createAdmin>;
 
@@ -15,13 +15,13 @@ export const GET = withApiHandler({}, async ({ userId }) => {
   const admin = createAdmin();
 
   const [profileRes, reportsRes, petsRes, clinicsRes, vetsRes, consentsRes, imagesRes] = await Promise.all([
-    admin.from("profiles").select("*").eq("id", userId).maybeSingle(),
-    admin.from("reports").select("*").eq("user_id", userId),
-    admin.from("pets").select("*").eq("user_id", userId),
-    admin.from("clinics").select("*").eq("user_id", userId),
-    admin.from("clinic_vets").select("*").eq("user_id", userId),
-    admin.from("consents").select("*").eq("user_id", userId),
-    admin.from("report_images").select("*").eq("user_id", userId),
+    admin.from(TABLES.profiles).select("*").eq("id", userId).maybeSingle(),
+    admin.from(TABLES.reports).select("*").eq("user_id", userId),
+    admin.from(TABLES.pets).select("*").eq("user_id", userId),
+    admin.from(TABLES.clinics).select("*").eq("user_id", userId),
+    admin.from(TABLES.clinic_vets).select("*").eq("user_id", userId),
+    admin.from(TABLES.consents).select("*").eq("user_id", userId),
+    admin.from(TABLES.report_images).select("*").eq("user_id", userId),
   ]);
 
   const reportIdToImages = new Map<
@@ -34,7 +34,7 @@ export const GET = withApiHandler({}, async ({ userId }) => {
       id: img.id,
       storage_path: img.storage_path,
       file_name: img.file_name,
-      signed_url: await signed(admin, "report-images", img.storage_path),
+      signed_url: await signed(admin, STORAGE_BUCKETS.reportImages, img.storage_path),
     });
     reportIdToImages.set(img.report_id, list);
   }
@@ -42,7 +42,7 @@ export const GET = withApiHandler({}, async ({ userId }) => {
   const reports = await Promise.all(
     (reportsRes.data ?? []).map(async (r) => ({
       ...r,
-      pdf_signed_url: await signed(admin, "report-pdfs", r.pdf_storage_path),
+      pdf_signed_url: await signed(admin, STORAGE_BUCKETS.reportPdfs, r.pdf_storage_path),
       images: reportIdToImages.get(r.id) ?? [],
     })),
   );
@@ -50,8 +50,8 @@ export const GET = withApiHandler({}, async ({ userId }) => {
   const profile = profileRes.data
     ? {
         ...profileRes.data,
-        logo_signed_url: await signed(admin, "profile-logos", profileRes.data.logo_url),
-        signature_signed_url: await signed(admin, "profile-logos", profileRes.data.signature_image_url),
+        logo_signed_url: await signed(admin, STORAGE_BUCKETS.profileLogos, profileRes.data.logo_url),
+        signature_signed_url: await signed(admin, STORAGE_BUCKETS.profileLogos, profileRes.data.signature_image_url),
       }
     : null;
 

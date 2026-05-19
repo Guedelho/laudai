@@ -3,6 +3,10 @@
     {
       "path": "/api/internal/sweep-stale-laudos",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/internal/sweep-deleted-accounts",
+      "schedule": "0 3 * * *"
     }
   ]
 }
