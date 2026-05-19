@@ -6,6 +6,7 @@ import { getUserId, getCurrentOrgId } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
 import { logAudit, type AuditAction, type AuditEntity } from "@/lib/audit";
 import { logError } from "@/lib/log";
+import { checkRateLimit, type RateLimitConfig } from "@/lib/rate-limit";
 
 type Admin = ReturnType<typeof createAdmin>;
 
@@ -25,11 +26,16 @@ interface HandlerCtx<P> {
 
 type Handler<P> = (ctx: HandlerCtx<P>) => Promise<Response>;
 
-// Pass { botId: false } for routes loaded by <img>/<a download>/top-level navigation
-// — those can't carry BotID headers. Cookies still gate access.
+interface HandlerOpts {
+  // { botId: false } for routes loaded by <img>/<a download>/top-level navigation
+  // — those can't carry BotID headers. Cookies still gate access.
+  botId?: boolean;
+  rateLimit?: RateLimitConfig;
+}
+
 export function withApiHandler<P = Record<string, never>>(
   handler: Handler<P>,
-  opts: { botId?: boolean } = {},
+  opts: HandlerOpts = {},
 ): (req: NextRequest, ctx?: { params: Promise<P> }) => Promise<Response> {
   return async (req, ctx) => {
     try {
@@ -44,6 +50,14 @@ export function withApiHandler<P = Record<string, never>>(
       const orgId = await getCurrentOrgId(userId);
       const params = ctx ? ((await ctx.params) as P) : ({} as P);
       const admin = createAdmin();
+
+      if (opts.rateLimit) {
+        const allowed = await checkRateLimit(admin, userId, opts.rateLimit);
+        if (!allowed) {
+          return NextResponse.json({ error: "Muitas requisições. Tente novamente em instantes." }, { status: 429 });
+        }
+      }
+
       const audit: HandlerCtx<P>["audit"] = (args) => logAudit(admin, { orgId, userId, ...args });
 
       return await handler({ userId, orgId, req, params, admin, audit });

@@ -49,6 +49,7 @@ export const TABLES = {
   report_images: "report_images",
   consents: "consents",
   audit_log: "audit_log",
+  rate_limits: "rate_limits",
 } as const;
 
 export const REPORT_TYPES = {
