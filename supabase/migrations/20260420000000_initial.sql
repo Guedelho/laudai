@@ -97,7 +97,8 @@ create table if not exists organization_members (
 create unique index if not exists organization_members_one_owner_per_org
   on organization_members(org_id) where role = 'owner';
 
-create index if not exists organization_members_user_id_idx on organization_members(user_id);
+create index if not exists organization_members_user_id_idx    on organization_members(user_id);
+create index if not exists organization_members_invited_by_idx on organization_members(invited_by);
 
 alter table organization_members enable row level security;
 
@@ -126,8 +127,19 @@ create policy "members read same-org memberships"
     )
   );
 
-create policy "owners admins manage members"
-  on organization_members for all to authenticated
+create policy "org_members insert by admin"
+  on organization_members for insert to authenticated
+  with check (
+    exists (
+      select 1 from organization_members self
+      where self.org_id = organization_members.org_id
+        and self.user_id = (select auth.uid())
+        and self.role in ('owner', 'admin')
+    )
+  );
+
+create policy "org_members update by admin"
+  on organization_members for update to authenticated
   using (
     exists (
       select 1 from organization_members self
@@ -137,6 +149,17 @@ create policy "owners admins manage members"
     )
   )
   with check (
+    exists (
+      select 1 from organization_members self
+      where self.org_id = organization_members.org_id
+        and self.user_id = (select auth.uid())
+        and self.role in ('owner', 'admin')
+    )
+  );
+
+create policy "org_members delete by admin"
+  on organization_members for delete to authenticated
+  using (
     exists (
       select 1 from organization_members self
       where self.org_id = organization_members.org_id
@@ -160,8 +183,8 @@ create table if not exists organization_invitations (
 create unique index if not exists organization_invitations_pending_unique
   on organization_invitations(org_id, email) where accepted_at is null;
 
-create index if not exists organization_invitations_org_idx   on organization_invitations(org_id);
-create index if not exists organization_invitations_token_idx on organization_invitations(token);
+create index if not exists organization_invitations_org_idx        on organization_invitations(org_id);
+create index if not exists organization_invitations_invited_by_idx on organization_invitations(invited_by);
 
 alter table organization_invitations enable row level security;
 
@@ -174,8 +197,19 @@ create policy "members read org invitations"
     )
   );
 
-create policy "owners admins manage invitations"
-  on organization_invitations for all to authenticated
+create policy "org_invitations insert by admin"
+  on organization_invitations for insert to authenticated
+  with check (
+    exists (
+      select 1 from organization_members m
+      where m.org_id = organization_invitations.org_id
+        and m.user_id = (select auth.uid())
+        and m.role in ('owner', 'admin')
+    )
+  );
+
+create policy "org_invitations update by admin"
+  on organization_invitations for update to authenticated
   using (
     exists (
       select 1 from organization_members m
@@ -185,6 +219,17 @@ create policy "owners admins manage invitations"
     )
   )
   with check (
+    exists (
+      select 1 from organization_members m
+      where m.org_id = organization_invitations.org_id
+        and m.user_id = (select auth.uid())
+        and m.role in ('owner', 'admin')
+    )
+  );
+
+create policy "org_invitations delete by admin"
+  on organization_invitations for delete to authenticated
+  using (
     exists (
       select 1 from organization_members m
       where m.org_id = organization_invitations.org_id
@@ -240,15 +285,24 @@ create table if not exists pets (
   constraint pets_sex_len check (char_length(sex) <= 10)
 );
 
-create index if not exists pets_user_id_idx on pets(user_id);
-create index if not exists pets_org_id_idx  on pets(org_id);
+create index if not exists pets_user_id_idx        on pets(user_id);
+create index if not exists pets_org_id_idx         on pets(org_id);
+create index if not exists pets_org_name_owner_idx on pets(org_id, name, owner_name);
 
 alter table pets enable row level security;
 
-create policy "Users can manage their own pets"
-  on pets for all to authenticated
+create policy "pets insert own"
+  on pets for insert to authenticated
+  with check ((select auth.uid()) = user_id);
+
+create policy "pets update own"
+  on pets for update to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
+
+create policy "pets delete own"
+  on pets for delete to authenticated
+  using ((select auth.uid()) = user_id);
 
 create policy "org members read pets"
   on pets for select to authenticated
@@ -268,15 +322,24 @@ create table if not exists clinics (
   constraint clinics_name_len check (char_length(name) <= 200)
 );
 
-create index if not exists clinics_user_id_idx on clinics(user_id);
-create index if not exists clinics_org_id_idx  on clinics(org_id);
+create index if not exists clinics_user_id_idx  on clinics(user_id);
+create index if not exists clinics_org_id_idx   on clinics(org_id);
+create index if not exists clinics_org_name_idx on clinics(org_id, name);
 
 alter table clinics enable row level security;
 
-create policy "Users can manage their own clinics"
-  on clinics for all to authenticated
+create policy "clinics insert own"
+  on clinics for insert to authenticated
+  with check ((select auth.uid()) = user_id);
+
+create policy "clinics update own"
+  on clinics for update to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
+
+create policy "clinics delete own"
+  on clinics for delete to authenticated
+  using ((select auth.uid()) = user_id);
 
 create policy "org members read clinics"
   on clinics for select to authenticated
@@ -303,10 +366,18 @@ create index if not exists clinic_vets_org_id_idx    on clinic_vets(org_id);
 
 alter table clinic_vets enable row level security;
 
-create policy "Users can manage their own clinic vets"
-  on clinic_vets for all to authenticated
+create policy "clinic_vets insert own"
+  on clinic_vets for insert to authenticated
+  with check ((select auth.uid()) = user_id);
+
+create policy "clinic_vets update own"
+  on clinic_vets for update to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
+
+create policy "clinic_vets delete own"
+  on clinic_vets for delete to authenticated
+  using ((select auth.uid()) = user_id);
 
 create policy "org members read clinic_vets"
   on clinic_vets for select to authenticated
@@ -371,8 +442,9 @@ create index if not exists reports_status_user_idx
 create index if not exists reports_user_id_created_idx
   on reports(user_id, created_at desc) where deleted_at is null;
 
-create index if not exists reports_org_id_idx     on reports(org_id);
-create index if not exists reports_updated_by_idx on reports(updated_by);
+create index if not exists reports_org_id_idx      on reports(org_id);
+create index if not exists reports_org_created_idx on reports(org_id, created_at desc) where deleted_at is null;
+create index if not exists reports_updated_by_idx  on reports(updated_by);
 
 -- FK-direction lookups ("all reports for this pet/clinic/vet").
 create index if not exists reports_pet_id_idx    on reports(pet_id)    where pet_id    is not null;
@@ -381,10 +453,18 @@ create index if not exists reports_vet_id_idx    on reports(vet_id)    where vet
 
 alter table reports enable row level security;
 
-create policy "Users can manage their own reports"
-  on reports for all to authenticated
+create policy "reports insert own"
+  on reports for insert to authenticated
+  with check ((select auth.uid()) = user_id);
+
+create policy "reports update own"
+  on reports for update to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
+
+create policy "reports delete own"
+  on reports for delete to authenticated
+  using ((select auth.uid()) = user_id);
 
 create policy "org members read reports"
   on reports for select to authenticated
@@ -420,11 +500,7 @@ create table if not exists report_versions (
   unique (report_id, version)
 );
 
-create index if not exists report_versions_report_version_idx
-  on report_versions(report_id, version desc);
-
-create index if not exists report_versions_edited_by_idx
-  on report_versions(edited_by);
+create index if not exists report_versions_edited_by_idx on report_versions(edited_by);
 
 alter table report_versions enable row level security;
 
@@ -471,10 +547,6 @@ create index if not exists report_images_user_id_idx   on report_images(user_id)
 create index if not exists report_images_org_id_idx    on report_images(org_id);
 
 alter table report_images enable row level security;
-
-create policy "Users can read their own report images"
-  on report_images for select to authenticated
-  using ((select auth.uid()) = user_id);
 
 create policy "Users can insert their own report images"
   on report_images for insert to authenticated
