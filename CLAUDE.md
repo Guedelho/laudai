@@ -101,7 +101,7 @@ Wrap every handler in `withApiHandler` (`@/lib/api-handler`). Signature: `withAp
 
 `withApiHandler` runs: BotID check (unless `{ botId: false }`) → auth → org lookup → 500 fallback. Cron routes don't use `withApiHandler` — they're plain `GET` exports gated by `Bearer ${CRON_SECRET}` (no user/org context).
 
-CSRF protection is handled by Supabase's `SameSite=Lax` cookies plus modern browser defaults — no custom check. Rate limiting is per-user (keyed by `user_id`, not IP) via the `rate_limits` table and the `check_rate_limit` Postgres function. Opt in by passing `{ rateLimit: { endpoint, max, windowSec } }` to `withApiHandler`. Active on `/api/generate` (10/min), `/api/reports/[id]/regenerate` (10/min), `/api/reports/[id]/pdf` (30/min). Fails open if the RPC errors. Stale window rows are swept by `cleanup_rate_limits()`.
+CSRF protection is handled by Supabase's `SameSite=Lax` cookies plus modern browser defaults — no custom check. Rate limiting is per-user (keyed by `user_id`, not IP) via the `rate_limits` table and the `check_rate_limit` Postgres function. Opt in by passing `{ rateLimit: { endpoint, max, windowSec } }` to `withApiHandler`. Active on `/api/generate` (10/min), `/api/reports/[id]/regenerate` (10/min), `/api/reports/[id]/pdf` (30/min). Fails open if the RPC errors. Stale window rows are swept hourly by pg_cron via `cleanup_rate_limits()`.
 
 **Scope rules:**
 

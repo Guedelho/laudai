@@ -132,7 +132,7 @@ as $$
   );
 $$;
 
-revoke all on function is_org_member(uuid, uuid) from public;
+revoke all on function is_org_member(uuid, uuid) from public, anon;
 grant execute on function is_org_member(uuid, uuid) to authenticated;
 
 -- Policies on organizations (defined after members table so EXISTS subqueries are valid).
@@ -282,6 +282,8 @@ create table if not exists organization_report_types (
 );
 
 create index if not exists organization_report_types_org_idx on organization_report_types(org_id);
+create index if not exists organization_report_types_report_type_id_idx
+  on organization_report_types(report_type_id);
 create index if not exists organization_report_types_expires_idx
   on organization_report_types(expires_at)
   where expires_at is not null;
@@ -310,6 +312,8 @@ create table if not exists member_specialties (
 
 create index if not exists member_specialties_org_type_idx
   on member_specialties(org_id, report_type_id);
+create index if not exists member_specialties_report_type_id_idx
+  on member_specialties(report_type_id);
 
 alter table member_specialties enable row level security;
 
@@ -323,6 +327,7 @@ create or replace function create_solo_org(p_user_id uuid, p_name text, p_slug t
 returns uuid
 language plpgsql
 security definer
+set search_path = public, pg_temp
 as $$
 declare
   v_org_id uuid;
@@ -832,6 +837,15 @@ as $$
 $$;
 
 revoke all on function cleanup_rate_limits() from public, anon, authenticated;
+
+-- Schedule cleanup hourly via pg_cron
+create extension if not exists pg_cron;
+
+select cron.schedule(
+  'cleanup_rate_limits_hourly',
+  '0 * * * *',
+  $$select public.cleanup_rate_limits();$$
+);
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Permissions
