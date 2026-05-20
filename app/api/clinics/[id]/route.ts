@@ -1,21 +1,18 @@
 import { NextResponse } from "next/server";
-import { withApiHandler } from "@/lib/api-handler";
+import { withApiHandler, loadOwned } from "@/lib/api-handler";
 import { ClinicRequest } from "@/shared/interfaces";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 
+const NOT_FOUND = NextResponse.json({ error: "Clínica não encontrada." }, { status: 404 });
+
 export const PATCH = withApiHandler<{ id: string }>(async ({ userId, admin, audit, params, req }) => {
   const { name }: ClinicRequest = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: "Nome da clínica é obrigatório" }, { status: 400 });
 
-  const { data: before } = await admin
-    .from(TABLES.clinics)
-    .select("*")
-    .eq("id", params.id)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!before) return NextResponse.json({ error: "Clínica não encontrada." }, { status: 404 });
+  const before = await loadOwned(admin, TABLES.clinics, params.id, userId);
+  if (!before) return NOT_FOUND;
 
   const { data: clinic, error } = await admin
     .from(TABLES.clinics)
@@ -40,13 +37,8 @@ export const PATCH = withApiHandler<{ id: string }>(async ({ userId, admin, audi
 });
 
 export const DELETE = withApiHandler<{ id: string }>(async ({ userId, admin, audit, params }) => {
-  const { data: before } = await admin
-    .from(TABLES.clinics)
-    .select("*")
-    .eq("id", params.id)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!before) return NextResponse.json({ error: "Clínica não encontrada." }, { status: 404 });
+  const before = await loadOwned(admin, TABLES.clinics, params.id, userId);
+  if (!before) return NOT_FOUND;
 
   const { error } = await admin.from(TABLES.clinics).delete().eq("id", params.id).eq("user_id", userId);
 

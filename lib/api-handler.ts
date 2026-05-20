@@ -10,6 +10,16 @@ import { checkRateLimit, type RateLimitConfig } from "@/lib/rate-limit";
 
 type Admin = ReturnType<typeof createAdmin>;
 
+export async function loadOwned<T = Record<string, unknown>>(
+  admin: Admin,
+  table: string,
+  id: string,
+  userId: string,
+): Promise<T | null> {
+  const { data } = await admin.from(table).select("*").eq("id", id).eq("user_id", userId).maybeSingle();
+  return (data as T | null) ?? null;
+}
+
 interface HandlerCtx<P> {
   userId: string;
   orgId: string;

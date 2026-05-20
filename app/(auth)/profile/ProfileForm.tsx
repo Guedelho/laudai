@@ -215,8 +215,8 @@ export default function ProfileForm({
     }
   }
 
-  const logoSrc = logoVersion ? `/api/profile/logo?v=${logoVersion}` : null;
-  const sigSrc = sigVersion ? `/api/profile/signature?v=${sigVersion}` : null;
+  const logoSrc = logoVersion ? `/api/profile/image/logo?v=${logoVersion}` : null;
+  const sigSrc = sigVersion ? `/api/profile/image/signature?v=${sigVersion}` : null;
 
   return (
     <div className="space-y-6">

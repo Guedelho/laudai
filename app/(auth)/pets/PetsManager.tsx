@@ -2,42 +2,59 @@
 
 import { useState } from "react";
 import { Pet } from "@/shared/models";
-import { SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared/constants";
 import { sexLabel } from "@/lib/utils";
 import * as api from "@/lib/services/pets";
-import Typeahead from "@/components/Typeahead";
+import PetFormFields, { PetFormValues } from "./PetFormFields";
+
+const EMPTY_FORM: PetFormValues = {
+  name: "",
+  owner_name: "",
+  species: "Canina",
+  breed: "",
+  age: "",
+  sex: "",
+  neutered: false,
+};
+
+function petToForm(pet: Pet): PetFormValues {
+  return {
+    name: pet.name,
+    owner_name: pet.owner_name,
+    species: pet.species,
+    breed: pet.breed,
+    age: pet.age,
+    sex: pet.sex ?? "",
+    neutered: pet.neutered ?? false,
+  };
+}
 
 export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
   const [pets, setPets] = useState<Pet[]>(initialPets);
   const [showForm, setShowForm] = useState(false);
-  const [name, setName] = useState("");
-  const [species, setSpecies] = useState("Canina");
-  const [breed, setBreed] = useState("");
-  const [age, setAge] = useState("");
-  const [ownerName, setOwnerName] = useState("");
+  const [newForm, setNewForm] = useState<PetFormValues>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editFields, setEditFields] = useState<Partial<Pet>>({});
+  const [editForm, setEditForm] = useState<PetFormValues>(EMPTY_FORM);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
   const breedSuggestions = [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
 
+  function updateNew<K extends keyof PetFormValues>(field: K, value: PetFormValues[K]) {
+    setNewForm((f) => ({ ...f, [field]: value }));
+  }
+
+  function updateEdit<K extends keyof PetFormValues>(field: K, value: PetFormValues[K]) {
+    setEditForm((f) => ({ ...f, [field]: value }));
+  }
+
   function startEdit(pet: Pet) {
     setEditingId(pet.id);
-    setEditFields({
-      name: pet.name,
-      species: pet.species,
-      breed: pet.breed,
-      age: pet.age,
-      owner_name: pet.owner_name,
-      sex: pet.sex,
-      neutered: pet.neutered,
-    });
+    setEditForm(petToForm(pet));
     setEditError("");
   }
 
@@ -49,13 +66,13 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
 
     try {
       const pet = await api.updatePet(editingId, {
-        name: editFields.name!,
-        species: editFields.species!,
-        breed: editFields.breed!,
-        age: editFields.age!,
-        ownerName: editFields.owner_name!,
-        sex: editFields.sex!,
-        neutered: editFields.neutered!,
+        name: editForm.name,
+        species: editForm.species,
+        breed: editForm.breed,
+        age: editForm.age,
+        ownerName: editForm.owner_name,
+        sex: editForm.sex,
+        neutered: editForm.neutered,
       });
 
       setPets((prev) => prev.map((p) => (p.id === editingId ? pet : p)).sort((a, b) => a.name.localeCompare(b.name)));
@@ -86,14 +103,18 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
     setError("");
 
     try {
-      const pet = await api.createPet({ name, species, breed, age, ownerName, sex: "", neutered: false });
+      const pet = await api.createPet({
+        name: newForm.name,
+        species: newForm.species,
+        breed: newForm.breed,
+        age: newForm.age,
+        ownerName: newForm.owner_name,
+        sex: newForm.sex,
+        neutered: newForm.neutered,
+      });
 
       setPets((prev) => [...prev, pet].sort((a, b) => a.name.localeCompare(b.name)));
-      setName("");
-      setSpecies("Canina");
-      setBreed("");
-      setAge("");
-      setOwnerName("");
+      setNewForm(EMPTY_FORM);
       setShowForm(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar paciente.");
@@ -117,59 +138,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
       {showForm && (
         <form onSubmit={handleAdd} className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
           <p className="text-sm font-semibold text-gray-700">Cadastrar paciente</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Nome do animal</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Responsável</label>
-              <input
-                value={ownerName}
-                onChange={(e) => setOwnerName(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Espécie</label>
-              <select
-                value={species}
-                onChange={(e) => setSpecies(e.target.value)}
-                aria-label="Espécie"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {SPECIES_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Raça</label>
-              <Typeahead
-                value={breed}
-                onChange={setBreed}
-                suggestions={breedSuggestions}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Idade</label>
-              <input
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                placeholder="ex: 3 anos"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
+          <PetFormFields values={newForm} onChange={updateNew} breedSuggestions={breedSuggestions} />
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button
             type="submit"
@@ -195,83 +164,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
             {editingId === pet.id ? (
               <form onSubmit={handleEdit} className="space-y-3">
                 <p className="text-sm font-semibold text-gray-700">Editar paciente</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Nome do animal</label>
-                    <input
-                      value={editFields.name ?? ""}
-                      onChange={(e) => setEditFields((f) => ({ ...f, name: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Responsável</label>
-                    <input
-                      value={editFields.owner_name ?? ""}
-                      onChange={(e) => setEditFields((f) => ({ ...f, owner_name: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Espécie</label>
-                    <select
-                      value={editFields.species ?? "Canina"}
-                      onChange={(e) => setEditFields((f) => ({ ...f, species: e.target.value }))}
-                      aria-label="Espécie"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {SPECIES_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Raça</label>
-                    <Typeahead
-                      value={editFields.breed ?? ""}
-                      onChange={(v) => setEditFields((f) => ({ ...f, breed: v }))}
-                      suggestions={breedSuggestions}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Idade</label>
-                    <input
-                      value={editFields.age}
-                      onChange={(e) => setEditFields((f) => ({ ...f, age: e.target.value }))}
-                      placeholder="ex: 3 anos"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Sexo</label>
-                    <select
-                      value={editFields.sex}
-                      onChange={(e) => setEditFields((f) => ({ ...f, sex: e.target.value }))}
-                      aria-label="Sexo"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {SEX_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={editFields.neutered}
-                    onChange={(e) => setEditFields((f) => ({ ...f, neutered: e.target.checked }))}
-                    className="rounded border-gray-300"
-                  />
-                  Castrado(a)
-                </label>
+                <PetFormFields values={editForm} onChange={updateEdit} breedSuggestions={breedSuggestions} />
                 {editError && <p className="text-sm text-red-600">{editError}</p>}
                 <div className="flex gap-2">
                   <button

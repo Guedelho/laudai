@@ -8,17 +8,17 @@ export async function updateProfile(body: UpdateProfileRequest, signal?: AbortSi
 export async function uploadLogo(file: File): Promise<void> {
   const formData = new FormData();
   formData.append("logo", file);
-  await fetchOk("/api/profile/logo", { method: "POST", ...formBody(formData) });
+  await fetchOk("/api/profile/image/logo", { method: "POST", ...formBody(formData) });
 }
 
 export async function uploadSignature(file: File): Promise<void> {
   const formData = new FormData();
   formData.append("signature", file);
-  await fetchOk("/api/profile/signature", { method: "POST", ...formBody(formData) });
+  await fetchOk("/api/profile/image/signature", { method: "POST", ...formBody(formData) });
 }
 
 export async function removeSignature(): Promise<void> {
-  await fetchOk("/api/profile/signature", { method: "DELETE" });
+  await fetchOk("/api/profile/image/signature", { method: "DELETE" });
 }
 
 export async function deleteAccount(): Promise<void> {

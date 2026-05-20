@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { PetRequest } from "@/shared/interfaces";
-import { withApiHandler } from "@/lib/api-handler";
+import { withApiHandler, loadOwned } from "@/lib/api-handler";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
+
+const NOT_FOUND = NextResponse.json({ error: "Paciente não encontrado." }, { status: 404 });
 
 export const PATCH = withApiHandler<{ id: string }>(async ({ userId, admin, audit, params, req }) => {
   const { name, species, breed, age, ownerName, sex, neutered }: PetRequest = await req.json();
@@ -11,13 +13,8 @@ export const PATCH = withApiHandler<{ id: string }>(async ({ userId, admin, audi
     return NextResponse.json({ error: "Campos obrigatórios: nome, espécie, tutor" }, { status: 400 });
   }
 
-  const { data: before } = await admin
-    .from(TABLES.pets)
-    .select("*")
-    .eq("id", params.id)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!before) return NextResponse.json({ error: "Paciente não encontrado." }, { status: 404 });
+  const before = await loadOwned(admin, TABLES.pets, params.id, userId);
+  if (!before) return NOT_FOUND;
 
   const { data: pet, error } = await admin
     .from(TABLES.pets)
@@ -50,13 +47,8 @@ export const PATCH = withApiHandler<{ id: string }>(async ({ userId, admin, audi
 });
 
 export const DELETE = withApiHandler<{ id: string }>(async ({ userId, admin, audit, params }) => {
-  const { data: before } = await admin
-    .from(TABLES.pets)
-    .select("*")
-    .eq("id", params.id)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!before) return NextResponse.json({ error: "Paciente não encontrado." }, { status: 404 });
+  const before = await loadOwned(admin, TABLES.pets, params.id, userId);
+  if (!before) return NOT_FOUND;
 
   const { error } = await admin.from(TABLES.pets).delete().eq("id", params.id).eq("user_id", userId);
 
