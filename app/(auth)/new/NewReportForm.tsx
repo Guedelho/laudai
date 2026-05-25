@@ -264,11 +264,37 @@ export default function NewReportPage() {
         }
       }
 
+      resetForm();
       await redirectToDashboard();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao enviar laudo.");
       setSubmitting(false);
     }
+  }
+
+  function resetForm() {
+    setSelectedPetId("");
+    setPatientName("");
+    setSpecies("Canina");
+    setBreed("");
+    setAge("");
+    setSex("M");
+    setNeutered(false);
+    setOwnerName("");
+    setSelectedClinicId("");
+    setNewClinicName("");
+    setSelectedVetId("");
+    setNewVetName("");
+    setExamDate(new Date().toISOString().slice(0, 10));
+    setRawInput("");
+    setError("");
+    objectUrlsRef.current.forEach(URL.revokeObjectURL);
+    setSelectedFiles([]);
+    setObjectUrls([]);
+    setLightboxIndex(null);
+    if (imageInputRef.current) imageInputRef.current.value = "";
+    liveAnchorRef.current = "";
+    resetTranscript();
   }
 
   const inputCls =
