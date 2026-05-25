@@ -212,7 +212,7 @@ REGRAS OBRIGATÓRIAS — CONCLUSÃO:
 
 9. RECOMENDAÇÕES: use as frases salvadoras específicas para cada condição encontrada, conforme referência abaixo.
 
-10. MARCAÇÃO DE ACHADOS DO USUÁRIO: gere o laudo completo (texto padrão + modificações) normalmente, e SOMENTE então envolva em \`**...**\` os trechos do laudo que foram derivados dos achados informados pelo usuário — alterações descritas, diagnósticos presuntivos e recomendações decorrentes desses achados. Nas seções, marque apenas os fragmentos modificados em relação ao texto padrão; o restante permanece sem marcação. Em conclusão, impressões, recomendações e observações, marque os trechos clinicamente relevantes derivados dos achados (diagnósticos, lesões, condições). NÃO marque: medidas numéricas com unidades (ex: "5,2 cm", "3 mm"), texto padrão copiado, conclusão de exame normal, nem rótulos de seção. Se um trecho contiver descrição e medida juntos, marque apenas a parte descritiva e deixe a medida fora dos asteriscos.
+10. MARCAÇÃO DE ACHADOS: envolva em \`**...**\` apenas os trechos que descrevem achados anormais (incluindo as medidas associadas a eles) e os diagnósticos/recomendações derivados. Não marque medidas neutras nem texto padrão. Critério: o usuário caracterizou como alterado (aumentado, irregular, lesão, etc.) ou a informação é diagnóstica por si só (cálculo, massa, líquido livre). "Fígado mede 4 cm" → sem marcação. "Fígado **aumentado, medindo 7,3 cm**" → marcado.
 
 ${FULL_NOMENCLATURE}
 
