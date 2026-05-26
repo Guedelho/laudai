@@ -8,30 +8,20 @@ import { logError } from "@/lib/log";
 
 const BUCKET = STORAGE_BUCKETS.profileLogos;
 
-type Kind = "logo" | "signature";
-
-const CONFIG = {
-  logo: { column: "logo_url", file: "logo", label: "logo", extraOnUpload: {} as Record<string, unknown> },
-  signature: {
-    column: "signature_image_url",
-    file: "signature",
-    label: "imagem de assinatura",
-    extraOnUpload: { signature_font: null },
-  },
-} as const;
+// Only the personal signature lives per-user here. The clinic logo is org-level
+// (see /api/org/logo).
+type Kind = "signature";
 
 function parseKind(raw: string): Kind | null {
-  return raw === "logo" || raw === "signature" ? raw : null;
+  return raw === "signature" ? raw : null;
 }
 
 export const GET = withApiHandler<{ kind: string }>(
   async ({ userId, admin, params }) => {
-    const kind = parseKind(params.kind);
-    if (!kind) return new NextResponse(null, { status: 404 });
+    if (!parseKind(params.kind)) return new NextResponse(null, { status: 404 });
 
-    const { column } = CONFIG[kind];
-    const { data: profile } = await admin.from(TABLES.profiles).select(column).eq("id", userId).single();
-    const path = (profile as Record<string, string | null> | null)?.[column];
+    const { data: profile } = await admin.from(TABLES.profiles).select("signature_image_url").eq("id", userId).single();
+    const path = profile?.signature_image_url;
     if (!path) return new NextResponse(null, { status: 404 });
     return serveProfileImage(admin, path);
   },
@@ -39,34 +29,32 @@ export const GET = withApiHandler<{ kind: string }>(
 );
 
 export const POST = withApiHandler<{ kind: string }>(async ({ userId, admin, req, params }) => {
-  const kind = parseKind(params.kind);
-  if (!kind) return NextResponse.json({ error: "Not found." }, { status: 404 });
+  if (!parseKind(params.kind)) return NextResponse.json({ error: "Not found." }, { status: 404 });
 
-  const { column, file, label, extraOnUpload } = CONFIG[kind];
   const formData = await req.formData();
-  const result = await parseProfileImage(formData.get(file) as File | null);
+  const result = await parseProfileImage(formData.get("signature") as File | null);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 
   const { buf, ext, mime } = result;
-  const storagePath = `${userId}/${kind}.${ext}`;
+  const storagePath = `${userId}/signature.${ext}`;
 
   const { error: uploadError } = await admin.storage
     .from(BUCKET)
     .upload(storagePath, buf, { contentType: mime, upsert: true });
 
   if (uploadError) {
-    logError(`${kind} upload failed`, uploadError, { userId });
-    return NextResponse.json({ error: `Erro ao enviar ${label}.` }, { status: 500 });
+    logError("signature upload failed", uploadError, { userId });
+    return NextResponse.json({ error: "Erro ao enviar imagem de assinatura." }, { status: 500 });
   }
 
   const { error: updateError } = await admin
     .from(TABLES.profiles)
-    .update({ [column]: storagePath, ...extraOnUpload })
+    .update({ signature_image_url: storagePath, signature_font: null })
     .eq("id", userId);
 
   if (updateError) {
-    logError(`Profile ${column} update failed`, updateError, { userId });
-    return NextResponse.json({ error: `Erro ao salvar ${label} no perfil.` }, { status: 500 });
+    logError("Profile signature_image_url update failed", updateError, { userId });
+    return NextResponse.json({ error: "Erro ao salvar imagem de assinatura no perfil." }, { status: 500 });
   }
 
   await invalidateUserPdfCache(admin, userId);
@@ -74,8 +62,7 @@ export const POST = withApiHandler<{ kind: string }>(async ({ userId, admin, req
 });
 
 export const DELETE = withApiHandler<{ kind: string }>(async ({ userId, admin, params }) => {
-  const kind = parseKind(params.kind);
-  if (kind !== "signature") return NextResponse.json({ error: "Not allowed." }, { status: 405 });
+  if (!parseKind(params.kind)) return NextResponse.json({ error: "Not allowed." }, { status: 405 });
 
   const { error } = await admin.from(TABLES.profiles).update({ signature_image_url: null }).eq("id", userId);
 

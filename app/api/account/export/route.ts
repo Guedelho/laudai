@@ -54,7 +54,6 @@ async function doExport(userId: string) {
   const profile = profileRes.data
     ? {
         ...profileRes.data,
-        logo_signed_url: await signed(admin, STORAGE_BUCKETS.profileLogos, profileRes.data.logo_url),
         signature_signed_url: await signed(admin, STORAGE_BUCKETS.profileLogos, profileRes.data.signature_image_url),
       }
     : null;

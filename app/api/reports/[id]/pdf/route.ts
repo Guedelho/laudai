@@ -140,15 +140,16 @@ export const GET = withApiHandler<{ id: string }>(
 
     const imageBase64List = imageResults.filter((b): b is string => b !== null);
 
+    const { data: orgRow } = await admin.from(TABLES.organizations).select("logo_url").eq("id", orgId).single();
     let logoBase64: string | undefined;
-    if (profile.logo_url) {
+    if (orgRow?.logo_url) {
       try {
         const { data: logoSigned } = await admin.storage
           .from(STORAGE_BUCKETS.profileLogos)
-          .createSignedUrl(profile.logo_url, SIGNED_URL_TTL.oneShot);
+          .createSignedUrl(orgRow.logo_url, SIGNED_URL_TTL.oneShot);
         if (logoSigned?.signedUrl) logoBase64 = await fetchAsBase64(logoSigned.signedUrl);
       } catch (err) {
-        logError("Failed to fetch user logo", err, { userId: pdfAuthorUserId });
+        logError("Failed to fetch org logo", err, { orgId });
       }
     }
 

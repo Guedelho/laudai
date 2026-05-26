@@ -82,6 +82,21 @@ export async function invalidateUserPdfCache(admin: Admin, userId: string): Prom
   if (error) logError("PDF cache invalidation failed", error, { userId });
 }
 
+export async function invalidateOrgPdfCache(admin: Admin, orgId: string): Promise<void> {
+  const { error } = await admin.from(TABLES.reports).update({ pdf_storage_path: null }).eq("org_id", orgId);
+  if (error) logError("Org PDF cache invalidation failed", error, { orgId });
+}
+
+export async function isOrgOwner(admin: Admin, userId: string, orgId: string): Promise<boolean> {
+  const { data } = await admin
+    .from(TABLES.organization_members)
+    .select("role")
+    .eq("org_id", orgId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data?.role === "owner";
+}
+
 export async function resolveOwnedFks(
   admin: Admin,
   orgId: string,

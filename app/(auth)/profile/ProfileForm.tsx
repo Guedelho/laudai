@@ -33,7 +33,6 @@ export default function ProfileForm({
   initialFullName,
   initialCrmv,
   initialCpf,
-  hasLogo,
   initialSignatureFont,
   initialSignature,
   initialCrmvState,
@@ -43,7 +42,6 @@ export default function ProfileForm({
   initialFullName: string;
   initialCrmv: string;
   initialCpf: string;
-  hasLogo: boolean;
   initialSignatureFont: string;
   initialSignature: string;
   initialCrmvState: string;
@@ -54,7 +52,6 @@ export default function ProfileForm({
   const [cpf, setCpf] = useState(initialCpf);
   const crmv = initialCrmv;
   const crmvState = initialCrmvState;
-  const [logoVersion, setLogoVersion] = useState(() => (hasLogo ? Date.now() : 0));
   const [sigVersion, setSigVersion] = useState(() => (hasSignatureImage ? Date.now() : 0));
   const [signatureFont, setSignatureFont] = useState(initialSignatureFont);
   const [signature, setSignature] = useState(initialSignature);
@@ -62,8 +59,6 @@ export default function ProfileForm({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
-  const [logoUploading, setLogoUploading] = useState(false);
-  const [logoError, setLogoError] = useState("");
   const [sigUploading, setSigUploading] = useState(false);
   const [sigError, setSigError] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -94,29 +89,8 @@ export default function ProfileForm({
       document.head.appendChild(link);
     }
   }, []);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const sigInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-
-  async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setLogoUploading(true);
-    setLogoError("");
-    try {
-      const formData = new FormData();
-      formData.append("logo", file);
-
-      await profileApi.uploadLogo(file);
-      setLogoVersion(Date.now());
-    } catch (err) {
-      setLogoError(err instanceof Error ? err.message : "Erro ao enviar logo");
-    } finally {
-      setLogoUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }
 
   async function handleSignatureImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -215,40 +189,10 @@ export default function ProfileForm({
     }
   }
 
-  const logoSrc = logoVersion ? `/api/profile/image/logo?v=${logoVersion}` : null;
   const sigSrc = sigVersion ? `/api/profile/image/signature?v=${sigVersion}` : null;
 
   return (
     <div className="space-y-6">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Logo do laudo</label>
-        <div className="flex flex-col gap-3">
-          {logoSrc ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={logoSrc}
-              alt="Logo"
-              className="max-h-48 w-full object-contain rounded border border-gray-200 bg-gray-50 p-2"
-            />
-          ) : (
-            <div className="h-48 w-full rounded border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-sm text-gray-500">
-              Sem logo
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={logoUploading}
-            className="text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50 text-left"
-          >
-            {logoUploading ? "Enviando..." : logoSrc ? "Alterar" : "Enviar logo"}
-          </button>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
-        </div>
-        {logoError && <p className="mt-1 text-xs text-red-600">{logoError}</p>}
-        <p className="mt-1 text-xs text-gray-500">JPEG ou PNG · máx. 5 MB</p>
-      </div>
-
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Nome completo</label>

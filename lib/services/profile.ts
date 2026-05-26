@@ -5,10 +5,14 @@ export async function updateProfile(body: UpdateProfileRequest, signal?: AbortSi
   await fetchOk("/api/profile", { method: "PUT", ...jsonBody(body), signal });
 }
 
-export async function uploadLogo(file: File): Promise<void> {
+export async function uploadOrgLogo(file: File): Promise<void> {
   const formData = new FormData();
   formData.append("logo", file);
-  await fetchOk("/api/profile/image/logo", { method: "POST", ...formBody(formData) });
+  await fetchOk("/api/org/logo", { method: "POST", ...formBody(formData) });
+}
+
+export async function removeOrgLogo(): Promise<void> {
+  await fetchOk("/api/org/logo", { method: "DELETE" });
 }
 
 export async function uploadSignature(file: File): Promise<void> {
