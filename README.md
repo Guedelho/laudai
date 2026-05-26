@@ -38,7 +38,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
    ```
 
 3. **Set up Supabase**
-   - Open your project's SQL Editor and run every migration in `supabase/migrations/` in filename order (`20260420…_initial.sql`, then `20260526…_stripe_billing.sql`)
+   - Open your project's SQL Editor and run the full contents of `supabase/migrations/20260420000000_initial.sql`
    - Go to **Storage** → create three private buckets: `report-images`, `report-pdfs`, and `profile-logos`
    - All RLS, indexes, functions, triggers, and seed data (plans) are applied by the migrations
 

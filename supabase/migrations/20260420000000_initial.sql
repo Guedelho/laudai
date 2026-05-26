@@ -11,7 +11,6 @@ create table if not exists profiles (
   crmv                   text,
   cpf                    text,
   crmv_state             text,
-  logo_url               text,
   signature_font         text,
   signature              text,
   signature_image_url    text,
@@ -82,13 +81,17 @@ create policy "report_types public read" on report_types for select to authentic
 -- ═══════════════════════════════════════════════════════════════════════════
 
 create table if not exists organizations (
-  id            uuid primary key default gen_random_uuid(),
-  name          text not null,
-  slug          text unique not null,
-  plan          text not null default 'individual' references plans(id) on update cascade on delete restrict,
-  owner_user_id uuid references auth.users(id) on delete cascade not null,
-  created_at    timestamptz not null default now(),
-  deleted_at    timestamptz,
+  id                         uuid primary key default gen_random_uuid(),
+  name                       text not null,
+  slug                       text unique not null,
+  plan                       text not null default 'individual' references plans(id) on update cascade on delete restrict,
+  owner_user_id              uuid references auth.users(id) on delete cascade not null,
+  logo_url                   text,
+  stripe_customer_id         text unique,
+  stripe_subscription_id     text unique,
+  stripe_subscription_status text,
+  created_at                 timestamptz not null default now(),
+  deleted_at                 timestamptz,
 
   constraint orgs_name_len check (char_length(name) between 1 and 200),
   constraint orgs_slug_format check (slug ~ '^[a-z0-9][a-z0-9-]{0,63}$')
@@ -96,6 +99,10 @@ create table if not exists organizations (
 
 create index if not exists organizations_owner_idx on organizations(owner_user_id);
 create index if not exists organizations_plan_idx  on organizations(plan);
+create index if not exists organizations_stripe_customer_idx
+  on organizations(stripe_customer_id) where stripe_customer_id is not null;
+create index if not exists organizations_stripe_subscription_idx
+  on organizations(stripe_subscription_id) where stripe_subscription_id is not null;
 
 alter table organizations enable row level security;
 
@@ -275,8 +282,8 @@ create policy "org_invitations delete by owner"
 create table if not exists organization_report_types (
   org_id         uuid not null references organizations(id) on delete cascade,
   report_type_id text not null references report_types(id)  on update cascade on delete restrict,
-  -- null = permanent (paid). non-null = trial / time-bound grant. hasReportTypeAccess()
-  -- treats now() >= expires_at as no access.
+  -- expires_at mirrors the Stripe subscription's current period end, written by
+  -- the webhook. hasReportTypeAccess() treats now() >= expires_at as no access.
   expires_at     timestamptz,
   primary key (org_id, report_type_id)
 );
@@ -321,8 +328,9 @@ create policy "org members read specialties"
   on member_specialties for select to authenticated
   using (is_org_member((select auth.uid()), org_id));
 
--- Atomically create a solo (individual plan) org, owner membership,
--- and the default ultrasound entitlement.
+-- Atomically create a solo (individual plan) org + owner membership.
+-- No entitlement is granted here — it arrives via the Stripe webhook once the
+-- vet subscribes (trial is managed by Stripe, not the DB).
 create or replace function create_solo_org(p_user_id uuid, p_name text, p_slug text)
 returns uuid
 language plpgsql
@@ -338,11 +346,6 @@ begin
 
   insert into organization_members (org_id, user_id, role)
   values (v_org_id, p_user_id, 'owner');
-
-  -- 7-day trial on the default report type. Adjust the interval here when
-  -- changing trial length. NULL expires_at = permanent (paid) entitlement.
-  insert into organization_report_types (org_id, report_type_id, expires_at)
-  values (v_org_id, 'ultrasound_abdominal', now() + interval '7 days');
 
   return v_org_id;
 end;
