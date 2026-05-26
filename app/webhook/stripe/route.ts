@@ -4,12 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe/server";
 import { createAdmin } from "@/lib/supabase/admin";
-import { TABLES, REPORT_TYPES } from "@/shared/constants";
+import { TABLES, REPORT_TYPES, ENTITLED_SUBSCRIPTION_STATUSES } from "@/shared/constants";
 import { logError, logInfo } from "@/lib/log";
-
-// Stripe subscription statuses that grant access to the product.
-// Other statuses (past_due, canceled, unpaid, etc.) revoke entitlements.
-const ENTITLED_STATUSES = new Set<Stripe.Subscription.Status>(["trialing", "active"]);
 
 export async function POST(req: NextRequest) {
   const signature = req.headers.get("stripe-signature");
@@ -75,7 +71,7 @@ async function syncSubscription(admin: ReturnType<typeof createAdmin>, sub: Stri
     })
     .eq("id", orgId);
 
-  if (ENTITLED_STATUSES.has(sub.status)) {
+  if (ENTITLED_SUBSCRIPTION_STATUSES.has(sub.status)) {
     // Period end carries the trial end date during the trial, and the next
     // renewal date after the first invoice — both map to "access until X".
     const expiresAt = new Date(subscriptionPeriodEnd(sub) * 1000).toISOString();

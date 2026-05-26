@@ -3,11 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/supabase/auth";
 import { redirect } from "next/navigation";
-import { TABLES, REPORT_TYPES } from "@/shared/constants";
+import { TABLES, REPORT_TYPES, ENTITLED_SUBSCRIPTION_STATUSES } from "@/shared/constants";
 import AppHeader from "@/components/AppHeader";
 import SubscriptionChip from "./SubscriptionChip";
-
-const ENTITLED_STATUSES = new Set(["trialing", "active", "past_due"]);
 
 async function AuthGate({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -38,7 +36,7 @@ async function HeaderWithChip() {
   ]);
 
   const status = org?.stripe_subscription_status ?? "";
-  if (!ENTITLED_STATUSES.has(status)) return <AppHeader />;
+  if (!ENTITLED_SUBSCRIPTION_STATUSES.has(status)) return <AppHeader />;
 
   return (
     <AppHeader

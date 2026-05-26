@@ -2,12 +2,10 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/supabase/auth";
-import { TABLES } from "@/shared/constants";
+import { TABLES, ENTITLED_SUBSCRIPTION_STATUSES } from "@/shared/constants";
 import ReportList from "./ReportList";
 import SubscribeGate from "./SubscribeGate";
 import Loading from "./loading";
-
-const ENTITLED_STATUSES = new Set(["trialing", "active", "past_due"]);
 
 async function DashboardContents() {
   const {
@@ -23,7 +21,7 @@ async function DashboardContents() {
     .eq("id", orgId)
     .single();
 
-  if (!ENTITLED_STATUSES.has(org?.stripe_subscription_status ?? "")) {
+  if (!ENTITLED_SUBSCRIPTION_STATUSES.has(org?.stripe_subscription_status ?? "")) {
     return <SubscribeGate />;
   }
 

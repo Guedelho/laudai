@@ -64,6 +64,9 @@ export const ORG_ROLES = {
   member: "member",
 } as const;
 
+// past_due stays entitled so a failed card keeps access during Stripe dunning.
+export const ENTITLED_SUBSCRIPTION_STATUSES: ReadonlySet<string> = new Set(["trialing", "active", "past_due"]);
+
 export const STORAGE_BUCKETS = {
   reportImages: "report-images",
   reportPdfs: "report-pdfs",

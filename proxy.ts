@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const PUBLIC_EXACT = new Set(["/login"]);
 // /webhook — Stripe (and future server-to-server callers). Outside /api so
 // Vercel BotID doesn't challenge the request before our signature check runs.
-const PUBLIC_PREFIXES = ["/legal", "/webhook"];
+const PUBLIC_PREFIXES = ["/legal", "/webhook/"];
 
 function isPublicPath(path: string): boolean {
   return PUBLIC_EXACT.has(path) || PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix));
