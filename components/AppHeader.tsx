@@ -10,7 +10,11 @@ const NAV_LINKS = [
   { href: "/profile", label: "Perfil" },
 ];
 
-export default function AppHeader() {
+interface Props {
+  subscriptionChip?: React.ReactNode;
+}
+
+export default function AppHeader({ subscriptionChip }: Props) {
   const pathname = usePathname();
 
   return (
@@ -28,6 +32,7 @@ export default function AppHeader() {
             {l.label}
           </Link>
         ))}
+        {subscriptionChip}
         <Link href="/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
           Novo Laudo
         </Link>
