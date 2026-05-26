@@ -33,11 +33,10 @@ export default function LoginPage() {
   function translateAuthError(code: string | undefined, fallback: string): string {
     switch (code) {
       case "invalid_credentials":
+      case "user_not_found":
         return "Email ou senha incorretos.";
       case "email_not_confirmed":
         return "Email ainda não confirmado. Verifique sua caixa de entrada.";
-      case "user_not_found":
-        return "Usuário não encontrado.";
       case "over_request_rate_limit":
       case "over_email_send_rate_limit":
         return "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
