@@ -73,7 +73,7 @@ export const GET = withApiHandler<{ id: string }>(
     const { data: report } = await admin
       .from(TABLES.reports)
       .select(
-        "user_id, patient_name, species, breed, age, sex, neutered, owner_name, clinic_name, responsible_vet, specialty, exam_date, created_at, edited_content, pdf_storage_path, pdf_cached_at",
+        "user_id, patient_name, species, breed, age, sex, neutered, owner_name, client_name, responsible_vet, specialty, exam_date, created_at, edited_content, pdf_storage_path, pdf_cached_at",
       )
       .eq("id", id)
       .eq("org_id", orgId)
@@ -173,7 +173,7 @@ export const GET = withApiHandler<{ id: string }>(
       ownerName: report.owner_name,
       sex: report.sex,
       neutered: report.neutered,
-      clinicName: report.clinic_name,
+      clientName: report.client_name,
       responsibleVet: report.responsible_vet,
       date,
       reportTitle: SPECIALTIES[specialty].reportTitle,

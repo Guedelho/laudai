@@ -27,7 +27,7 @@ export interface PatientFields {
 }
 
 export interface ReportFields extends PatientFields {
-  clinicName: string;
+  clientName: string;
   responsibleVet: string;
   examDate: string;
 }
@@ -57,20 +57,20 @@ export interface Pet {
   created_at: string;
 }
 
-export interface ClinicVet {
+export interface ClientVet {
   id: string;
-  clinic_id: string;
+  client_id: string;
   user_id: string;
   name: string;
   created_at: string;
 }
 
-export interface Clinic {
+export interface Client {
   id: string;
   user_id: string;
   name: string;
   created_at: string;
-  clinic_vets: ClinicVet[];
+  client_vets: ClientVet[];
 }
 
 export const REPORT_STATUSES = {
@@ -86,7 +86,7 @@ export interface ReportSummary {
   id: string;
   patient_name: string;
   owner_name: string;
-  clinic_name: string;
+  client_name: string;
   specialty: ReportType;
   created_at: string;
   exam_date?: string;
@@ -105,14 +105,14 @@ export interface Report {
   sex: string;
   neutered: boolean;
   owner_name: string;
-  clinic_name: string;
+  client_name: string;
   responsible_vet: string;
   raw_input: string;
   generated_content: string | null;
   edited_content: string | null;
   exam_date: string;
   pet_id: string | null;
-  clinic_id: string | null;
+  client_id: string | null;
   vet_id: string | null;
   status: ReportStatus;
   error_message: string | null;

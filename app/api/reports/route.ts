@@ -20,7 +20,7 @@ export const GET = withApiHandler(async ({ userId, orgId, admin, req }) => {
   let query = admin
     .from(TABLES.reports)
     .select(
-      "id, patient_name, owner_name, clinic_name, specialty, created_at, exam_date, status, error_message, user_id",
+      "id, patient_name, owner_name, client_name, specialty, created_at, exam_date, status, error_message, user_id",
     )
     .eq("org_id", orgId)
     .is("deleted_at", null)
@@ -28,7 +28,7 @@ export const GET = withApiHandler(async ({ userId, orgId, admin, req }) => {
     .limit(limit);
 
   if (q) {
-    query = query.or(`patient_name.ilike.%${q}%,owner_name.ilike.%${q}%,clinic_name.ilike.%${q}%`);
+    query = query.or(`patient_name.ilike.%${q}%,owner_name.ilike.%${q}%,client_name.ilike.%${q}%`);
   } else if (before) {
     query = query.lt("created_at", before);
   }

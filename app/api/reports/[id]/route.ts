@@ -10,8 +10,8 @@ import { logError } from "@/lib/log";
 
 export const PATCH = withApiHandler<{ id: string }>(async ({ userId, orgId, admin, audit, params, req }) => {
   const id = params.id;
-  const { generatedContent, patientFields, petId, clinicId, vetId }: UpdateReportRequest = await req.json();
-  const owned = await resolveOwnedFks(admin, orgId, { petId, clinicId, vetId });
+  const { generatedContent, patientFields, petId, clientId, vetId }: UpdateReportRequest = await req.json();
+  const owned = await resolveOwnedFks(admin, orgId, { petId, clientId, vetId });
 
   const editedContent = JSON.stringify(generatedContent);
 
@@ -42,7 +42,7 @@ export const PATCH = withApiHandler<{ id: string }>(async ({ userId, orgId, admi
       ...patientFields,
       pdf_storage_path: null,
       ...(petId !== undefined ? { pet_id: owned.petId } : {}),
-      ...(clinicId !== undefined ? { clinic_id: owned.clinicId } : {}),
+      ...(clientId !== undefined ? { client_id: owned.clientId } : {}),
       ...(vetId !== undefined ? { vet_id: owned.vetId } : {}),
     })
     .eq("id", id)
@@ -69,15 +69,15 @@ export const PATCH = withApiHandler<{ id: string }>(async ({ userId, orgId, admi
           })
           .eq("id", owned.petId)
           .eq("org_id", orgId),
-      owned.clinicId &&
+      owned.clientId &&
         admin
-          .from(TABLES.clinics)
-          .update({ name: patientFields.clinic_name })
-          .eq("id", owned.clinicId)
+          .from(TABLES.clients)
+          .update({ name: patientFields.client_name })
+          .eq("id", owned.clientId)
           .eq("org_id", orgId),
       owned.vetId &&
         admin
-          .from(TABLES.clinic_vets)
+          .from(TABLES.client_vets)
           .update({ name: patientFields.responsible_vet })
           .eq("id", owned.vetId)
           .eq("org_id", orgId),

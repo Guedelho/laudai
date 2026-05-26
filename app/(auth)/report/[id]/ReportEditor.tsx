@@ -1,6 +1,6 @@
 "use client";
 
-import { ParsedReport, Pet, Clinic, ClinicVet } from "@/shared/models";
+import { ParsedReport, Pet, Client, ClientVet } from "@/shared/models";
 import { SEX_OPTIONS } from "@/shared/constants";
 import EntityTypeahead from "@/components/EntityTypeahead";
 import Typeahead from "@/components/Typeahead";
@@ -112,27 +112,27 @@ interface PatientFieldsProps {
   fields: ReportFieldsState;
   setFields: (f: ReportFieldsState) => void;
   pets: Pet[];
-  clinics: Clinic[];
+  clients: Client[];
   breedSuggestions: string[];
-  selectedClinicId: string | null;
+  selectedClientId: string | null;
   selectPet: (pet: Pet | null) => void;
-  selectClinic: (clinic: Clinic | null) => void;
-  selectVet: (vet: ClinicVet | null) => void;
+  selectClient: (client: Client | null) => void;
+  selectVet: (vet: ClientVet | null) => void;
 }
 
 export function ReportEditorPatientFields({
   fields,
   setFields,
   pets,
-  clinics,
+  clients,
   breedSuggestions,
-  selectedClinicId,
+  selectedClientId,
   selectPet,
-  selectClinic,
+  selectClient,
   selectVet,
 }: PatientFieldsProps) {
-  const selectedClinic = clinics.find((c) => c.id === selectedClinicId);
-  const vets = selectedClinic?.clinic_vets ?? [];
+  const selectedClient = clients.find((c) => c.id === selectedClientId);
+  const vets = selectedClient?.client_vets ?? [];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -214,18 +214,18 @@ export function ReportEditorPatientFields({
         </div>
         <div>
           <label className="block text-xs text-gray-500 mb-1">Clínica</label>
-          <EntityTypeahead<Clinic>
-            value={fields.clinicName}
-            onChange={(v) => setFields({ ...fields, clinicName: v })}
-            items={clinics}
+          <EntityTypeahead<Client>
+            value={fields.clientName}
+            onChange={(v) => setFields({ ...fields, clientName: v })}
+            items={clients}
             getLabel={(c) => c.name}
-            onPick={selectClinic}
+            onPick={selectClient}
             className={inputCls}
           />
         </div>
         <div>
           <label className="block text-xs text-gray-500 mb-1">Médico Responsável</label>
-          <EntityTypeahead<ClinicVet>
+          <EntityTypeahead<ClientVet>
             value={fields.responsibleVet}
             onChange={(v) => setFields({ ...fields, responsibleVet: v })}
             items={vets}

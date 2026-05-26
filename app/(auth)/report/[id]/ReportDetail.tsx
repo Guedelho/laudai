@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SPECIALTIES } from "@/lib/report/templates";
-import { Report, ReportImage, Pet, Clinic } from "@/shared/models";
+import { Report, ReportImage, Pet, Client } from "@/shared/models";
 import { listPets } from "@/lib/services/pets";
-import { listClinics } from "@/lib/services/clinics";
+import { listClients } from "@/lib/services/clients";
 import ImageManager from "./ImageManager";
 import { useReportEditor } from "./useReportEditor";
 import { ReportEditorActions, ReportEditorContent, ReportEditorPatientFields } from "./ReportEditor";
@@ -23,13 +23,13 @@ export default function ReportDetail({
   const [editing, setEditing] = useState(isEditing);
   const editor = useReportEditor(report, () => setEditing(false));
   const [pets, setPets] = useState<Pet[]>([]);
-  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
 
   useEffect(() => {
-    Promise.all([listPets(), listClinics()])
+    Promise.all([listPets(), listClients()])
       .then(([p, c]) => {
         setPets(p);
-        setClinics(c);
+        setClients(c);
       })
       .catch(() => {
         /* dropdowns just won't be offered */
@@ -82,11 +82,11 @@ export default function ReportDetail({
           fields={editor.fields}
           setFields={editor.setFields}
           pets={pets}
-          clinics={clinics}
+          clients={clients}
           breedSuggestions={breedSuggestions}
-          selectedClinicId={editor.selectedClinicId}
+          selectedClientId={editor.selectedClientId}
           selectPet={editor.selectPet}
-          selectClinic={editor.selectClinic}
+          selectClient={editor.selectClient}
           selectVet={editor.selectVet}
         />
       ) : (

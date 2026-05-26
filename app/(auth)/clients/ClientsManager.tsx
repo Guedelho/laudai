@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Clinic, ClinicVet } from "@/shared/models";
-import * as api from "@/lib/services/clinics";
+import { Client, ClientVet } from "@/shared/models";
+import * as api from "@/lib/services/clients";
 
-export default function ClinicsManager({ initialClinics }: { initialClinics: Clinic[] }) {
-  const [clinics, setClinics] = useState<Clinic[]>(initialClinics);
+export default function ClientsManager({ initialClients }: { initialClients: Client[] }) {
+  const [clients, setClients] = useState<Client[]>(initialClients);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [vetName, setVetName] = useState("");
@@ -22,9 +22,9 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
   const [addingVet, setAddingVet] = useState(false);
   const [removingVetId, setRemovingVetId] = useState<string | null>(null);
 
-  function startEdit(clinic: Clinic) {
-    setEditingId(clinic.id);
-    setEditName(clinic.name);
+  function startEdit(client: Client) {
+    setEditingId(client.id);
+    setEditName(client.name);
     setNewVetName("");
     setEditError("");
   }
@@ -36,14 +36,14 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     setEditError("");
 
     try {
-      const clinic = await api.renameClinic(editingId, editName);
-      setClinics((prev) =>
+      const client = await api.renameClient(editingId, editName);
+      setClients((prev) =>
         prev
-          .map((c) => (c.id === editingId ? { ...c, name: clinic.name } : c))
+          .map((c) => (c.id === editingId ? { ...c, name: client.name } : c))
           .sort((a, b) => a.name.localeCompare(b.name)),
       );
     } catch (err) {
-      setEditError(err instanceof Error ? err.message : "Erro ao salvar clínica.");
+      setEditError(err instanceof Error ? err.message : "Erro ao salvar cliente.");
     } finally {
       setEditSaving(false);
     }
@@ -57,7 +57,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
 
     try {
       const vet = await api.addVet(editingId, newVetName);
-      setClinics((prev) => prev.map((c) => (c.id === editingId ? { ...c, clinic_vets: [...c.clinic_vets, vet] } : c)));
+      setClients((prev) => prev.map((c) => (c.id === editingId ? { ...c, client_vets: [...c.client_vets, vet] } : c)));
       setNewVetName("");
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Erro ao adicionar médico.");
@@ -66,14 +66,14 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     }
   }
 
-  async function handleRemoveVet(clinicId: string, vetId: string) {
+  async function handleRemoveVet(clientId: string, vetId: string) {
     setRemovingVetId(vetId);
     setEditError("");
 
     try {
-      await api.removeVet(clinicId, vetId);
-      setClinics((prev) =>
-        prev.map((c) => (c.id === clinicId ? { ...c, clinic_vets: c.clinic_vets.filter((v) => v.id !== vetId) } : c)),
+      await api.removeVet(clientId, vetId);
+      setClients((prev) =>
+        prev.map((c) => (c.id === clientId ? { ...c, client_vets: c.client_vets.filter((v) => v.id !== vetId) } : c)),
       );
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Erro ao remover médico.");
@@ -88,13 +88,13 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     setError("");
 
     try {
-      const { clinic } = await api.createClinic(name, vetName);
-      setClinics((prev) => [...prev, clinic].sort((a, b) => a.name.localeCompare(b.name)));
+      const { client } = await api.createClient(name, vetName);
+      setClients((prev) => [...prev, client].sort((a, b) => a.name.localeCompare(b.name)));
       setName("");
       setVetName("");
       setShowForm(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao salvar clínica.");
+      setError(err instanceof Error ? err.message : "Erro ao salvar cliente.");
     } finally {
       setSaving(false);
     }
@@ -104,10 +104,10 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
     setDeletingId(id);
     setDeleteError("");
     try {
-      await api.deleteClinic(id);
-      setClinics((prev) => prev.filter((c) => c.id !== id));
+      await api.deleteClient(id);
+      setClients((prev) => prev.filter((c) => c.id !== id));
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Erro ao excluir clínica.");
+      setDeleteError(err instanceof Error ? err.message : "Erro ao excluir cliente.");
     } finally {
       setDeletingId(null);
     }
@@ -116,21 +116,21 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">Clínicas</h1>
+        <h1 className="text-xl font-semibold text-gray-900">Clientes</h1>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
         >
-          {showForm ? "Cancelar" : "Nova clínica"}
+          {showForm ? "Cancelar" : "Novo cliente"}
         </button>
       </div>
 
       {showForm && (
         <form onSubmit={handleAdd} className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
-          <p className="text-sm font-semibold text-gray-700">Cadastrar clínica</p>
+          <p className="text-sm font-semibold text-gray-700">Cadastrar cliente</p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Nome da clínica</label>
+              <label className="block text-xs text-gray-500 mb-1">Nome do cliente</label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -153,27 +153,27 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
             disabled={saving}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
           >
-            {saving ? "Salvando..." : "Salvar clínica"}
+            {saving ? "Salvando..." : "Salvar cliente"}
           </button>
         </form>
       )}
 
       {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
 
-      {!clinics.length && !showForm && (
+      {!clients.length && !showForm && (
         <div className="text-center py-16 text-gray-500">
-          <p>Nenhuma clínica cadastrada ainda</p>
+          <p>Nenhum cliente cadastrado ainda</p>
         </div>
       )}
 
       <div className="space-y-3">
-        {clinics.map((clinic) => (
-          <div key={clinic.id} className="bg-white border border-gray-200 rounded-xl p-4">
-            {editingId === clinic.id ? (
+        {clients.map((client) => (
+          <div key={client.id} className="bg-white border border-gray-200 rounded-xl p-4">
+            {editingId === client.id ? (
               <div className="space-y-4">
                 <form onSubmit={handleRename} className="flex gap-2 items-end">
                   <div className="flex-1">
-                    <label className="block text-xs text-gray-500 mb-1">Nome da clínica</label>
+                    <label className="block text-xs text-gray-500 mb-1">Nome do cliente</label>
                     <input
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
@@ -193,11 +193,11 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
                 <div>
                   <p className="text-xs text-gray-500 mb-2">Médicos</p>
                   <div className="space-y-1">
-                    {clinic.clinic_vets.map((vet: ClinicVet) => (
+                    {client.client_vets.map((vet: ClientVet) => (
                       <div key={vet.id} className="flex items-center justify-between text-sm">
                         <span className="text-gray-700">{vet.name}</span>
                         <button
-                          onClick={() => handleRemoveVet(clinic.id, vet.id)}
+                          onClick={() => handleRemoveVet(client.id, vet.id)}
                           disabled={removingVetId === vet.id}
                           className="text-xs text-red-600 hover:text-red-700 disabled:opacity-40"
                         >
@@ -205,7 +205,7 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
                         </button>
                       </div>
                     ))}
-                    {clinic.clinic_vets.length === 0 && (
+                    {client.client_vets.length === 0 && (
                       <p className="text-xs text-gray-500">Nenhum médico cadastrado</p>
                     )}
                   </div>
@@ -235,21 +235,21 @@ export default function ClinicsManager({ initialClinics }: { initialClinics: Cli
             ) : (
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="font-medium text-gray-900">{clinic.name}</p>
-                  {clinic.clinic_vets?.length > 0 && (
-                    <p className="text-sm text-gray-500 mt-0.5">{clinic.clinic_vets.map((v) => v.name).join(", ")}</p>
+                  <p className="font-medium text-gray-900">{client.name}</p>
+                  {client.client_vets?.length > 0 && (
+                    <p className="text-sm text-gray-500 mt-0.5">{client.client_vets.map((v) => v.name).join(", ")}</p>
                   )}
                 </div>
                 <div className="flex gap-3 shrink-0 mt-0.5">
-                  <button onClick={() => startEdit(clinic)} className="text-xs text-blue-600 hover:text-blue-700">
+                  <button onClick={() => startEdit(client)} className="text-xs text-blue-600 hover:text-blue-700">
                     Editar
                   </button>
                   <button
-                    onClick={() => handleDelete(clinic.id)}
-                    disabled={deletingId === clinic.id}
+                    onClick={() => handleDelete(client.id)}
+                    disabled={deletingId === client.id}
                     className="text-xs text-red-600 hover:text-red-700 disabled:opacity-40"
                   >
-                    {deletingId === clinic.id ? "Excluindo..." : "Excluir"}
+                    {deletingId === client.id ? "Excluindo..." : "Excluir"}
                   </button>
                 </div>
               </div>

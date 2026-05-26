@@ -41,7 +41,7 @@ export default function PrivacyPolicyPage() {
             <strong>Dados de cadastro do veterinário:</strong> e-mail, nome completo, CPF, CRMV e estado do CRMV.
           </li>
           <li>
-            <strong>Dados profissionais:</strong> logotipo da clínica e imagem de assinatura digital.
+            <strong>Dados profissionais:</strong> logotipo da organização e imagem de assinatura digital.
           </li>
           <li>
             <strong>Dados clínicos do paciente animal:</strong> nome, espécie, raça, idade, sexo, castração.

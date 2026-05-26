@@ -14,8 +14,8 @@ export const AUDIT_ACTIONS = {
 
 export const AUDIT_ENTITIES = {
   pet: "pet",
-  clinic: "clinic",
-  clinic_vet: "clinic_vet",
+  client: "client",
+  client_vet: "client_vet",
   report: "report",
   report_image: "report_image",
   profile: "profile",

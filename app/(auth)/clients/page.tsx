@@ -2,10 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/supabase/auth";
 import { TABLES } from "@/shared/constants";
-import ClinicsManager from "./ClinicsManager";
-import { Clinic } from "@/shared/models";
+import ClientsManager from "./ClientsManager";
+import { Client } from "@/shared/models";
 
-export default async function ClinicsPage() {
+export default async function ClientsPage() {
   const {
     data: { user },
   } = await (await createClient()).auth.getUser();
@@ -13,15 +13,15 @@ export default async function ClinicsPage() {
 
   const orgId = await getCurrentOrgId(user.id);
   const admin = createAdmin();
-  const { data: clinics } = await admin
-    .from(TABLES.clinics)
-    .select("*, clinic_vets(*)")
+  const { data: clients } = await admin
+    .from(TABLES.clients)
+    .select("*, client_vets(*)")
     .eq("org_id", orgId)
     .order("name", { ascending: true });
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-8">
-      <ClinicsManager initialClinics={(clinics ?? []) as Clinic[]} />
+      <ClientsManager initialClients={(clients ?? []) as Client[]} />
     </main>
   );
 }

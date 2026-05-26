@@ -6,10 +6,10 @@ import ImageLightbox from "@/components/ImageLightbox";
 import Typeahead from "@/components/Typeahead";
 import EntityTypeahead from "@/components/EntityTypeahead";
 import Link from "next/link";
-import { Pet, Clinic } from "@/shared/models";
+import { Pet, Client } from "@/shared/models";
 import { SPECIES_OPTIONS, SEX_OPTIONS, MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE } from "@/shared/constants";
 import { listPets } from "@/lib/services/pets";
-import { listClinics, createClinic, addVet } from "@/lib/services/clinics";
+import { listClients, createClient, addVet } from "@/lib/services/clients";
 import { enqueueGeneration, uploadReportImages } from "@/lib/services/reports";
 import { redirectToDashboard } from "@/app/actions/reports";
 import { useIsClient } from "@/lib/use-is-client";
@@ -30,10 +30,10 @@ export default function NewReportPage() {
   const [neutered, setNeutered] = useState(false);
   const [ownerName, setOwnerName] = useState("");
 
-  // Clinic/vet
-  const [clinics, setClinics] = useState<Clinic[]>([]);
-  const [selectedClinicId, setSelectedClinicId] = useState<string>("");
-  const [newClinicName, setNewClinicName] = useState("");
+  // Client/vet
+  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [newClientName, setNewClientName] = useState("");
   const [selectedVetId, setSelectedVetId] = useState<string>("");
   const [newVetName, setNewVetName] = useState("");
 
@@ -87,9 +87,9 @@ export default function NewReportPage() {
 
   useEffect(() => {
     async function loadData() {
-      const [p, c] = await Promise.all([listPets(), listClinics()]);
+      const [p, c] = await Promise.all([listPets(), listClients()]);
       setPets(p);
-      setClinics(c);
+      setClients(c);
     }
     loadData();
   }, []);
@@ -156,9 +156,9 @@ export default function NewReportPage() {
     }
   }
 
-  const selectedClinic = clinics.find((c) => c.id === selectedClinicId);
-  const vets = selectedClinic?.clinic_vets ?? [];
-  const clinicName = selectedClinic?.name ?? newClinicName;
+  const selectedClient = clients.find((c) => c.id === selectedClientId);
+  const vets = selectedClient?.client_vets ?? [];
+  const clientName = selectedClient?.name ?? newClientName;
   const responsibleVet = vets.find((v) => v.id === selectedVetId)?.name ?? newVetName;
 
   const breedSuggestions = [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
@@ -193,7 +193,7 @@ export default function NewReportPage() {
       [ownerName, "Nome do responsável"],
       [breed, "Raça"],
       [age, "Idade"],
-      [clinicName, "Nome da clínica"],
+      [clientName, "Nome do cliente"],
       [responsibleVet, "Médico responsável"],
       [rawInput, "Achados do exame"],
     ];
@@ -205,18 +205,18 @@ export default function NewReportPage() {
     setSubmitting(true);
 
     try {
-      let resolvedClinicName = clinicName;
+      let resolvedClientName = clientName;
       let resolvedVetName = responsibleVet;
       const resolvedPetId = selectedPetId || undefined;
-      let resolvedClinicId = selectedClinicId || undefined;
+      let resolvedClientId = selectedClientId || undefined;
       let resolvedVetId = selectedVetId || undefined;
 
-      if (!selectedClinicId && newClinicName.trim()) {
+      if (!selectedClientId && newClientName.trim()) {
         try {
-          const { clinic, vet } = await createClinic(newClinicName.trim(), newVetName.trim());
-          setClinics((prev) => [...prev, clinic]);
-          resolvedClinicName = clinic.name;
-          resolvedClinicId = clinic.id;
+          const { client, vet } = await createClient(newClientName.trim(), newVetName.trim());
+          setClients((prev) => [...prev, client]);
+          resolvedClientName = client.name;
+          resolvedClientId = client.id;
           if (vet) {
             resolvedVetName = vet.name;
             resolvedVetId = vet.id;
@@ -224,11 +224,11 @@ export default function NewReportPage() {
         } catch {
           /* non-blocking — continue with typed names */
         }
-      } else if (selectedClinicId && !selectedVetId && newVetName.trim()) {
+      } else if (selectedClientId && !selectedVetId && newVetName.trim()) {
         try {
-          const vet = await addVet(selectedClinicId, newVetName.trim());
-          setClinics((prev) =>
-            prev.map((c) => (c.id === selectedClinicId ? { ...c, clinic_vets: [...c.clinic_vets, vet] } : c)),
+          const vet = await addVet(selectedClientId, newVetName.trim());
+          setClients((prev) =>
+            prev.map((c) => (c.id === selectedClientId ? { ...c, client_vets: [...c.client_vets, vet] } : c)),
           );
           resolvedVetName = vet.name;
           resolvedVetId = vet.id;
@@ -247,11 +247,11 @@ export default function NewReportPage() {
         sex,
         neutered,
         ownerName,
-        clinicName: resolvedClinicName,
+        clientName: resolvedClientName,
         responsibleVet: resolvedVetName,
         examDate,
         petId: resolvedPetId,
-        clinicId: resolvedClinicId,
+        clientId: resolvedClientId,
         vetId: resolvedVetId,
       });
 
@@ -281,8 +281,8 @@ export default function NewReportPage() {
     setSex("M");
     setNeutered(false);
     setOwnerName("");
-    setSelectedClinicId("");
-    setNewClinicName("");
+    setSelectedClientId("");
+    setNewClientName("");
     setSelectedVetId("");
     setNewVetName("");
     setExamDate(new Date().toISOString().slice(0, 10));
@@ -306,28 +306,28 @@ export default function NewReportPage() {
         ← Laudos
       </Link>
       <form onSubmit={handleGenerate} className="space-y-6">
-        {/* Clinic / Vet */}
+        {/* Client / Vet */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-gray-700">Clínica e Responsável</p>
-            <a href="/clinics" className="text-xs text-blue-600 hover:underline">
-              Gerenciar clínicas
+            <p className="text-sm font-semibold text-gray-700">Cliente e Responsável</p>
+            <a href="/clients" className="text-xs text-blue-600 hover:underline">
+              Gerenciar clientes
             </a>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Clínica</label>
-              <EntityTypeahead<Clinic>
-                value={newClinicName}
-                onChange={setNewClinicName}
-                items={clinics}
+              <label className="block text-xs text-gray-500 mb-1">Cliente</label>
+              <EntityTypeahead<Client>
+                value={newClientName}
+                onChange={setNewClientName}
+                items={clients}
                 getLabel={(c) => c.name}
                 onPick={(c) => {
-                  setSelectedClinicId(c?.id ?? "");
+                  setSelectedClientId(c?.id ?? "");
                   setSelectedVetId("");
                   setNewVetName("");
                 }}
-                placeholder="Nome da clínica"
+                placeholder="Nome do cliente"
                 className={inputCls}
                 required
               />

@@ -22,7 +22,7 @@ function toSummary(row: ReportRealtimeRow): ReportSummary {
     id: row.id,
     patient_name: row.patient_name,
     owner_name: row.owner_name,
-    clinic_name: row.clinic_name,
+    client_name: row.client_name,
     specialty: row.specialty,
     created_at: row.created_at,
     exam_date: row.exam_date,
@@ -259,7 +259,7 @@ function ReportRow({ report, retrying, onRetry }: { report: ReportSummary; retry
         {report.patient_name} · {report.owner_name}
       </p>
       <p className="text-sm text-gray-500">
-        {SPECIALTIES[report.specialty].label} · {report.clinic_name}
+        {SPECIALTIES[report.specialty].label} · {report.client_name}
       </p>
       <p className="text-xs text-gray-500 mt-1">
         Criado: {new Date(report.created_at).toLocaleDateString("pt-BR")}

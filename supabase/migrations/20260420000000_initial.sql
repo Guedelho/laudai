@@ -402,79 +402,79 @@ create policy "org members read pets"
   using (exists (select 1 from organization_members m where m.org_id = pets.org_id and m.user_id = (select auth.uid())));
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- clinics
+-- clients
 -- ═══════════════════════════════════════════════════════════════════════════
 
-create table if not exists clinics (
+create table if not exists clients (
   id         uuid default gen_random_uuid() primary key,
   user_id    uuid references auth.users(id) on delete cascade not null,
   org_id     uuid references organizations(id) on delete cascade not null,
   name       text not null,
   created_at timestamptz default now() not null,
 
-  constraint clinics_name_len check (char_length(name) <= 200)
+  constraint clients_name_len check (char_length(name) <= 200)
 );
 
-create index if not exists clinics_user_id_idx  on clinics(user_id);
-create index if not exists clinics_org_id_idx   on clinics(org_id);
-create index if not exists clinics_org_name_idx on clinics(org_id, name);
+create index if not exists clients_user_id_idx  on clients(user_id);
+create index if not exists clients_org_id_idx   on clients(org_id);
+create index if not exists clients_org_name_idx on clients(org_id, name);
 
-alter table clinics enable row level security;
+alter table clients enable row level security;
 
-create policy "clinics insert own"
-  on clinics for insert to authenticated
+create policy "clients insert own"
+  on clients for insert to authenticated
   with check ((select auth.uid()) = user_id);
 
-create policy "clinics update own"
-  on clinics for update to authenticated
+create policy "clients update own"
+  on clients for update to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
 
-create policy "clinics delete own"
-  on clinics for delete to authenticated
+create policy "clients delete own"
+  on clients for delete to authenticated
   using ((select auth.uid()) = user_id);
 
-create policy "org members read clinics"
-  on clinics for select to authenticated
-  using (exists (select 1 from organization_members m where m.org_id = clinics.org_id and m.user_id = (select auth.uid())));
+create policy "org members read clients"
+  on clients for select to authenticated
+  using (exists (select 1 from organization_members m where m.org_id = clients.org_id and m.user_id = (select auth.uid())));
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- clinic_vets
+-- client_vets
 -- ═══════════════════════════════════════════════════════════════════════════
 
-create table if not exists clinic_vets (
+create table if not exists client_vets (
   id         uuid default gen_random_uuid() primary key,
-  clinic_id  uuid references clinics(id) on delete cascade not null,
+  client_id  uuid references clients(id) on delete cascade not null,
   user_id    uuid references auth.users(id) on delete cascade not null,
   org_id     uuid references organizations(id) on delete cascade not null,
   name       text not null,
   created_at timestamptz default now() not null,
 
-  constraint clinic_vets_name_len check (char_length(name) <= 200)
+  constraint client_vets_name_len check (char_length(name) <= 200)
 );
 
-create index if not exists clinic_vets_clinic_id_idx on clinic_vets(clinic_id);
-create index if not exists clinic_vets_user_id_idx   on clinic_vets(user_id);
-create index if not exists clinic_vets_org_id_idx    on clinic_vets(org_id);
+create index if not exists client_vets_client_id_idx on client_vets(client_id);
+create index if not exists client_vets_user_id_idx   on client_vets(user_id);
+create index if not exists client_vets_org_id_idx    on client_vets(org_id);
 
-alter table clinic_vets enable row level security;
+alter table client_vets enable row level security;
 
-create policy "clinic_vets insert own"
-  on clinic_vets for insert to authenticated
+create policy "client_vets insert own"
+  on client_vets for insert to authenticated
   with check ((select auth.uid()) = user_id);
 
-create policy "clinic_vets update own"
-  on clinic_vets for update to authenticated
+create policy "client_vets update own"
+  on client_vets for update to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
 
-create policy "clinic_vets delete own"
-  on clinic_vets for delete to authenticated
+create policy "client_vets delete own"
+  on client_vets for delete to authenticated
   using ((select auth.uid()) = user_id);
 
-create policy "org members read clinic_vets"
-  on clinic_vets for select to authenticated
-  using (exists (select 1 from organization_members m where m.org_id = clinic_vets.org_id and m.user_id = (select auth.uid())));
+create policy "org members read client_vets"
+  on client_vets for select to authenticated
+  using (exists (select 1 from organization_members m where m.org_id = client_vets.org_id and m.user_id = (select auth.uid())));
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- reports
@@ -492,7 +492,7 @@ create table if not exists reports (
   sex                     text,
   neutered                boolean,
   owner_name              text not null,
-  clinic_name             text,
+  client_name             text,
   responsible_vet         text,
   raw_input               text not null,
   generated_content       text,
@@ -502,8 +502,8 @@ create table if not exists reports (
   pdf_cached_at           timestamptz,
   deleted_at              timestamptz,
   pet_id                  uuid references pets(id) on delete set null,
-  clinic_id               uuid references clinics(id) on delete set null,
-  vet_id                  uuid references clinic_vets(id) on delete set null,
+  client_id               uuid references clients(id) on delete set null,
+  vet_id                  uuid references client_vets(id) on delete set null,
   status                  text not null default 'completed'
                           check (status in ('pending','generating','completed','failed')),
   error_message           text,
@@ -519,7 +519,7 @@ create table if not exists reports (
   constraint reports_age_len               check (char_length(age) <= 100),
   constraint reports_sex_len               check (char_length(sex) <= 10),
   constraint reports_owner_name_len        check (char_length(owner_name) <= 200),
-  constraint reports_clinic_name_len       check (char_length(clinic_name) <= 200),
+  constraint reports_client_name_len       check (char_length(client_name) <= 200),
   constraint reports_responsible_vet_len   check (char_length(responsible_vet) <= 200),
   constraint reports_raw_input_len         check (char_length(raw_input) <= 2000),
   constraint reports_generated_content_len check (char_length(generated_content) <= 50000),
@@ -539,9 +539,9 @@ create index if not exists reports_org_created_idx on reports(org_id, created_at
 create index if not exists reports_updated_by_idx  on reports(updated_by);
 create index if not exists reports_specialty_idx   on reports(specialty);
 
--- FK-direction lookups ("all reports for this pet/clinic/vet").
+-- FK-direction lookups ("all reports for this pet/client/vet").
 create index if not exists reports_pet_id_idx    on reports(pet_id)    where pet_id    is not null;
-create index if not exists reports_clinic_id_idx on reports(clinic_id) where clinic_id is not null;
+create index if not exists reports_client_id_idx on reports(client_id) where client_id is not null;
 create index if not exists reports_vet_id_idx    on reports(vet_id)    where vet_id    is not null;
 
 alter table reports enable row level security;
@@ -583,7 +583,7 @@ begin
     'id', coalesce(new.id, old.id),
     'patient_name', coalesce(new.patient_name, old.patient_name),
     'owner_name', coalesce(new.owner_name, old.owner_name),
-    'clinic_name', coalesce(new.clinic_name, old.clinic_name),
+    'client_name', coalesce(new.client_name, old.client_name),
     'specialty', coalesce(new.specialty, old.specialty),
     'created_at', coalesce(new.created_at, old.created_at),
     'exam_date', coalesce(new.exam_date, old.exam_date),
@@ -712,7 +712,7 @@ create policy "org members read report_images"
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- audit_log
--- General-purpose CRUD log across pets, clinics, clinic_vets, reports,
+-- General-purpose CRUD log across pets, clients, client_vets, reports,
 -- report_images, profile, organization_member. App-level instrumentation:
 -- mutation endpoints call logAudit() after a successful write. Append-only.
 -- ═══════════════════════════════════════════════════════════════════════════

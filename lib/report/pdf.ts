@@ -127,7 +127,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
     sex,
     neutered,
     ownerName,
-    clinicName,
+    clientName,
     responsibleVet,
     date,
     reportTitle,
@@ -195,7 +195,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
   ];
 
   const rightCol = [
-    row("Clínica: ", clinicName),
+    row("Cliente: ", clientName),
     row("Médico Responsável: ", responsibleVet),
     row("Responsável: ", ownerName),
     row("Data: ", date),

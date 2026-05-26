@@ -29,11 +29,11 @@ export const POST = withApiHandler(
       sex,
       neutered,
       ownerName,
-      clinicName,
+      clientName,
       responsibleVet,
       examDate,
       petId,
-      clinicId,
+      clientId,
       vetId,
     } = body;
 
@@ -42,7 +42,7 @@ export const POST = withApiHandler(
       [ownerName, "Nome do tutor"],
       [breed, "Raça"],
       [age, "Idade"],
-      [clinicName, "Nome da clínica"],
+      [clientName, "Nome do cliente"],
       [responsibleVet, "Médico responsável"],
       [examDate, "Data do exame"],
       [rawInput, "Achados do exame"],
@@ -63,7 +63,7 @@ export const POST = withApiHandler(
       return NextResponse.json({ error: "Você não tem permissão para gerar este tipo de laudo." }, { status: 403 });
     }
 
-    const ownedFks = await resolveOwnedFks(admin, orgId, { petId, clinicId, vetId });
+    const ownedFks = await resolveOwnedFks(admin, orgId, { petId, clientId, vetId });
 
     let resolvedPetId: string | null = ownedFks.petId;
     if (!resolvedPetId) {
@@ -92,11 +92,11 @@ export const POST = withApiHandler(
         raw_input: rawInput,
         sex,
         neutered,
-        clinic_name: clinicName,
+        client_name: clientName,
         responsible_vet: responsibleVet,
         exam_date: examDate,
         pet_id: resolvedPetId,
-        clinic_id: ownedFks.clinicId,
+        client_id: ownedFks.clientId,
         vet_id: ownedFks.vetId,
       })
       .select("id")

@@ -8,7 +8,7 @@ import { logError } from "@/lib/log";
 
 const BUCKET = STORAGE_BUCKETS.profileLogos;
 
-// Only the personal signature lives per-user here. The clinic logo is org-level
+// Only the personal signature lives per-user here. The client logo is org-level
 // (see /api/org/logo).
 type Kind = "signature";
 

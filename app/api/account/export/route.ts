@@ -18,12 +18,12 @@ export const GET = withApiHandler(async ({ userId }) => {
 async function doExport(userId: string) {
   const admin = createAdmin();
 
-  const [profileRes, reportsRes, petsRes, clinicsRes, vetsRes, consentsRes, imagesRes] = await Promise.all([
+  const [profileRes, reportsRes, petsRes, clientsRes, vetsRes, consentsRes, imagesRes] = await Promise.all([
     admin.from(TABLES.profiles).select("*").eq("id", userId).maybeSingle(),
     admin.from(TABLES.reports).select("*").eq("user_id", userId),
     admin.from(TABLES.pets).select("*").eq("user_id", userId),
-    admin.from(TABLES.clinics).select("*").eq("user_id", userId),
-    admin.from(TABLES.clinic_vets).select("*").eq("user_id", userId),
+    admin.from(TABLES.clients).select("*").eq("user_id", userId),
+    admin.from(TABLES.client_vets).select("*").eq("user_id", userId),
     admin.from(TABLES.consents).select("*").eq("user_id", userId),
     admin.from(TABLES.report_images).select("*").eq("user_id", userId),
   ]);
@@ -64,8 +64,8 @@ async function doExport(userId: string) {
     profile,
     reports,
     pets: petsRes.data ?? [],
-    clinics: clinicsRes.data ?? [],
-    clinic_vets: vetsRes.data ?? [],
+    clients: clientsRes.data ?? [],
+    client_vets: vetsRes.data ?? [],
     consents: consentsRes.data ?? [],
   };
 

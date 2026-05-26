@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Report, ParsedReport, Pet, Clinic, ClinicVet } from "@/shared/models";
+import { Report, ParsedReport, Pet, Client, ClientVet } from "@/shared/models";
 import { parseReportContent } from "@/lib/utils";
 import { updateReport } from "@/lib/services/reports";
 import { openReportPdfTab } from "@/lib/pdf-tab";
@@ -14,7 +14,7 @@ export type ReportFieldsState = {
   sex: string;
   neutered: boolean;
   ownerName: string;
-  clinicName: string;
+  clientName: string;
   responsibleVet: string;
   examDate: string;
 };
@@ -34,12 +34,12 @@ export function useReportEditor(report: Report, onAfterImprimir: () => void) {
     sex: report.sex,
     neutered: report.neutered,
     ownerName: report.owner_name,
-    clinicName: report.clinic_name,
+    clientName: report.client_name,
     responsibleVet: report.responsible_vet,
     examDate: report.exam_date,
   });
   const [selectedPetId, setSelectedPetId] = useState<string | null>(report.pet_id);
-  const [selectedClinicId, setSelectedClinicId] = useState<string | null>(report.clinic_id);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(report.client_id);
   const [selectedVetId, setSelectedVetId] = useState<string | null>(report.vet_id);
 
   function selectPet(pet: Pet | null) {
@@ -57,14 +57,14 @@ export function useReportEditor(report: Report, onAfterImprimir: () => void) {
     }));
   }
 
-  function selectClinic(clinic: Clinic | null) {
-    setSelectedClinicId(clinic?.id ?? null);
+  function selectClient(client: Client | null) {
+    setSelectedClientId(client?.id ?? null);
     setSelectedVetId(null);
-    if (!clinic) return;
-    setFields((prev) => ({ ...prev, clinicName: clinic.name }));
+    if (!client) return;
+    setFields((prev) => ({ ...prev, clientName: client.name }));
   }
 
-  function selectVet(vet: ClinicVet | null) {
+  function selectVet(vet: ClientVet | null) {
     setSelectedVetId(vet?.id ?? null);
     if (!vet) return;
     setFields((prev) => ({ ...prev, responsibleVet: vet.name }));
@@ -107,12 +107,12 @@ export function useReportEditor(report: Report, onAfterImprimir: () => void) {
         sex: fields.sex,
         neutered: fields.neutered,
         owner_name: fields.ownerName,
-        clinic_name: fields.clinicName,
+        client_name: fields.clientName,
         responsible_vet: fields.responsibleVet,
         exam_date: fields.examDate,
       },
       petId: selectedPetId ?? undefined,
-      clinicId: selectedClinicId ?? undefined,
+      clientId: selectedClientId ?? undefined,
       vetId: selectedVetId ?? undefined,
     });
   }
@@ -149,10 +149,10 @@ export function useReportEditor(report: Report, onAfterImprimir: () => void) {
     editedParsed,
     setEditedParsed,
     selectedPetId,
-    selectedClinicId,
+    selectedClientId,
     selectedVetId,
     selectPet,
-    selectClinic,
+    selectClient,
     selectVet,
     updateSection,
     removeSection,

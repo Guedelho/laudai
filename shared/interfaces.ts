@@ -3,8 +3,8 @@ import type {
   PatientFields,
   ReportFields,
   Pet,
-  Clinic,
-  ClinicVet,
+  Client,
+  ClientVet,
   ReportImage,
   ReportSummary,
   ReportType,
@@ -15,7 +15,7 @@ export interface GenerateRequest extends ReportFields {
   specialty: ReportType;
   rawInput: string;
   petId?: string;
-  clinicId?: string;
+  clientId?: string;
   vetId?: string;
 }
 
@@ -29,19 +29,19 @@ export interface PetRequest {
   ownerName: string;
 }
 
-export interface ClinicRequest {
+export interface ClientRequest {
   name: string;
   vetName?: string;
 }
 
-export interface ClinicVetRequest {
+export interface ClientVetRequest {
   name: string;
 }
 
 export interface UpdateReportRequest {
   generatedContent: ParsedReport;
   petId?: string;
-  clinicId?: string;
+  clientId?: string;
   vetId?: string;
   patientFields: {
     patient_name: string;
@@ -51,7 +51,7 @@ export interface UpdateReportRequest {
     sex: string;
     neutered: boolean;
     owner_name: string;
-    clinic_name: string;
+    client_name: string;
     responsible_vet: string;
     exam_date: string;
   };
@@ -81,16 +81,16 @@ export interface PetsResponse extends ApiResponse {
   pets: Pet[];
 }
 
-export interface ClinicResponse extends ApiResponse {
-  clinic: Clinic;
+export interface ClientResponse extends ApiResponse {
+  client: Client;
 }
 
-export interface ClinicsResponse extends ApiResponse {
-  clinics: Clinic[];
+export interface ClientsResponse extends ApiResponse {
+  clients: Client[];
 }
 
 export interface VetResponse extends ApiResponse {
-  vet: ClinicVet;
+  vet: ClientVet;
 }
 
 export interface ImagesResponse extends ApiResponse {
@@ -114,7 +114,7 @@ export interface GenerateParams extends PatientFields {
 // ─── PDF ─────────────────────────────────────────────────────────────────────
 
 export interface PdfData extends PatientFields {
-  clinicName: string;
+  clientName: string;
   responsibleVet: string;
   date: string;
   reportTitle: string;

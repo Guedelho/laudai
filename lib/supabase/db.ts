@@ -41,36 +41,36 @@ export async function canWriteReport(
   return !!grant;
 }
 
-export async function findOrCreateClinic(admin: Admin, userId: string, orgId: string, name: string) {
+export async function findOrCreateClient(admin: Admin, userId: string, orgId: string, name: string) {
   const { data: existing } = await admin
-    .from(TABLES.clinics)
-    .select("*, clinic_vets(*)")
+    .from(TABLES.clients)
+    .select("*, client_vets(*)")
     .eq("org_id", orgId)
     .eq("name", name.trim())
     .maybeSingle();
   if (existing) return existing;
 
   const { data, error } = await admin
-    .from(TABLES.clinics)
+    .from(TABLES.clients)
     .insert({ user_id: userId, org_id: orgId, name })
-    .select("*, clinic_vets(*)")
+    .select("*, client_vets(*)")
     .single();
   if (error) throw error;
   return data;
 }
 
-export async function findOrCreateVet(admin: Admin, clinicId: string, userId: string, orgId: string, name: string) {
+export async function findOrCreateVet(admin: Admin, clientId: string, userId: string, orgId: string, name: string) {
   const { data: existing } = await admin
-    .from(TABLES.clinic_vets)
+    .from(TABLES.client_vets)
     .select("*")
-    .eq("clinic_id", clinicId)
+    .eq("client_id", clientId)
     .eq("name", name.trim())
     .maybeSingle();
   if (existing) return existing;
 
   const { data, error } = await admin
-    .from(TABLES.clinic_vets)
-    .insert({ clinic_id: clinicId, user_id: userId, org_id: orgId, name })
+    .from(TABLES.client_vets)
+    .insert({ client_id: clientId, user_id: userId, org_id: orgId, name })
     .select()
     .single();
   if (error) throw error;
@@ -100,23 +100,23 @@ export async function isOrgOwner(admin: Admin, userId: string, orgId: string): P
 export async function resolveOwnedFks(
   admin: Admin,
   orgId: string,
-  ids: { petId?: string | null; clinicId?: string | null; vetId?: string | null },
-): Promise<{ petId: string | null; clinicId: string | null; vetId: string | null }> {
-  const [pet, clinic, vet] = await Promise.all([
+  ids: { petId?: string | null; clientId?: string | null; vetId?: string | null },
+): Promise<{ petId: string | null; clientId: string | null; vetId: string | null }> {
+  const [pet, client, vet] = await Promise.all([
     ids.petId
       ? admin.from(TABLES.pets).select("id").eq("id", ids.petId).eq("org_id", orgId).maybeSingle()
       : Promise.resolve({ data: null }),
-    ids.clinicId
-      ? admin.from(TABLES.clinics).select("id").eq("id", ids.clinicId).eq("org_id", orgId).maybeSingle()
+    ids.clientId
+      ? admin.from(TABLES.clients).select("id").eq("id", ids.clientId).eq("org_id", orgId).maybeSingle()
       : Promise.resolve({ data: null }),
     ids.vetId
-      ? admin.from(TABLES.clinic_vets).select("id").eq("id", ids.vetId).eq("org_id", orgId).maybeSingle()
+      ? admin.from(TABLES.client_vets).select("id").eq("id", ids.vetId).eq("org_id", orgId).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 
   return {
     petId: pet.data?.id ?? null,
-    clinicId: clinic.data?.id ?? null,
+    clientId: client.data?.id ?? null,
     vetId: vet.data?.id ?? null,
   };
 }

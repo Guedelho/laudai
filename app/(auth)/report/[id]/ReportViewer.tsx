@@ -58,7 +58,7 @@ export function ReportViewerInfo({ fields, displayDate }: { fields: ReportFields
       <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-2 text-sm">
         <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Atendimento</h2>
         <InfoItem label="Responsável:" value={fields.ownerName} />
-        <InfoItem label="Clínica:" value={fields.clinicName} />
+        <InfoItem label="Clínica:" value={fields.clientName} />
         <InfoItem label="Médico:" value={fields.responsibleVet} />
         {displayDate && <InfoItem label="Data do exame:" value={displayDate} />}
       </div>
