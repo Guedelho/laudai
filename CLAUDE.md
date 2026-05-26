@@ -30,7 +30,7 @@ All schema names, statuses, buckets, plan ids, audit actions, etc. live in const
 - **Branding split**: the **logo is org-level** (`organizations.logo_url`, shared by all members, owner-managed via `/api/org/logo`), the **signature is per-user** (`profiles.signature_image_url`, via `/api/profile/image/signature`). Both stored in `STORAGE_BUCKETS.profileLogos` — logos under `{orgId}/`, signatures under `{userId}/`. Served by `serveProfileImage` (`lib/profile-image.ts`) which streams bytes through the API route rather than redirecting to a signed URL (browsers cache redirects, and the signed-URL target expires after `SIGNED_URL_TTL.serverFetch`s). Both routes opt out of BotID (`{ botId: false }`) because `<img src>` is browser-native without BotID headers. Org-logo changes call `invalidateOrgPdfCache(orgId)`; signature changes call `invalidateUserPdfCache(userId)`. Org-logo write/delete is gated to owners via `isOrgOwner` (`lib/supabase/db.ts`).
 - **Bot protection**: Vercel BotID is on by default for every `withApiHandler` route. Routes hit by browser-native mechanisms (`<img>`, `<a download>`, top-level navigation) opt out with `withApiHandler(..., { botId: false })` — currently `/api/org/logo`, `/api/profile/image/signature`, `/api/reports/[id]/pdf`. `/api/account/export` keeps BotID on; the client downloads via `fetch()` + blob + programmatic `<a download>` so detection headers attach. `instrumentation-client.ts` injects detection headers for all `/api/*` paths; `deepAnalysis` mode is enabled on `/api/generate` and `/api/reports/*/regenerate` (the Gemini-cost endpoints).
 - **Formatting**: Prettier + pre-commit hook via lint-staged. Run `npm run format` to format all files.
-- **Database**: Supabase Postgres (project `rgemiayidnumeotplozm`, region `sa-east-1`). Multi-tenant via `organizations`. Every domain table (`pets`, `clinics`, `clinic_vets`, `reports`, `report_images`) has `org_id NOT NULL` + `user_id NOT NULL`. RLS: reads scope by org membership (team-visible); mutations stay user_id-self (only creator edits). All FK / `user_id` / `org_id` columns are indexed.
+- **Database**: Supabase Postgres (project `rgemiayidnumeotplozm`, region `sa-east-1`). Multi-tenant via `organizations`. Every domain table (`pets`, `clients`, `client_vets`, `reports`, `report_images`) has `org_id NOT NULL` + `user_id NOT NULL`. RLS: reads scope by org membership (team-visible); mutations stay user_id-self (only creator edits). All FK / `user_id` / `org_id` columns are indexed.
 - **Storage**: Three private buckets — `STORAGE_BUCKETS.reportImages`, `STORAGE_BUCKETS.reportPdfs`, `STORAGE_BUCKETS.profileLogos`. RLS scopes anon-client access to `auth.uid() = first folder in path`. All writes via service role.
 - **Auth**: Supabase Auth via cookies (SSR). `proxy.ts` syncs session and redirects unauthenticated users to `/login` (except `/legal/*`). `/signup` exists but is disabled — page redirects to `/login`. `withApiHandler` uses `getUserId()` from `@/lib/supabase/auth` — cookie-only, no Bearer tokens.
 - **Deployment**: Vercel. Git auto-deploy is enabled — pushes to `main` deploy automatically. Personal repo (`Guedelho/laudai`); push as the `Guedelho` gh account.
@@ -83,7 +83,7 @@ For local dev, `stripe listen --forward-to localhost:3000/webhook/stripe` prints
 
 ## Audit log
 
-`audit_log` is the polymorphic append-only record of every create/update/delete on domain entities (`pet`, `clinic`, `clinic_vet`, `report`, `report_image`, `profile`, `organization`, `organization_member`, `organization_report_type`, `member_specialty`). Every mutation endpoint writes one via the `audit()` helper that `withApiHandler` provides in ctx (auto-bound to the request's userId + orgId).
+`audit_log` is the polymorphic append-only record of every create/update/delete on domain entities (`pet`, `client`, `client_vet`, `report`, `report_image`, `profile`, `organization`, `organization_member`, `organization_report_type`, `member_specialty`). Every mutation endpoint writes one via the `audit()` helper that `withApiHandler` provides in ctx (auto-bound to the request's userId + orgId).
 
 ```ts
 await audit({ action: AUDIT_ACTIONS.delete, entityType: AUDIT_ENTITIES.pet, entityId: id, changes: before });
@@ -129,7 +129,7 @@ CSRF protection is handled by Supabase's `SameSite=Lax` cookies plus modern brow
 - Reads: filter by `org_id` (team-visible). Use `.eq("org_id", orgId)`.
 - Mutations (UPDATE/DELETE): filter by `user_id` (only the row's author can mutate). Use `.eq("user_id", userId)`.
 - Inserts: always set both `user_id: userId` and `org_id: orgId`.
-- FK ownership: `resolveOwnedFks(admin, orgId, ids)` filters incoming petId/clinicId/vetId to those in the caller's org.
+- FK ownership: `resolveOwnedFks(admin, orgId, ids)` filters incoming petId/clientId/vetId to those in the caller's org.
 
 **Other:**
 
@@ -141,7 +141,7 @@ CSRF protection is handled by Supabase's `SameSite=Lax` cookies plus modern brow
 ## Client-side conventions
 
 - Auth via cookies (`@supabase/ssr`) — no manual auth headers on fetch calls.
-- API calls: typed functions in `lib/services/` (pets, clinics, reports, profile) — never inline `fetch()` in components.
+- API calls: typed functions in `lib/services/` (pets, clients, reports, profile) — never inline `fetch()` in components.
 - JSON requests: add `"Content-Type": "application/json"`. FormData requests need no extra headers.
 
 ## Data model
@@ -152,12 +152,12 @@ CSRF protection is handled by Supabase's `SameSite=Lax` cookies plus modern brow
 - `updated_by` — populated by PATCH (last editor's user_id).
 - `error_message`, `generation_started_at`, `generation_completed_at` — populated by the worker.
 - `raw_input` — original vet findings, immutable.
-- `org_id` — every domain row (pets, clinics, clinic_vets, reports, report_images) — FK to organizations, NOT NULL.
+- `org_id` — every domain row (pets, clients, client_vets, reports, report_images) — FK to organizations, NOT NULL.
 - Reports remain editable after generation. PATCH writes a `report_versions` snapshot, updates `edited_content`, `updated_by`, drops `pdf_storage_path`.
-- Reports are historical documents. Patient/clinic/vet data is **snapshot text** on the report row — display always reads from these snapshot columns, never from joined tables. The silent FK columns (`pet_id`, `clinic_id`, `vet_id`) write back to source entities on save — never used for display.
+- Reports are historical documents. Patient/client/vet data is **snapshot text** on the report row — display always reads from these snapshot columns, never from joined tables. The silent FK columns (`pet_id`, `client_id`, `vet_id`) write back to source entities on save — never used for display.
 - Profile uniqueness: `cpf` is UNIQUE; `(crmv, crmv_state)` is UNIQUE. Prevents one vet from holding multiple accounts.
 - Profile fields `cpf`, `crmv`, `crmv_state` are immutable after first profile creation.
-- All patient/report fields (`breed`, `age`, `sex`, `neutered`, `clinicName`, `responsibleVet`, `examDate`) are required — never nullable.
+- All patient/report fields (`breed`, `age`, `sex`, `neutered`, `clientName`, `responsibleVet`, `examDate`) are required — never nullable.
 - Dropdown options (`SPECIES_OPTIONS`, `SEX_OPTIONS`, `sexLabel`) centralized in `shared/constants.ts`.
 
 ## Types

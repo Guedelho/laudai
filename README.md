@@ -1,6 +1,6 @@
 # laudai
 
-Veterinary ultrasound report generator. Vets describe exam findings (by typing or voice), and the app produces a complete, structured report (laudo) in Portuguese using Google Gemini AI. Reports can be reviewed, edited, exported as PDF, and shared across a clinic team.
+Veterinary ultrasound report generator. Vets describe exam findings (by typing or voice), and the app produces a complete, structured report (laudo) in Portuguese using Google Gemini AI. Reports can be reviewed, edited, exported as PDF, and shared across a team.
 
 ## Tech stack
 
@@ -61,7 +61,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 | `/report/[id]`                   | View / edit / download a completed report            |
 | `/profile`                       | Vet profile (name, CRMV, logo, signature, account)   |
 | `/pets`                          | Manage patients                                      |
-| `/clinics`                       | Manage clinics and responsible vets                  |
+| `/clients`                       | Manage clients and responsible vets                  |
 | `/legal/politica-de-privacidade` | Privacy policy (LGPD)                                |
 | `/legal/termos-de-uso`           | Terms of use                                         |
 | `/login`                         | Public login page                                    |
@@ -95,7 +95,7 @@ The dashboard subscribes to a private Supabase Realtime **Broadcast** channel (`
 - The worker wraps the Gemini call in `Promise.race` with a 5-min timeout — failures surface within seconds.
 - Generated PDFs are cached in storage with a 24h TTL; reads after that regenerate from the (possibly edited) report.
 - Every report edit writes a snapshot to `report_versions` (append-only audit of laudo content).
-- Every CRUD across pets, clinics, reports, images, profile lands in `audit_log` (who did what when).
+- Every CRUD across pets, clients, reports, images, profile lands in `audit_log` (who did what when).
 
 ## LGPD compliance
 
@@ -121,14 +121,14 @@ app/
     new/                            # New report form
     report/[id]/                    # View / edit / print report
     profile/                        # Profile editor + privacy controls (export, delete)
-    pets/ clinics/                  # Pet & clinic management
+    pets/ clients/                  # Pet & client management
   api/
     generate/                       # POST — enqueue laudo
     reports/[id]/                   # PATCH (writes version + updated_by) / DELETE
     reports/[id]/regenerate/        # POST — retry a failed laudo
     reports/[id]/images/            # POST/DELETE — exam images
     reports/[id]/pdf/               # GET — render or fetch cached PDF
-    pets/ clinics/ profile/         # CRUD for sidebar entities
+    pets/ clients/ profile/         # CRUD for sidebar entities
     consents/                       # POST — record terms/privacy acceptance
     account/                        # DELETE (schedule) / POST (cancel) / GET export
     internal/sweep-deleted-accounts/ # Cron: 30-day account purge (daily 03:00 UTC)
