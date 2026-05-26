@@ -11,6 +11,15 @@ function isPublicPath(path: string): boolean {
 }
 
 export default async function proxy(request: NextRequest) {
+  // App lives at app.laudai.vet; root domain is reserved for a future landing
+  // page. Forwarding everything else keeps cookies anchored to one host.
+  const host = request.headers.get("host");
+  if (host === "laudai.vet" || host === "www.laudai.vet") {
+    const url = request.nextUrl.clone();
+    url.host = "app.laudai.vet";
+    return NextResponse.redirect(url, 307);
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
