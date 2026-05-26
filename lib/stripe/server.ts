@@ -15,4 +15,9 @@ export function getStripe(): Stripe {
   return _stripe;
 }
 
-export const STRIPE_PRICE_ID_OWNER = process.env.STRIPE_PRICE_ID_OWNER!;
+export const PLAN_PRICE_IDS = {
+  monthly: () => process.env.STRIPE_PRICE_ID_MONTHLY!,
+  yearly: () => process.env.STRIPE_PRICE_ID_YEARLY!,
+} as const;
+
+export type PlanInterval = keyof typeof PLAN_PRICE_IDS;

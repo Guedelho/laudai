@@ -2,11 +2,15 @@ import "server-only";
 
 import { NextResponse } from "next/server";
 import { withApiHandler } from "@/lib/api-handler";
-import { getStripe, STRIPE_PRICE_ID_OWNER } from "@/lib/stripe/server";
+import { getStripe, PLAN_PRICE_IDS, type PlanInterval } from "@/lib/stripe/server";
 import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 
-export const POST = withApiHandler(async ({ admin, userId, orgId }) => {
+export const POST = withApiHandler(async ({ admin, userId, orgId, req }) => {
+  const body = await req.json().catch(() => ({}));
+  const plan: PlanInterval = body?.plan === "yearly" ? "yearly" : "monthly";
+  const priceId = PLAN_PRICE_IDS[plan]();
+
   const { data: org, error: orgErr } = await admin
     .from(TABLES.organizations)
     .select("name, stripe_customer_id, stripe_subscription_status")
@@ -18,7 +22,6 @@ export const POST = withApiHandler(async ({ admin, userId, orgId }) => {
     return NextResponse.json({ error: "Organização não encontrada." }, { status: 404 });
   }
 
-  // Org already has an active or trialing sub — Checkout would create a duplicate.
   if (org.stripe_subscription_status === "active" || org.stripe_subscription_status === "trialing") {
     return NextResponse.json({ error: "Assinatura já está ativa." }, { status: 409 });
   }
@@ -44,7 +47,7 @@ export const POST = withApiHandler(async ({ admin, userId, orgId }) => {
   const session = await getStripe().checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
-    line_items: [{ price: STRIPE_PRICE_ID_OWNER, quantity: 1 }],
+    line_items: [{ price: priceId, quantity: 1 }],
     subscription_data: {
       trial_period_days: 7,
       metadata: { org_id: orgId },
