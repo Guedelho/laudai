@@ -3,9 +3,17 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { withApiHandler } from "@/lib/api-handler";
 import { getStripe } from "@/lib/stripe/server";
+import { isOrgOwner } from "@/lib/supabase/db";
 import { TABLES } from "@/shared/constants";
 
-export const POST = withApiHandler(async ({ admin, orgId }) => {
+export const POST = withApiHandler(async ({ admin, userId, orgId }) => {
+  if (!(await isOrgOwner(admin, userId, orgId))) {
+    return NextResponse.json(
+      { error: "Apenas o responsável pela organização gerencia a assinatura." },
+      { status: 403 },
+    );
+  }
+
   const { data: org } = await admin.from(TABLES.organizations).select("stripe_customer_id").eq("id", orgId).single();
 
   if (!org?.stripe_customer_id) {

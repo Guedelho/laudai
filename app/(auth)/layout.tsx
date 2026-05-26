@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/supabase/auth";
 import { redirect } from "next/navigation";
+import { isOrgOwner } from "@/lib/supabase/db";
 import { TABLES, REPORT_TYPES, ENTITLED_SUBSCRIPTION_STATUSES } from "@/shared/constants";
 import AppHeader from "@/components/AppHeader";
 import SubscriptionChip from "./SubscriptionChip";
@@ -25,7 +26,7 @@ async function HeaderWithChip() {
 
   const orgId = await getCurrentOrgId(user.id);
   const admin = createAdmin();
-  const [{ data: org }, { data: entitlement }] = await Promise.all([
+  const [{ data: org }, { data: entitlement }, owner] = await Promise.all([
     admin.from(TABLES.organizations).select("stripe_subscription_status").eq("id", orgId).single(),
     admin
       .from(TABLES.organization_report_types)
@@ -33,10 +34,12 @@ async function HeaderWithChip() {
       .eq("org_id", orgId)
       .eq("report_type_id", REPORT_TYPES.ultrasound_abdominal)
       .maybeSingle(),
+    isOrgOwner(admin, user.id, orgId),
   ]);
 
   const status = org?.stripe_subscription_status ?? "";
-  if (!ENTITLED_SUBSCRIPTION_STATUSES.has(status)) return <AppHeader />;
+  // Only the owner manages billing, so only they see the subscription chip.
+  if (!owner || !ENTITLED_SUBSCRIPTION_STATUSES.has(status)) return <AppHeader />;
 
   return (
     <AppHeader
