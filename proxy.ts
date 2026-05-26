@@ -11,13 +11,6 @@ function isPublicPath(path: string): boolean {
 }
 
 export default async function proxy(request: NextRequest) {
-  // Root domain is reserved for a future landing page — send all app traffic
-  // to the app subdomain until that ships.
-  const host = request.headers.get("host");
-  if (host === "laudai.vet") {
-    return NextResponse.redirect("https://app.laudai.vet/login", 307);
-  }
-
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
