@@ -63,7 +63,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 
 ## Multi-tenancy
 
-Every user belongs to at least one organization. Solo users get an org-of-1 automatically (individual plan, owner role, 7-day trial on `ultrasound_abdominal`) — the concept is invisible until they invite a teammate.
+Every user belongs to at least one organization. Solo users get an org-of-1 automatically (individual plan, owner role) — the concept is invisible until they invite a teammate. Entitlements are granted by Stripe webhook after the vet subscribes.
 
 - **Plans**: `individual`, `team` (seed rows; FK from `organizations.plan`)
 - **Roles**: `owner`, `member` — one owner per org. Team management (member CRUD + invitations) is owner-only at the RLS level.
@@ -73,10 +73,10 @@ Every user belongs to at least one organization. Solo users get an org-of-1 auto
 
 Each report type (`report_types` catalog) is gated by two tables:
 
-- `organization_report_types(org_id, report_type_id, expires_at)` — what the org owns. `NULL expires_at` = paid; non-null = trial / time-bound.
+- `organization_report_types(org_id, report_type_id, expires_at)` — what the org owns. `expires_at` mirrors the Stripe subscription's current period end and is written by `/api/webhooks/stripe`; the row is deleted when the subscription leaves entitled status (`trialing`/`active`).
 - `member_specialties(org_id, user_id, report_type_id)` — which members can write which types. Owners are implicit (god-mode within the org's entitlements); other members need a grant.
 
-`/api/generate` checks both. Solo signups receive a 7-day trial of `ultrasound_abdominal` via `create_solo_org`.
+`/api/generate` checks both. New signups have no entitlement until the Stripe Checkout flow completes (the 7-day trial is managed by Stripe, not the DB).
 
 ## How laudo generation works
 

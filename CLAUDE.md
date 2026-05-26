@@ -47,7 +47,7 @@ Every user belongs to ≥1 organization. Solo users get an org-of-1 (individual 
 Helpers:
 
 - `getCurrentOrgId(userId)` in `lib/supabase/auth.ts` — returns the user's primary org (owned first, then any membership). Until the org switcher is built, this is the "current" org for every request.
-- `create_solo_org(userId, name, slug)` — SQL function (revoked from anon/authenticated). Atomically inserts the org + owner membership + a 7-day trial entitlement on `ultrasound_abdominal`.
+- `create_solo_org(userId, name, slug)` — SQL function (revoked from anon/authenticated). Atomically inserts the org + owner membership. No entitlement is granted — that arrives via the Stripe webhook once the vet subscribes.
 
 Plan enforcement (member counts, features) is **application-level** — no quotas in DB.
 
@@ -55,10 +55,22 @@ Plan enforcement (member counts, features) is **application-level** — no quota
 
 Two layers gate `/api/generate`:
 
-- **Billing** (`organization_report_types(org_id, report_type_id, expires_at)`) — what the org owns. `NULL expires_at` = permanent (paid). Non-null = trial / time-bound grant. `hasReportTypeAccess()` in `lib/supabase/db.ts` rejects when `now() >= expires_at`. Solo signups land here with `expires_at = now() + 7 days` on `ultrasound_abdominal` — that's the 7-day trial.
+- **Billing** (`organization_report_types(org_id, report_type_id, expires_at)`) — what the org owns. `expires_at` always reflects the Stripe subscription's current period end (trial end during `trialing`, next renewal during `active`). `hasReportTypeAccess()` in `lib/supabase/db.ts` rejects when `now() >= expires_at`. The Stripe webhook (`/api/webhooks/stripe`) upserts this row on `customer.subscription.*` and `invoice.*` events; rows are deleted when the subscription leaves entitled status.
 - **Permission** (`member_specialties(org_id, user_id, report_type_id)`) — which members can write which types. `canWriteReport()` short-circuits true for org owners (god-mode within the org's entitlements); otherwise it requires a grant row. Composite FK back to `organization_members(org_id, user_id)` so grants can only target actual members.
 
 The catalog `report_types(id)` is the FK target for both `reports.specialty` and the two gate tables (ID-only; display labels live in `SPECIALTIES` in `lib/report/templates.ts`). Today only `ultrasound_abdominal` has prompts/templates wired in `lib/report/generate.ts`; the `periodontal_treatment` catalog row exists but is not yet generatable end-to-end — keep that in mind before granting it.
+
+## Stripe billing
+
+Stripe is the source of truth for subscriptions. `organizations` has `stripe_customer_id`, `stripe_subscription_id`, `stripe_subscription_status` (mirrored verbatim from Stripe).
+
+- **Checkout** — `POST /api/billing/checkout` creates a Stripe Customer on first call (with `metadata.org_id`), then returns a Checkout Session URL in `mode: "subscription"` with `trial_period_days: 7`. The dashboard `<SubscribeGate />` redirects the browser to it.
+- **Customer Portal** — `POST /api/billing/portal` returns a hosted portal URL. Vets cancel, update card, and download invoices there — no UI to maintain.
+- **Webhook** — `POST /api/webhooks/stripe` verifies the signature with `STRIPE_WEBHOOK_SECRET` and handles `customer.subscription.{created,updated,deleted,trial_will_end}` + `invoice.{paid,payment_failed}`. It upserts `organization_report_types.expires_at` to the subscription's current period end (`subscriptionPeriodEnd()` — the dahlia API moved this from Subscription to SubscriptionItem). Deletes the entitlement row when status leaves `trialing`/`active`. The Stripe SDK API version is pinned in `lib/stripe/server.ts` (currently `2026-04-22.dahlia`).
+- **Dashboard gate** — `app/(auth)/dashboard/page.tsx` shows `<SubscribeGate />` when the org has no entitled subscription status; otherwise `<SubscriptionStatus />` banner + the report list.
+- **Stripe IDs** — owner price `STRIPE_PRICE_ID_OWNER`. The add-on member price exists in test mode but isn't wired into Checkout yet (team management is a later PR).
+
+For local dev, `stripe listen --forward-to localhost:3000/api/webhooks/stripe` prints a `whsec_...` to put in `.env.local`; that key is per-session and changes each invocation.
 
 ## Audit log
 
