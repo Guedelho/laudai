@@ -8,6 +8,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 - **Tailwind CSS 4**
 - **Supabase** — auth, Postgres, storage
 - **Google Gemini AI** — `gemini-3-flash-preview` (single-call report generation)
+- **Stripe** — subscriptions (monthly/yearly), hosted Checkout + Customer Portal, webhook-driven entitlements
 - **pdfmake** — server-side PDF generation (cached in storage)
 - **Vercel BotID** — invisible bot protection on generation + upload routes
 - **Prettier** — code formatting with pre-commit hook
@@ -17,6 +18,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 - Node.js 20+
 - A [Supabase](https://supabase.com) project
 - A [Google AI Studio](https://aistudio.google.com/app/apikey) API key
+- A [Stripe](https://stripe.com) account (test mode for local dev)
 
 ## Local setup
 
@@ -36,11 +38,15 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
    ```
 
 3. **Set up Supabase**
-   - Open your project's SQL Editor and run the full contents of `supabase/migrations/20260420000000_initial.sql`
+   - Open your project's SQL Editor and run every migration in `supabase/migrations/` in filename order (`20260420…_initial.sql`, then `20260526…_stripe_billing.sql`)
    - Go to **Storage** → create three private buckets: `report-images`, `report-pdfs`, and `profile-logos`
-   - All RLS, indexes, functions, triggers, and seed data (plans) are applied by the migration
+   - All RLS, indexes, functions, triggers, and seed data (plans) are applied by the migrations
 
-4. **Run the dev server**
+4. **Set up Stripe (test mode)**
+   - Create a Product with two recurring prices (monthly + yearly); put their IDs in `STRIPE_PRICE_ID_MONTHLY` / `STRIPE_PRICE_ID_YEARLY`
+   - In a second terminal, forward webhooks: `stripe listen --forward-to localhost:3000/webhook/stripe` — copy the printed `whsec_…` into `STRIPE_WEBHOOK_SECRET`
+
+5. **Run the dev server**
    ```bash
    npm run dev
    # Open http://localhost:3000

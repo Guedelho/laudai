@@ -64,13 +64,22 @@ The catalog `report_types(id)` is the FK target for both `reports.specialty` and
 
 Stripe is the source of truth for subscriptions. `organizations` has `stripe_customer_id`, `stripe_subscription_id`, `stripe_subscription_status` (mirrored verbatim from Stripe).
 
-- **Checkout** — `POST /api/billing/checkout` creates a Stripe Customer on first call (with `metadata.org_id`), then returns a Checkout Session URL in `mode: "subscription"` with `trial_period_days: 7`. The dashboard `<SubscribeGate />` redirects the browser to it.
+- **Checkout** — `POST /api/billing/checkout` creates a Stripe Customer on first call (with `metadata.org_id`), then returns a Checkout Session URL in `mode: "subscription"` with `trial_period_days: 7`. Body `{ plan: "monthly" | "yearly" }` selects the price (defaults to monthly); the price IDs live server-side in `PLAN_PRICE_IDS` (`lib/stripe/server.ts`) — the client only sends the plan name, never a `price_...`. `<SubscribeGate />` (two-button picker) redirects the browser to the returned URL.
 - **Customer Portal** — `POST /api/billing/portal` returns a hosted portal URL. Vets cancel, update card, and download invoices there — no UI to maintain.
-- **Webhook** — `POST /webhook/stripe` (outside `/api/*` so Vercel BotID doesn't challenge Stripe's server-to-server callbacks). Verifies the signature with `STRIPE_WEBHOOK_SECRET` and handles `customer.subscription.{created,updated,deleted,trial_will_end}` + `invoice.{paid,payment_failed}`. It upserts `organization_report_types.expires_at` to the subscription's current period end (`subscriptionPeriodEnd()` — the dahlia API moved this from Subscription to SubscriptionItem). Deletes the entitlement row when status leaves `trialing`/`active`. The Stripe SDK API version is pinned in `lib/stripe/server.ts` (currently `2026-04-22.dahlia`). `proxy.ts` lists `/webhook` in `PUBLIC_PREFIXES` so no auth redirect runs.
-- **Dashboard gate** — `app/(auth)/dashboard/page.tsx` shows `<SubscribeGate />` when the org has no entitled subscription status; otherwise `<SubscriptionStatus />` banner + the report list.
-- **Stripe IDs** — owner price `STRIPE_PRICE_ID_OWNER`. The add-on member price exists in test mode but isn't wired into Checkout yet (team management is a later PR).
+- **Webhook** — `POST /webhook/stripe` (outside `/api/*` so Vercel BotID doesn't challenge Stripe's server-to-server callbacks; `proxy.ts` lists `/webhook/` in `PUBLIC_PREFIXES`). Verifies the signature with `STRIPE_WEBHOOK_SECRET` and handles `customer.subscription.{created,updated,deleted,trial_will_end}` + `invoice.{paid,payment_failed}`. Upserts `organization_report_types.expires_at` to the subscription's current period end (`subscriptionPeriodEnd()` — the dahlia API moved this from Subscription to SubscriptionItem); deletes the row when status leaves the entitled set. SDK API version pinned in `lib/stripe/server.ts` (`2026-04-22.dahlia`).
+- **Entitled statuses** — `ENTITLED_SUBSCRIPTION_STATUSES` (`shared/constants.ts`) = `{trialing, active, past_due}` is the single source of truth read by the webhook AND both UI gates. `past_due` stays entitled so a failed card keeps access during Stripe dunning. Never redefine this set locally — they must not drift.
+- **Gates** — `app/(auth)/dashboard/page.tsx` shows `<SubscribeGate />` when status isn't entitled; otherwise the report list. The status chip (trial countdown / "Gerenciar assinatura") lives in the header via `app/(auth)/layout.tsx` → `<SubscriptionChip />`, not on the dashboard.
+- **Prices** — monthly `STRIPE_PRICE_ID_MONTHLY` (R$ 99,90) + yearly `STRIPE_PRICE_ID_YEARLY` (R$ 990,90). Per-seat/team add-on prices exist in Stripe but aren't wired into Checkout yet (later PR).
 
-For local dev, `stripe listen --forward-to localhost:3000/api/webhooks/stripe` prints a `whsec_...` to put in `.env.local`; that key is per-session and changes each invocation.
+For local dev, `stripe listen --forward-to localhost:3000/webhook/stripe` prints a `whsec_...` to put in `.env.local`; that key is per-session and changes each invocation.
+
+**Vercel preview deployment protection gotcha:** when forwarding a webhook to a Vercel deployment gated by SSO, append `?x-vercel-protection-bypass=<secret>` to the URL — but NOT `&x-vercel-set-bypass-cookie=true`. The set-bypass-cookie flow makes Vercel rewrite the response/body, which breaks Stripe's signature verification (the signed raw body no longer matches). Bypass token alone is fine.
+
+## Domains & environments
+
+- **Production** — app at `app.laudai.vet`; `laudai.vet`/`www.laudai.vet` 307-redirect to `app.laudai.vet` (proxy.ts) so the Supabase auth cookie stays anchored to one host. Root domain is reserved for a future landing page. Supabase project `rgemiayidnumeotplozm`. Stripe is in **live mode**.
+- **Staging** — branch `staging`, deployed to `laudai-staging.vercel.app` (manual `vercel deploy` from the branch; the alias must be re-pointed at the new deployment each time — git auto-deploy for non-main isn't enabled). Separate Supabase project `jrspzfygwkjercxdqyqx` and Stripe **test mode**. All staging env vars are scoped to the `staging` git branch in Vercel's Preview environment.
+- **Env var naming** — Supabase keys use the modern format: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (was `ANON_KEY`) and `SUPABASE_SECRET_KEY` (was `SERVICE_ROLE_KEY`). The values are `sb_publishable_…` / `sb_secret_…`.
 
 ## Audit log
 
