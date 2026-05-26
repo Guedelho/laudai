@@ -213,7 +213,7 @@ export function ReportEditorPatientFields({
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Clínica</label>
+          <label className="block text-xs text-gray-500 mb-1">Cliente</label>
           <EntityTypeahead<Client>
             value={fields.clientName}
             onChange={(v) => setFields({ ...fields, clientName: v })}
