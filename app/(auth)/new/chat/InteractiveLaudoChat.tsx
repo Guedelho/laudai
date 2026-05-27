@@ -49,6 +49,7 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
   const [attached, setAttached] = useState<File[]>([]);
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
+  const [audioError, setAudioError] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -89,6 +90,7 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
   }
 
   async function startRecording() {
+    setAudioError("");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const rec = new MediaRecorder(stream);
@@ -103,7 +105,9 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
           const wav = await recordingToWav(raw);
           setAttached((prev) => [...prev, new File([wav], `audio-${Date.now()}.wav`, { type: "audio/wav" })]);
         } catch {
-          /* could not process the recording */
+          // Conversion failed — attach the raw recording so it's still playable/sendable.
+          const ext = (raw.type.split("/")[1] || "webm").split(";")[0];
+          setAttached((prev) => [...prev, new File([raw], `audio-${Date.now()}.${ext}`, { type: raw.type })]);
         }
       };
       rec.start();
@@ -112,7 +116,7 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
       setRecordSeconds(0);
       timerRef.current = setInterval(() => setRecordSeconds((s) => s + 1), 1000);
     } catch {
-      /* mic permission denied */
+      setAudioError("Não foi possível acessar o microfone.");
     }
   }
 
@@ -152,6 +156,7 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
               Gravando {formatDuration(recordSeconds)}
             </div>
           )}
+          {audioError && <p className="mb-2 text-xs text-red-600">{audioError}</p>}
           {attached.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-2">
               {attached.map((f, i) => (
