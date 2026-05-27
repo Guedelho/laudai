@@ -244,17 +244,36 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
       : {}),
 
     content: [
-      // Logo as first content item — only on page 1, naturally
-      ...(logoBase64
-        ? [
-            {
-              image: logoBase64,
-              fit: [PAGE_W - 100, LOGO_H],
-              alignment: "center",
-              margin: [0, 0, 0, 20],
-            },
-          ]
-        : []),
+      // Org logo when present, otherwise the LAUDAI wordmark drawn as native
+      // vector (crisp at any zoom, no font/raster dependency).
+      logoBase64
+        ? { image: logoBase64, fit: [PAGE_W - 100, LOGO_H], alignment: "center", margin: [0, 0, 0, 20] }
+        : {
+            columns: [
+              { width: "*", text: "" },
+              {
+                width: "auto",
+                table: {
+                  body: [
+                    [
+                      {
+                        text: "LAUDAI",
+                        color: "#ffffff",
+                        bold: true,
+                        fontSize: 20,
+                        characterSpacing: 4,
+                        fillColor: "#1e3a5f",
+                        margin: [24, 12, 24, 12],
+                      },
+                    ],
+                  ],
+                },
+                layout: "noBorders",
+              },
+              { width: "*", text: "" },
+            ],
+            margin: [0, 0, 0, 20],
+          },
       {
         columns: [
           { stack: leftCol, width: "*" },
