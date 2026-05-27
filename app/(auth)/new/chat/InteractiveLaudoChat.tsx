@@ -2,15 +2,24 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type FileUIPart } from "ai";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ImageLightbox from "@/components/ImageLightbox";
 import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE } from "@/shared/constants";
 import { uploadReportImages } from "@/lib/services/reports";
-import { useDictation } from "@/lib/use-dictation";
+import { recordingToWav } from "@/lib/audio-wav";
 import { Streamdown } from "streamdown";
 import type { LaudoAgentUIMessage } from "@/lib/agents/laudo-agent";
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 function findReportId(messages: LaudoAgentUIMessage[]): string | null {
   for (const m of messages) {
@@ -34,10 +43,11 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
   });
   const [input, setInput] = useState("");
   const [attached, setAttached] = useState<File[]>([]);
+  const [recording, setRecording] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  const dictation = useDictation(setInput);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   const reportId = findReportId(messages);
   const busy = status === "submitted" || status === "streaming";
@@ -49,22 +59,57 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy, reportId]);
 
-  function send() {
-    if (busy) return;
+  async function send() {
+    if (busy || recording) return;
     const text = input.trim();
     if (attached.length > 0) {
-      const dt = new DataTransfer();
-      attached.forEach((f) => dt.items.add(f));
-      sendMessage({ text, files: dt.files });
+      const files: FileUIPart[] = await Promise.all(
+        attached.map(async (f) => ({
+          type: "file" as const,
+          mediaType: f.type,
+          filename: f.name,
+          url: await fileToDataUrl(f),
+        })),
+      );
+      sendMessage({ text, files });
     } else {
-      // Empty input means "seguir" — let the agent interpret it in context.
       sendMessage({ text: text || "Pode seguir." });
     }
-    if (dictation.listening) dictation.stop();
-    dictation.reset();
     setInput("");
     setAttached([]);
     if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const rec = new MediaRecorder(stream);
+      chunksRef.current = [];
+      rec.ondataavailable = (e) => {
+        if (e.data.size) chunksRef.current.push(e.data);
+      };
+      rec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const raw = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
+        try {
+          const wav = await recordingToWav(raw);
+          setAttached((prev) => [...prev, new File([wav], `audio-${Date.now()}.wav`, { type: "audio/wav" })]);
+        } catch {
+          /* could not process the recording */
+        }
+      };
+      rec.start();
+      recorderRef.current = rec;
+      setRecording(true);
+    } catch {
+      /* mic permission denied */
+    }
+  }
+
+  function stopRecording() {
+    recorderRef.current?.stop();
+    recorderRef.current = null;
+    setRecording(false);
   }
 
   return (
@@ -96,7 +141,7 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
                   key={`${f.name}-${i}`}
                   className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs text-blue-700"
                 >
-                  {f.name}
+                  {f.type.startsWith("audio/") ? "🎙️ Áudio" : f.name}
                   <button
                     type="button"
                     onClick={() => setAttached((prev) => prev.filter((_, j) => j !== i))}
@@ -143,20 +188,16 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
             />
             <button
               type="button"
-              onClick={() => (dictation.listening ? dictation.stop() : dictation.start(input))}
-              disabled={busy || !dictation.supported}
-              title={
-                dictation.supported
-                  ? "Ditar por voz"
-                  : "Reconhecimento de voz indisponível neste navegador. Use Chrome, Edge ou Safari."
-              }
+              onClick={() => (recording ? stopRecording() : startRecording())}
+              disabled={busy}
+              title={recording ? "Parar gravação" : "Gravar áudio"}
               className={`rounded-lg border px-3 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                dictation.listening
+                recording
                   ? "border-red-500 bg-red-500 text-white hover:bg-red-600"
                   : "border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-600"
               }`}
             >
-              {dictation.listening ? "⏹" : "🎤"}
+              {recording ? "⏹" : "🎤"}
             </button>
             <button
               type="submit"
@@ -214,6 +255,9 @@ function Message({ message }: { message: LaudoAgentUIMessage }) {
               className="max-w-[60%] self-end rounded-lg border border-gray-200"
             />
           );
+        }
+        if (part.type === "file" && part.mediaType?.startsWith("audio/")) {
+          return <audio key={`${message.id}-${i}`} controls src={part.url} className="max-w-[70%] self-end" />;
         }
         return null;
       })}
