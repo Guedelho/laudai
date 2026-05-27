@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import ImageLightbox from "@/components/ImageLightbox";
 import Typeahead from "@/components/Typeahead";
 import EntityTypeahead from "@/components/EntityTypeahead";
@@ -12,7 +11,7 @@ import { listPets } from "@/lib/services/pets";
 import { listClients, createClient, addVet } from "@/lib/services/clients";
 import { enqueueGeneration, uploadReportImages } from "@/lib/services/reports";
 import { redirectToDashboard } from "@/app/actions/reports";
-import { useIsClient } from "@/lib/use-is-client";
+import { useDictation } from "@/lib/use-dictation";
 
 export default function NewReportPage() {
   const specialty = "ultrasound_abdominal" as const;
@@ -62,28 +61,7 @@ export default function NewReportPage() {
     };
   }, []);
 
-  const liveAnchorRef = useRef<string>("");
-  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition, isMicrophoneAvailable } =
-    useSpeechRecognition();
-
-  // react-speech-recognition reads window.SpeechRecognition at module-load
-  // time. Under Next.js SSR that's undefined, so the hook's first render
-  // returns false even on Chrome/Safari. Defer the support check until after
-  // hydration so the button doesn't paint disabled for a frame on supported
-  // browsers.
-  const isClient = useIsClient();
-  const speechSupported = !isClient || browserSupportsSpeechRecognition;
-  const micPermissionError =
-    isClient && !isMicrophoneAvailable
-      ? "Permissão para microfone negada. Habilite o microfone nas configurações do navegador."
-      : "";
-
-  useEffect(() => {
-    if (!listening && !transcript) return;
-    const anchor = liveAnchorRef.current;
-    const live = transcript.trim();
-    setRawInput(anchor + (anchor && live ? " " : "") + live);
-  }, [transcript, listening]);
+  const dictation = useDictation(setRawInput);
 
   useEffect(() => {
     async function loadData() {
@@ -162,28 +140,6 @@ export default function NewReportPage() {
   const responsibleVet = vets.find((v) => v.id === selectedVetId)?.name ?? newVetName;
 
   const breedSuggestions = [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
-
-  async function startRecording() {
-    setError("");
-    if (!browserSupportsSpeechRecognition) {
-      setError("Seu navegador não suporta reconhecimento de voz. Use Chrome, Edge ou Safari.");
-      return;
-    }
-    liveAnchorRef.current = rawInput;
-    resetTranscript();
-    // First call triggers the browser's native mic-permission prompt. If the
-    // user denies, isMicrophoneAvailable flips false and the effect above
-    // surfaces the Portuguese error.
-    try {
-      await SpeechRecognition.startListening({ language: "pt-BR", continuous: true });
-    } catch {
-      setError("Não foi possível acessar o microfone.");
-    }
-  }
-
-  async function stopRecording() {
-    await SpeechRecognition.stopListening();
-  }
 
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
@@ -293,8 +249,7 @@ export default function NewReportPage() {
     setObjectUrls([]);
     setLightboxIndex(null);
     if (imageInputRef.current) imageInputRef.current.value = "";
-    liveAnchorRef.current = "";
-    resetTranscript();
+    dictation.reset();
   }
 
   const inputCls =
@@ -455,20 +410,20 @@ export default function NewReportPage() {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={listening ? stopRecording : startRecording}
-              disabled={!speechSupported}
+              onClick={() => (dictation.listening ? dictation.stop() : dictation.start(rawInput, setError))}
+              disabled={!dictation.supported}
               title={
-                speechSupported
+                dictation.supported
                   ? undefined
                   : "Reconhecimento de voz indisponível neste navegador. Use Chrome, Edge ou Safari."
               }
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                listening
+                dictation.listening
                   ? "bg-red-500 text-white border-red-500 hover:bg-red-600"
                   : "bg-white text-gray-700 border-gray-300 hover:border-blue-400"
               }`}
             >
-              {listening ? "Parar gravação" : "Gravar voz"}
+              {dictation.listening ? "Parar gravação" : "Gravar voz"}
             </button>
           </div>
           <textarea
@@ -544,7 +499,9 @@ export default function NewReportPage() {
           )}
         </div>
 
-        {(error || micPermissionError) && <p className="text-sm text-red-600">{error || micPermissionError}</p>}
+        {(error || dictation.micPermissionError) && (
+          <p className="text-sm text-red-600">{error || dictation.micPermissionError}</p>
+        )}
 
         <button
           type="submit"

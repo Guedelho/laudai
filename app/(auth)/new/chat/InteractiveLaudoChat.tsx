@@ -8,6 +8,7 @@ import Link from "next/link";
 import ImageLightbox from "@/components/ImageLightbox";
 import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE } from "@/shared/constants";
 import { uploadReportImages } from "@/lib/services/reports";
+import { useDictation } from "@/lib/use-dictation";
 import { Streamdown } from "streamdown";
 import type { LaudoAgentUIMessage } from "@/lib/agents/laudo-agent";
 
@@ -36,6 +37,8 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const dictation = useDictation(setInput);
+
   const reportId = findReportId(messages);
   const busy = status === "submitted" || status === "streaming";
   const last = messages[messages.length - 1];
@@ -57,6 +60,8 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
       // Empty input means "seguir" — let the agent interpret it in context.
       sendMessage({ text: text || "Pode seguir." });
     }
+    if (dictation.listening) dictation.stop();
+    dictation.reset();
     setInput("");
     setAttached([]);
     if (fileRef.current) fileRef.current.value = "";
@@ -129,6 +134,23 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
                 setAttached((prev) => [...prev, ...Array.from(e.target.files ?? [])]);
               }}
             />
+            <button
+              type="button"
+              onClick={() => (dictation.listening ? dictation.stop() : dictation.start(input))}
+              disabled={busy || !dictation.supported}
+              title={
+                dictation.supported
+                  ? "Ditar por voz"
+                  : "Reconhecimento de voz indisponível neste navegador. Use Chrome, Edge ou Safari."
+              }
+              className={`rounded-lg border px-3 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                dictation.listening
+                  ? "border-red-500 bg-red-500 text-white hover:bg-red-600"
+                  : "border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-600"
+              }`}
+            >
+              {dictation.listening ? "⏹" : "🎤"}
+            </button>
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
