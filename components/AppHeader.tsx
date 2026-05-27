@@ -33,6 +33,12 @@ export default function AppHeader({ subscriptionChip }: Props) {
           </Link>
         ))}
         {subscriptionChip}
+        <Link
+          href="/new/chat"
+          className="border border-blue-600 text-blue-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-50"
+        >
+          Laudo Interativo
+        </Link>
         <Link href="/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
           Novo Laudo
         </Link>

@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/supabase/auth";
@@ -9,6 +8,7 @@ import { Report, REPORT_STATUSES } from "@/shared/models";
 import { SIGNED_URL_TTL, STORAGE_BUCKETS, TABLES } from "@/shared/constants";
 import { reportCacheTag } from "@/lib/utils";
 import ReportDetail from "./ReportDetail";
+import PendingReportLive from "./PendingReportLive";
 import Loading from "./loading";
 
 const BUCKET = STORAGE_BUCKETS.reportImages;
@@ -53,32 +53,10 @@ async function ReportContents({ id, review }: { id: string; review: boolean }) {
   if (!report) notFound();
 
   if (report.status !== REPORT_STATUSES.completed || !report.edited_content) {
-    return <PendingReport status={report.status} errorMessage={report.error_message} />;
+    return <PendingReportLive reportId={id} orgId={orgId} status={report.status} errorMessage={report.error_message} />;
   }
 
   return <ReportDetail report={report as Report} images={images} isEditing={review} />;
-}
-
-function PendingReport({ status, errorMessage }: { status: string; errorMessage: string | null }) {
-  const failed = status === REPORT_STATUSES.failed;
-  return (
-    <main className="max-w-2xl mx-auto px-6 py-12 text-center">
-      <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700 mb-8 inline-block">
-        ← Laudos
-      </Link>
-      {failed ? (
-        <>
-          <p className="text-lg font-semibold text-red-600 mb-2">Falha ao gerar laudo</p>
-          <p className="text-sm text-gray-500">{errorMessage ?? "Tente novamente pelo painel."}</p>
-        </>
-      ) : (
-        <>
-          <p className="text-lg font-semibold text-gray-900 mb-2">Gerando laudo...</p>
-          <p className="text-sm text-gray-500">Você pode acompanhar o progresso no painel.</p>
-        </>
-      )}
-    </main>
-  );
 }
 
 export default async function ReportPage({
