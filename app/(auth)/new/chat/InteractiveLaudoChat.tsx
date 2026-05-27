@@ -8,7 +8,7 @@ import Link from "next/link";
 import ImageLightbox from "@/components/ImageLightbox";
 import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE } from "@/shared/constants";
 import { uploadReportImages } from "@/lib/services/reports";
-import { splitBoldSegments } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
 import type { LaudoAgentUIMessage } from "@/lib/agents/laudo-agent";
 
 const TOOL_LABELS: Record<string, string> = {
@@ -18,12 +18,6 @@ const TOOL_LABELS: Record<string, string> = {
   "tool-searchPets": "Buscando pacientes...",
   "tool-createReportDraft": "Gerando laudo...",
 };
-
-function renderRich(text: string) {
-  return splitBoldSegments(text).map((seg, i) =>
-    seg.bold ? <strong key={i}>{seg.text}</strong> : <span key={i}>{seg.text}</span>,
-  );
-}
 
 function findReportId(messages: LaudoAgentUIMessage[]): string | null {
   for (const m of messages) {
@@ -46,7 +40,9 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
   const [input, setInput] = useState("");
+  const [attached, setAttached] = useState<File[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const reportId = findReportId(messages);
   const busy = status === "submitted" || status === "streaming";
@@ -55,11 +51,20 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy, reportId]);
 
-  // Empty input means "seguir / sem alterações" — let the agent interpret it in context.
-  function send(text: string) {
+  function send() {
     if (busy) return;
-    sendMessage({ text: text.trim() || "Pode seguir." });
+    const text = input.trim();
+    if (attached.length > 0) {
+      const dt = new DataTransfer();
+      attached.forEach((f) => dt.items.add(f));
+      sendMessage({ text, files: dt.files });
+    } else {
+      // Empty input means "seguir" — let the agent interpret it in context.
+      sendMessage({ text: text || "Pode seguir." });
+    }
     setInput("");
+    setAttached([]);
+    if (fileRef.current) fileRef.current.value = "";
   }
 
   return (
@@ -77,20 +82,58 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
         {messages.map((message) => (
           <Message key={message.id} message={message} />
         ))}
-        {busy && <p className="text-xs text-gray-400">Digitando...</p>}
+        {status === "submitted" && <TypingDots />}
         {reportId && <ImageStep reportId={reportId} onDone={() => router.push(`/report/${reportId}?review=1`)} />}
         <div ref={endRef} />
       </div>
 
       {!reportId && (
         <div className="shrink-0 border-t border-gray-200 bg-gray-50 pt-3 pb-4">
+          {attached.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {attached.map((f, i) => (
+                <span
+                  key={`${f.name}-${i}`}
+                  className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs text-blue-700"
+                >
+                  {f.name}
+                  <button
+                    type="button"
+                    onClick={() => setAttached((prev) => prev.filter((_, j) => j !== i))}
+                    className="text-blue-400 hover:text-blue-600"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              send(input);
+              send();
             }}
             className="flex gap-2"
           >
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={busy}
+              title="Anexar imagens para perguntar"
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600 hover:border-blue-400 hover:text-blue-600 disabled:opacity-50"
+            >
+              📎
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                setAttached((prev) => [...prev, ...Array.from(e.target.files ?? [])]);
+              }}
+            />
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -112,6 +155,20 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
   );
 }
 
+function TypingDots() {
+  return (
+    <div className="flex items-center gap-1 self-start rounded-2xl bg-gray-100 px-4 py-3">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
+          style={{ animationDelay: `${i * 150}ms` }}
+        />
+      ))}
+    </div>
+  );
+}
+
 function Message({ message }: { message: LaudoAgentUIMessage }) {
   const isUser = message.role === "user";
   return (
@@ -122,12 +179,29 @@ function Message({ message }: { message: LaudoAgentUIMessage }) {
           return (
             <div
               key={`${message.id}-${i}`}
-              className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap ${
+              className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm ${
                 isUser ? "self-end bg-blue-600 text-white" : "self-start bg-gray-100 text-gray-900"
               }`}
             >
-              {renderRich(part.text)}
+              {isUser ? (
+                <span className="whitespace-pre-wrap">{part.text}</span>
+              ) : (
+                <div className="[&>*+*]:mt-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5">
+                  <ReactMarkdown>{part.text}</ReactMarkdown>
+                </div>
+              )}
             </div>
+          );
+        }
+        if (part.type === "file" && part.mediaType?.startsWith("image/")) {
+          return (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={`${message.id}-${i}`}
+              src={part.url}
+              alt={part.filename ?? ""}
+              className="max-w-[60%] self-end rounded-lg border border-gray-200"
+            />
           );
         }
         if (isToolUIPart(part) && part.state !== "output-available") {
