@@ -229,35 +229,40 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
     pageMargins: [50, 36, 50, (signatureFont && SIGNATURE_FONT_URLS[signatureFont]) || signatureImageBase64 ? 130 : 48],
 
     // Centered watermark on every page
-    ...(logoBase64
-      ? {
-          background: () => ({
-            image: logoBase64,
-            width: 280,
-            opacity: 0.15,
-            absolutePosition: { x: (PAGE_W - 280) / 2, y: (841.89 - 280) / 2 },
-          }),
-        }
-      : {}),
+    background: logoBase64
+      ? () => ({
+          image: logoBase64,
+          width: 280,
+          opacity: 0.15,
+          absolutePosition: { x: (PAGE_W - 280) / 2, y: (841.89 - 280) / 2 },
+        })
+      : () => ({
+          text: "LAUDAI",
+          bold: true,
+          color: "#1e3a5f",
+          opacity: 0.06,
+          fontSize: 90,
+          characterSpacing: 10,
+          alignment: "center",
+          margin: [0, 360, 0, 0],
+        }),
 
     content: [
-      // Org logo when present, otherwise the LAUDAI wordmark drawn as native
-      // vector (crisp at any zoom, no font/raster dependency).
       logoBase64
         ? { image: logoBase64, fit: [PAGE_W - 100, LOGO_H], alignment: "center", margin: [0, 0, 0, 20] }
         : {
             stack: [
               {
-                canvas: [{ type: "rect", x: (PAGE_W - 100 - 170) / 2, y: 0, w: 170, h: 46, r: 8, color: "#1e3a5f" }],
+                canvas: [{ type: "rect", x: (PAGE_W - 100 - 210) / 2, y: 0, w: 210, h: 58, r: 10, color: "#1e3a5f" }],
               },
               {
                 text: "LAUDAI",
                 bold: true,
                 color: "#ffffff",
-                fontSize: 20,
-                characterSpacing: 4,
+                fontSize: 26,
+                characterSpacing: 5,
                 alignment: "center",
-                relativePosition: { x: 0, y: -34 },
+                relativePosition: { x: 0, y: -44 },
               },
             ],
             margin: [0, 0, 0, 20],
