@@ -155,9 +155,10 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
         {messages.map((message) => (
           <Message key={message.id} message={message} />
         ))}
-        {showThinking && <TypingDots />}
+        {showThinking && !imagesUploaded && <TypingDots />}
         {reportId && !imagesUploaded && <ImageStep reportId={reportId} onDone={() => setImagesUploaded(true)} />}
         {reportId && imagesUploaded && <ReportPreviewInChat reportId={reportId} orgId={orgId} />}
+        {showThinking && imagesUploaded && <TypingDots />}
         <div ref={endRef} />
       </div>
 
