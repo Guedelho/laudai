@@ -96,7 +96,7 @@ export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) 
 
     searchPets: tool({
       description:
-        "Busca pacientes (pets) existentes da organização pelo nome. Sempre use antes de assumir que o paciente é novo. Se encontrar, mostre os dados ao usuário e reutilize o petId.",
+        "Busca pacientes existentes da organização pelo nome. Sempre use antes de assumir que o paciente é novo. Se encontrar, mostre os dados ao usuário e reutilize o petId.",
       inputSchema: z.object({
         query: z.string().describe("Trecho do nome do paciente a buscar"),
       }),
