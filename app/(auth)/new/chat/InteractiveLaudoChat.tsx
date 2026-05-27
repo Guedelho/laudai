@@ -595,28 +595,46 @@ function ReportPreviewInChat({ reportId, orgId }: { reportId: string; orgId: str
   }
 
   const displayDate = new Date(report.exam_date + "T12:00:00").toLocaleDateString("pt-BR");
+  const neuteredLabel = report.neutered
+    ? report.sex === "M"
+      ? "Castrado"
+      : "Castrada"
+    : report.sex === "M"
+      ? "Não castrado"
+      : "Não castrada";
 
   return (
     <div className="max-w-[90%] self-start space-y-3 rounded-2xl bg-gray-100 px-4 py-3 text-sm text-gray-900">
       <p className="font-medium">Laudo pronto. Revise antes de confirmar:</p>
 
-      <div className="grid grid-cols-2 gap-x-4 rounded-xl bg-white px-3 py-2.5 text-xs text-gray-700">
-        <div className="space-y-0.5">
-          <p className="mb-1 font-semibold uppercase tracking-wide text-gray-400">Paciente</p>
-          <p className="font-medium text-gray-900">{report.patient_name}</p>
-          <p>
-            {report.species} · {report.breed}
-          </p>
-          <p>
-            {report.age} · {sexLabel(report.sex)} · {report.neutered ? "Castrado(a)" : "Não castrado(a)"}
-          </p>
-          <p>Tutor: {report.owner_name}</p>
+      <div className="rounded-xl bg-white px-3 py-2.5 text-xs">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Paciente</p>
+        <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-gray-700">
+          <span className="text-gray-400">Nome</span>
+          <span className="font-medium text-gray-900">{report.patient_name}</span>
+          <span className="text-gray-400">Espécie</span>
+          <span>{report.species}</span>
+          <span className="text-gray-400">Raça</span>
+          <span>{report.breed}</span>
+          <span className="text-gray-400">Idade</span>
+          <span>{report.age}</span>
+          <span className="text-gray-400">Sexo</span>
+          <span>
+            {sexLabel(report.sex)} · {neuteredLabel}
+          </span>
+          <span className="text-gray-400">Tutor</span>
+          <span>{report.owner_name}</span>
         </div>
-        <div className="space-y-0.5">
-          <p className="mb-1 font-semibold uppercase tracking-wide text-gray-400">Atendimento</p>
-          <p className="font-medium text-gray-900">{report.client_name}</p>
-          <p>{report.responsible_vet}</p>
-          <p>{displayDate}</p>
+        <p className="mb-2 mt-3 border-t border-gray-100 pt-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+          Atendimento
+        </p>
+        <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-gray-700">
+          <span className="text-gray-400">Cliente</span>
+          <span className="font-medium text-gray-900">{report.client_name}</span>
+          <span className="text-gray-400">Médico</span>
+          <span>{report.responsible_vet}</span>
+          <span className="text-gray-400">Data do exame</span>
+          <span>{displayDate}</span>
         </div>
       </div>
 
