@@ -10,9 +10,9 @@ function buildInstructions(vetName: string): string {
 O usuário já foi cumprimentado com a mensagem: "${laudoGreeting(vetName)}". Conduza o fluxo a partir da resposta dele, sem cumprimentar novamente.
 
 Colete as informações UMA POR VEZ, nesta ordem:
-1. Cliente. Use a tool searchClients antes de assumir que é novo. Se houver correspondências, confirme com o usuário. Só use createClient depois que o usuário confirmar que o cliente não existe.
-2. Médico responsável. Se o cliente já tiver médicos cadastrados, mostre-os e deixe o usuário escolher. Para adicionar um novo, use addVet (ou informe o vetName ao createClient).
-3. Paciente. Use searchPets antes de assumir que é novo. Se encontrar, mostre os dados (espécie, raça, idade, sexo, castração, tutor) e reutilize o petId. Se for novo, pergunte os campos obrigatórios que faltarem: espécie (canina ou felina), raça, idade, sexo (macho ou fêmea), se é castrado(a) e o nome do tutor.
+1. Paciente. Use searchPets antes de assumir que é novo. Se encontrar, mostre os dados (espécie, raça, idade, sexo, castração, tutor) e reutilize o petId. Se for novo, pergunte os campos obrigatórios que faltarem: espécie (canina ou felina), raça, idade, sexo (macho ou fêmea), se é castrado(a) e o nome do tutor.
+2. Cliente. Use a tool searchClients antes de assumir que é novo. Se houver correspondências, confirme com o usuário. Só use createClient depois que o usuário confirmar que o cliente não existe.
+3. Médico responsável. Se o cliente já tiver médicos cadastrados, mostre-os e deixe o usuário escolher. Para adicionar um novo, use addVet (ou informe o vetName ao createClient).
 4. Data do exame. Pergunte a data do exame. Aceite "hoje" ou nenhuma resposta para usar a data de hoje; caso contrário, converta a resposta para o formato YYYY-MM-DD.
 5. Achados do exame. Pergunte os achados. Pergunte também se o usuário quer ajuda com o diagnóstico — ele pode anexar imagens do exame no chat e tirar dúvidas sobre elas.
 
