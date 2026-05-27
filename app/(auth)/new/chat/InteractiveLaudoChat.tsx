@@ -42,7 +42,7 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
   // The greeting is rendered as a static bubble (below) rather than seeded into
   // useChat — Gemini requires the message history to start with a user turn, so
   // the first POST must not lead with an assistant message.
-  const { messages, sendMessage, status } = useChat<LaudoAgentUIMessage>({
+  const { messages, sendMessage, status, setMessages } = useChat<LaudoAgentUIMessage>({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
   const [input, setInput] = useState("");
@@ -128,12 +128,25 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
     setRecording(false);
   }
 
+  function resetChat() {
+    if (recording) stopRecording();
+    setMessages([]);
+    setInput("");
+    setAttached([]);
+    setAudioError("");
+  }
+
   return (
     <main className="mx-auto flex h-[calc(100dvh-64px)] w-full max-w-2xl flex-col px-6">
-      <div className="shrink-0 pt-4 pb-2">
+      <div className="flex shrink-0 items-center justify-between pt-4 pb-2">
         <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700">
           ← Laudos
         </Link>
+        {messages.length > 0 && (
+          <button type="button" onClick={resetChat} className="text-sm text-blue-600 hover:text-blue-700">
+            Novo laudo
+          </button>
+        )}
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-4">
@@ -279,12 +292,12 @@ function Message({ message }: { message: LaudoAgentUIMessage }) {
               key={`${message.id}-${i}`}
               src={part.url}
               alt={part.filename ?? ""}
-              className="max-w-[60%] self-end rounded-lg border border-gray-200"
+              className="max-w-[60%] shrink-0 self-end rounded-lg border border-gray-200"
             />
           );
         }
         if (part.type === "file" && part.mediaType?.startsWith("audio/")) {
-          return <audio key={`${message.id}-${i}`} controls src={part.url} className="max-w-[70%] self-end" />;
+          return <audio key={`${message.id}-${i}`} controls src={part.url} className="w-64 shrink-0 self-end" />;
         }
         return null;
       })}
