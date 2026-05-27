@@ -42,19 +42,23 @@ export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) 
         query: z.string().describe("Trecho do nome do cliente a buscar"),
       }),
       execute: async ({ query }) => {
-        const { data } = await admin
-          .from(TABLES.clients)
-          .select("id, name, client_vets(id, name)")
-          .eq("org_id", orgId)
-          .ilike("name", `%${query.trim()}%`)
-          .order("name")
-          .limit(10);
+        const select = "id, name, client_vets(id, name)";
+        const base = admin.from(TABLES.clients).select(select).eq("org_id", orgId).order("name");
+        let { data } = await base.ilike("name", `%${query.trim()}%`).limit(10);
+        let fellBack = false;
+        if (!data || data.length === 0) {
+          fellBack = true;
+          ({ data } = await admin.from(TABLES.clients).select(select).eq("org_id", orgId).order("name").limit(50));
+        }
         return {
           clients: (data ?? []).map((c) => ({
             id: c.id,
             name: c.name,
             vets: (c.client_vets ?? []).map((v) => ({ id: v.id, name: v.name })),
           })),
+          ...(fellBack && {
+            note: "Nenhuma correspondência exata. Esta é a lista de clientes da organização — verifique se algum corresponde (considere erros de digitação/transposição) antes de oferecer cadastro de um novo.",
+          }),
         };
       },
     }),
@@ -101,13 +105,19 @@ export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) 
         query: z.string().describe("Trecho do nome do paciente a buscar"),
       }),
       execute: async ({ query }) => {
-        const { data } = await admin
+        const select = "id, name, species, breed, age, sex, neutered, owner_name";
+        let { data } = await admin
           .from(TABLES.pets)
-          .select("id, name, species, breed, age, sex, neutered, owner_name")
+          .select(select)
           .eq("org_id", orgId)
           .ilike("name", `%${query.trim()}%`)
           .order("name")
           .limit(10);
+        let fellBack = false;
+        if (!data || data.length === 0) {
+          fellBack = true;
+          ({ data } = await admin.from(TABLES.pets).select(select).eq("org_id", orgId).order("name").limit(50));
+        }
         return {
           pets: (data ?? []).map((p) => ({
             id: p.id,
@@ -119,6 +129,9 @@ export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) 
             neutered: p.neutered,
             ownerName: p.owner_name,
           })),
+          ...(fellBack && {
+            note: "Nenhuma correspondência exata. Esta é a lista de pacientes da organização — verifique se algum corresponde (considere erros de digitação) antes de criar um novo.",
+          }),
         };
       },
     }),

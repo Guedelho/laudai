@@ -79,8 +79,12 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
         <div className="max-w-[85%] self-start rounded-2xl bg-gray-100 px-4 py-2 text-sm whitespace-pre-wrap text-gray-900">
           {greeting}
         </div>
-        {messages.map((message) => (
-          <Message key={message.id} message={message} />
+        {messages.map((message, idx) => (
+          <Message
+            key={message.id}
+            message={message}
+            streaming={status === "streaming" && idx === messages.length - 1}
+          />
         ))}
         {status === "submitted" && <TypingDots />}
         {reportId && <ImageStep reportId={reportId} onDone={() => router.push(`/report/${reportId}?review=1`)} />}
@@ -169,7 +173,7 @@ function TypingDots() {
   );
 }
 
-function Message({ message }: { message: LaudoAgentUIMessage }) {
+function Message({ message, streaming }: { message: LaudoAgentUIMessage; streaming: boolean }) {
   const isUser = message.role === "user";
   return (
     <>
@@ -183,7 +187,9 @@ function Message({ message }: { message: LaudoAgentUIMessage }) {
                 isUser ? "self-end bg-blue-600 text-white" : "self-start bg-gray-100 text-gray-900"
               }`}
             >
-              {isUser ? (
+              {/* Render markdown only once the message is complete — re-parsing
+                  partial markdown on every streamed token is unstable. */}
+              {isUser || streaming ? (
                 <span className="whitespace-pre-wrap">{part.text}</span>
               ) : (
                 <div className="[&>*+*]:mt-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5">

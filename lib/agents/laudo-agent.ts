@@ -34,6 +34,7 @@ export function createLaudoAgent(ctx: LaudoToolCtx, vetName: string) {
     instructions: buildInstructions(vetName),
     tools: createLaudoTools(ctx),
     stopWhen: stepCountIs(15),
+    maxOutputTokens: 2048,
   });
 }
 
