@@ -38,8 +38,6 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
 
   const reportId = findReportId(messages);
   const busy = status === "submitted" || status === "streaming";
-  // Steady "thinking" indicator while the agent works (waiting or running a
-  // tool) until it starts streaming visible text — avoids flickering labels.
   const last = messages[messages.length - 1];
   const showThinking =
     busy && (!last || last.role !== "assistant" || !last.parts.some((p) => p.type === "text" && p.text.trim()));
