@@ -37,7 +37,7 @@ export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) 
   return {
     searchClients: tool({
       description:
-        "Busca clientes (clínicas) existentes da organização pelo nome. Sempre use antes de assumir que um cliente é novo.",
+        "Busca clientes existentes da organização pelo nome. Sempre use antes de assumir que um cliente é novo.",
       inputSchema: z.object({
         query: z.string().describe("Trecho do nome do cliente a buscar"),
       }),
@@ -61,7 +61,7 @@ export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) 
 
     createClient: tool({
       description:
-        "Cria um novo cliente (clínica). Use apenas após confirmar com o usuário que o cliente não existe. Opcionalmente já cadastra o médico responsável.",
+        "Cria um novo cliente. Use apenas após confirmar com o usuário que o cliente não existe. Opcionalmente já cadastra o médico responsável.",
       inputSchema: z.object({
         name: z.string().describe("Nome do cliente/clínica"),
         vetName: z.string().optional().describe("Nome do médico responsável, se já souber"),
