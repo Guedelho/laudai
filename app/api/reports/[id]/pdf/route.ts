@@ -8,6 +8,8 @@ import { SPECIALTIES } from "@/lib/report/templates";
 import { withApiHandler } from "@/lib/api-handler";
 import { PDF_CACHE_TTL_MS, SIGNED_URL_TTL, STORAGE_BUCKETS, TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import sharp from "sharp";
 
 const IMAGES_BUCKET = STORAGE_BUCKETS.reportImages;
@@ -151,6 +153,9 @@ export const GET = withApiHandler<{ id: string }>(
       } catch (err) {
         logError("Failed to fetch org logo", err, { orgId });
       }
+    }
+    if (!logoBase64) {
+      logoBase64 = `data:image/png;base64,${(await readFile(join(process.cwd(), "public", "logo.png"))).toString("base64")}`;
     }
 
     let signatureImageBase64: string | undefined;

@@ -8,6 +8,9 @@ const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname;
 const nextConfig: NextConfig = {
   cacheComponents: true,
   serverExternalPackages: ["pdfmake"],
+  outputFileTracingIncludes: {
+    "/api/reports/[id]/pdf": ["./public/logo.png"],
+  },
   images: {
     remotePatterns: [
       {
