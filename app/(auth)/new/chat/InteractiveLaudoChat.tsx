@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, isToolUIPart } from "ai";
+import { DefaultChatTransport } from "ai";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ImageLightbox from "@/components/ImageLightbox";
@@ -10,14 +10,6 @@ import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE } from "@/shared/constants";
 import { uploadReportImages } from "@/lib/services/reports";
 import { Streamdown } from "streamdown";
 import type { LaudoAgentUIMessage } from "@/lib/agents/laudo-agent";
-
-const TOOL_LABELS: Record<string, string> = {
-  "tool-searchClients": "Buscando clientes...",
-  "tool-createClient": "Cadastrando cliente...",
-  "tool-addVet": "Cadastrando médico responsável...",
-  "tool-searchPets": "Buscando pacientes...",
-  "tool-createReportDraft": "Gerando laudo...",
-};
 
 function findReportId(messages: LaudoAgentUIMessage[]): string | null {
   for (const m of messages) {
@@ -46,6 +38,11 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
 
   const reportId = findReportId(messages);
   const busy = status === "submitted" || status === "streaming";
+  // Steady "thinking" indicator while the agent works (waiting or running a
+  // tool) until it starts streaming visible text — avoids flickering labels.
+  const last = messages[messages.length - 1];
+  const showThinking =
+    busy && (!last || last.role !== "assistant" || !last.parts.some((p) => p.type === "text" && p.text.trim()));
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -82,7 +79,7 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
         {messages.map((message) => (
           <Message key={message.id} message={message} />
         ))}
-        {status === "submitted" && <TypingDots />}
+        {showThinking && <TypingDots />}
         {reportId && <ImageStep reportId={reportId} onDone={() => router.push(`/report/${reportId}?review=1`)} />}
         <div ref={endRef} />
       </div>
@@ -196,13 +193,6 @@ function Message({ message }: { message: LaudoAgentUIMessage }) {
               alt={part.filename ?? ""}
               className="max-w-[60%] self-end rounded-lg border border-gray-200"
             />
-          );
-        }
-        if (isToolUIPart(part) && part.state !== "output-available") {
-          return (
-            <p key={`${message.id}-${i}`} className="self-start text-xs text-gray-400 italic">
-              {TOOL_LABELS[part.type] ?? "Processando..."}
-            </p>
           );
         }
         return null;
