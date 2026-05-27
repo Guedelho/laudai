@@ -161,7 +161,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
         <div ref={endRef} />
       </div>
 
-      {!reportId && (
+      {(!reportId || imagesUploaded) && (
         <div className="shrink-0 border-t border-gray-200 bg-gray-50 pt-3 pb-4">
           {recording && (
             <div className="mb-2 flex items-center gap-2 text-xs font-medium text-red-600">
@@ -571,32 +571,14 @@ function ReportPreviewInChat({ reportId, orgId }: { reportId: string; orgId: str
   }, [reportId, orgId]);
 
   if (phase === "waiting") {
-    return (
-      <div className="space-y-2 rounded-xl border border-gray-200 bg-white p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex gap-1">
-            {[0, 1, 2].map((i) => (
-              <span
-                key={i}
-                className="h-2 w-2 animate-bounce rounded-full bg-blue-400"
-                style={{ animationDelay: `${i * 150}ms` }}
-              />
-            ))}
-          </div>
-          <p className="text-sm text-gray-600">Gerando laudo...</p>
-        </div>
-        <p className="text-xs text-gray-400">O laudo aparecerá aqui quando ficar pronto.</p>
-      </div>
-    );
+    return <TypingDots />;
   }
 
   if (phase === "failed" || phase === "error") {
     return (
-      <div className="space-y-2 rounded-xl border border-red-200 bg-red-50 p-4">
-        <p className="text-sm font-semibold text-red-700">
-          {phase === "failed" ? "Falha ao gerar laudo." : "Erro ao carregar laudo."}
-        </p>
-        <Link href={`/report/${reportId}`} className="text-sm text-red-600 underline hover:text-red-700">
+      <div className="max-w-[85%] self-start rounded-2xl bg-gray-100 px-4 py-3 text-sm text-gray-900">
+        {phase === "failed" ? "Falha ao gerar o laudo." : "Erro ao carregar o laudo."}{" "}
+        <Link href={`/report/${reportId}`} className="underline hover:text-gray-700">
           Ver laudo →
         </Link>
       </div>
@@ -615,10 +597,12 @@ function ReportPreviewInChat({ reportId, orgId }: { reportId: string; orgId: str
   const displayDate = new Date(report.exam_date + "T12:00:00").toLocaleDateString("pt-BR");
 
   return (
-    <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-4">
-      <div className="grid grid-cols-2 gap-3 text-xs text-gray-700">
-        <div className="space-y-1">
-          <p className="font-semibold uppercase tracking-wide text-gray-500">Paciente</p>
+    <div className="max-w-[90%] self-start space-y-3 rounded-2xl bg-gray-100 px-4 py-3 text-sm text-gray-900">
+      <p className="font-medium">Laudo pronto. Revise antes de confirmar:</p>
+
+      <div className="grid grid-cols-2 gap-x-4 rounded-xl bg-white px-3 py-2.5 text-xs text-gray-700">
+        <div className="space-y-0.5">
+          <p className="mb-1 font-semibold uppercase tracking-wide text-gray-400">Paciente</p>
           <p className="font-medium text-gray-900">{report.patient_name}</p>
           <p>
             {report.species} · {report.breed}
@@ -628,36 +612,31 @@ function ReportPreviewInChat({ reportId, orgId }: { reportId: string; orgId: str
           </p>
           <p>Tutor: {report.owner_name}</p>
         </div>
-        <div className="space-y-1">
-          <p className="font-semibold uppercase tracking-wide text-gray-500">Atendimento</p>
+        <div className="space-y-0.5">
+          <p className="mb-1 font-semibold uppercase tracking-wide text-gray-400">Atendimento</p>
           <p className="font-medium text-gray-900">{report.client_name}</p>
           <p>{report.responsible_vet}</p>
           <p>{displayDate}</p>
         </div>
       </div>
 
-      <div className="border-t border-gray-100 pt-3">
+      <div className="rounded-xl bg-white px-3 py-2.5">
         <ReportPreviewContent parsedReport={parsedReport} />
       </div>
 
-      <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-        Este laudo foi gerado por IA e pode conter imprecisões. Revise todas as informações antes de confirmar.
-      </p>
+      <p className="text-xs text-gray-400">Gerado por IA — revise antes de confirmar.</p>
 
-      <div className="flex gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <Link href={`/report/${reportId}`} className="text-xs text-gray-500 underline hover:text-gray-700">
+          Editar laudo
+        </Link>
         <button
           type="button"
           onClick={() => openReportPdfTab(reportId)}
-          className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+          className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
         >
           Confirmar e gerar PDF
         </button>
-        <Link
-          href={`/report/${reportId}`}
-          className="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Editar laudo
-        </Link>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { after } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { createAdmin } from "@/lib/supabase/admin";
 import { runGeneration } from "@/lib/report/worker";
 import {
@@ -13,8 +13,9 @@ import {
   resolveOwnedFks,
 } from "@/lib/supabase/db";
 import { REPORT_TYPES, TABLES } from "@/shared/constants";
-import { REPORT_STATUSES } from "@/shared/models";
+import { REPORT_STATUSES, type ParsedReport } from "@/shared/models";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES, type AuditAction, type AuditEntity } from "@/lib/audit";
+import { parseReportContent, reportCacheTag } from "@/lib/utils";
 
 type Admin = ReturnType<typeof createAdmin>;
 
@@ -240,6 +241,80 @@ export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) 
         );
 
         return { reportId: report.id };
+      },
+    }),
+
+    updateReportSections: tool({
+      description:
+        "Adiciona itens à impressão diagnóstica, recomendações ou observações do laudo, ou substitui a conclusão. Use quando o usuário pedir para acrescentar conteúdo nessas seções após o laudo ter sido gerado.",
+      inputSchema: z.object({
+        reportId: z.string().describe("ID do laudo retornado por createReportDraft"),
+        impressionItems: z.array(z.string()).optional().describe("Itens a adicionar à impressão diagnóstica"),
+        recommendationItems: z.array(z.string()).optional().describe("Itens a adicionar às recomendações"),
+        observationItems: z.array(z.string()).optional().describe("Itens a adicionar às observações"),
+        conclusion: z.string().optional().describe("Substitui a conclusão (texto livre)"),
+      }),
+      execute: async ({ reportId, impressionItems, recommendationItems, observationItems, conclusion }) => {
+        const { data: report, error: fetchError } = await admin
+          .from(TABLES.reports)
+          .select("edited_content, status")
+          .eq("id", reportId)
+          .eq("user_id", userId)
+          .single();
+
+        if (fetchError || !report) return { error: "Laudo não encontrado." };
+        if (report.status !== REPORT_STATUSES.completed) return { error: "Laudo ainda não foi gerado." };
+        if (!report.edited_content) return { error: "Conteúdo do laudo indisponível." };
+
+        let parsed: ParsedReport;
+        try {
+          parsed = parseReportContent(report.edited_content);
+        } catch {
+          return { error: "Formato do laudo inválido." };
+        }
+
+        const updated: ParsedReport = {
+          ...parsed,
+          ...(impressionItems?.length ? { impression: [...(parsed.impression ?? []), ...impressionItems] } : {}),
+          ...(recommendationItems?.length
+            ? { recommendations: [...(parsed.recommendations ?? []), ...recommendationItems] }
+            : {}),
+          ...(observationItems?.length ? { observations: [...(parsed.observations ?? []), ...observationItems] } : {}),
+          ...(conclusion !== undefined ? { conclusion } : {}),
+        };
+
+        const editedContent = JSON.stringify(updated);
+
+        const { data: latestVersion } = await admin
+          .from(TABLES.report_versions)
+          .select("version")
+          .eq("report_id", reportId)
+          .order("version", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const nextVersion = (latestVersion?.version ?? 0) + 1;
+
+        const [{ error: versionError }, { error: updateError }] = await Promise.all([
+          admin.from(TABLES.report_versions).insert({
+            report_id: reportId,
+            edited_by: userId,
+            content: editedContent,
+            version: nextVersion,
+          }),
+          admin
+            .from(TABLES.reports)
+            .update({ edited_content: editedContent, updated_by: userId, pdf_storage_path: null })
+            .eq("id", reportId)
+            .eq("user_id", userId),
+        ]);
+
+        if (versionError || updateError) return { error: "Erro ao atualizar laudo." };
+
+        revalidateTag(reportCacheTag(reportId), "max");
+        await audit({ action: AUDIT_ACTIONS.update, entityType: AUDIT_ENTITIES.report, entityId: reportId });
+
+        return { ok: true };
       },
     }),
   };
