@@ -49,6 +49,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [audioError, setAudioError] = useState("");
   const [imagesUploaded, setImagesUploaded] = useState(false);
+  const [previewFiles, setPreviewFiles] = useState<File[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -133,10 +134,11 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
     setAttached([]);
     setAudioError("");
     setImagesUploaded(false);
+    setPreviewFiles([]);
   }
 
   return (
-    <main className="mx-auto flex h-[calc(100dvh-64px)] w-full max-w-2xl flex-col px-6">
+    <main className="mx-auto flex h-[calc(100dvh-64px)] w-full max-w-3xl flex-col px-6">
       <div className="flex shrink-0 items-center justify-between pt-4 pb-2">
         <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700">
           ← Laudos
@@ -156,8 +158,18 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
           <Message key={message.id} message={message} />
         ))}
         {showThinking && !imagesUploaded && <TypingDots />}
-        {reportId && !imagesUploaded && <ImageStep reportId={reportId} onDone={() => setImagesUploaded(true)} />}
-        {reportId && imagesUploaded && <ReportPreviewInChat reportId={reportId} orgId={orgId} />}
+        {reportId && !imagesUploaded && (
+          <ImageStep
+            reportId={reportId}
+            onDone={(files) => {
+              setPreviewFiles(files);
+              setImagesUploaded(true);
+            }}
+          />
+        )}
+        {reportId && imagesUploaded && (
+          <ReportPreviewInChat reportId={reportId} orgId={orgId} previewFiles={previewFiles} />
+        )}
         {showThinking && imagesUploaded && <TypingDots />}
         <div ref={endRef} />
       </div>
@@ -306,7 +318,7 @@ function Message({ message }: { message: LaudoAgentUIMessage }) {
   );
 }
 
-function ImageStep({ reportId, onDone }: { reportId: string; onDone: () => void }) {
+function ImageStep({ reportId, onDone }: { reportId: string; onDone: (files: File[]) => void }) {
   const [files, setFiles] = useState<File[]>([]);
   const [objectUrls, setObjectUrls] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -354,7 +366,7 @@ function ImageStep({ reportId, onDone }: { reportId: string; onDone: () => void 
     setError("");
     try {
       await uploadReportImages(reportId, files);
-      onDone();
+      onDone(files);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao enviar imagens.");
       setUploading(false);
@@ -509,9 +521,25 @@ function ReportPreviewContent({ parsedReport }: { parsedReport: ParsedReport }) 
   );
 }
 
-function ReportPreviewInChat({ reportId, orgId }: { reportId: string; orgId: string }) {
+function ReportPreviewInChat({
+  reportId,
+  orgId,
+  previewFiles,
+}: {
+  reportId: string;
+  orgId: string;
+  previewFiles: File[];
+}) {
   const [phase, setPhase] = useState<"waiting" | "completed" | "failed" | "error">("waiting");
   const [report, setReport] = useState<Report | null>(null);
+  const [fileUrls, setFileUrls] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const urls = previewFiles.map((f) => URL.createObjectURL(f));
+    setFileUrls(urls);
+    return () => urls.forEach(URL.revokeObjectURL);
+  }, [previewFiles]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -642,6 +670,31 @@ function ReportPreviewInChat({ reportId, orgId }: { reportId: string; orgId: str
       <div className="rounded-xl bg-white px-3 py-2.5">
         <ReportPreviewContent parsedReport={parsedReport} />
       </div>
+
+      {fileUrls.length > 0 && (
+        <div className="rounded-xl bg-white px-3 py-2.5">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Imagens do exame</p>
+          <div className="grid grid-cols-3 gap-2">
+            {fileUrls.map((url, i) => (
+              <div key={url} className="cursor-pointer" onClick={() => setLightboxIndex(i)}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
+                  alt={previewFiles[i]?.name ?? ""}
+                  className="aspect-[4/3] w-full rounded-lg border border-gray-200 bg-black object-cover"
+                />
+              </div>
+            ))}
+          </div>
+          {lightboxIndex !== null && (
+            <ImageLightbox
+              images={fileUrls.map((src) => ({ key: src, src }))}
+              selectedIndex={lightboxIndex}
+              onClose={() => setLightboxIndex(null)}
+            />
+          )}
+        </div>
+      )}
 
       <p className="text-xs text-gray-400">Gerado por IA — revise antes de confirmar.</p>
 
