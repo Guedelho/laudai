@@ -8,6 +8,7 @@ import Link from "next/link";
 import ImageLightbox from "@/components/ImageLightbox";
 import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE } from "@/shared/constants";
 import { uploadReportImages } from "@/lib/services/reports";
+import { splitBoldSegments } from "@/lib/utils";
 import type { LaudoAgentUIMessage } from "@/lib/agents/laudo-agent";
 
 const TOOL_LABELS: Record<string, string> = {
@@ -18,13 +19,10 @@ const TOOL_LABELS: Record<string, string> = {
   "tool-createReportDraft": "Gerando laudo...",
 };
 
-function quickReplies(lastAssistantText: string): string[] {
-  const t = lastAssistantText.toLowerCase();
-  const chips: string[] = [];
-  if (t.includes("achado")) chips.push("Sem alterações");
-  if (t.includes("data do exame")) chips.push("Hoje");
-  if (/confirm|correto|isso mesmo|esses dados|encontrei|est[áa] certo|procede/.test(t)) chips.push("Confirmar");
-  return chips;
+function renderRich(text: string) {
+  return splitBoldSegments(text).map((seg, i) =>
+    seg.bold ? <strong key={i}>{seg.text}</strong> : <span key={i}>{seg.text}</span>,
+  );
 }
 
 function findReportId(messages: LaudoAgentUIMessage[]): string | null {
@@ -36,15 +34,6 @@ function findReportId(messages: LaudoAgentUIMessage[]): string | null {
     }
   }
   return null;
-}
-
-function lastAssistantText(messages: LaudoAgentUIMessage[]): string {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].role === "assistant") {
-      return messages[i].parts.map((p) => (p.type === "text" ? p.text : "")).join(" ");
-    }
-  }
-  return "";
 }
 
 export default function InteractiveLaudoChat({ greeting }: { greeting: string }) {
@@ -61,7 +50,6 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
 
   const reportId = findReportId(messages);
   const busy = status === "submitted" || status === "streaming";
-  const chips = status === "ready" ? quickReplies(lastAssistantText(messages)) : [];
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -96,20 +84,6 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
 
       {!reportId && (
         <div className="shrink-0 border-t border-gray-200 bg-gray-50 pt-3 pb-4">
-          {chips.length > 0 && (
-            <div className="mb-2 flex flex-wrap gap-2">
-              {chips.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => send(c)}
-                  className="rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:border-blue-400 hover:text-blue-600"
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          )}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -152,7 +126,7 @@ function Message({ message }: { message: LaudoAgentUIMessage }) {
                 isUser ? "self-end bg-blue-600 text-white" : "self-start bg-gray-100 text-gray-900"
               }`}
             >
-              {part.text}
+              {renderRich(part.text)}
             </div>
           );
         }
