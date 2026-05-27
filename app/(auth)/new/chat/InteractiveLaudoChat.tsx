@@ -12,6 +12,10 @@ import { recordingToWav } from "@/lib/audio-wav";
 import { Streamdown } from "streamdown";
 import type { LaudoAgentUIMessage } from "@/lib/agents/laudo-agent";
 
+function formatDuration(s: number): string {
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -44,10 +48,14 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
   const [input, setInput] = useState("");
   const [attached, setAttached] = useState<File[]>([]);
   const [recording, setRecording] = useState(false);
+  const [recordSeconds, setRecordSeconds] = useState(0);
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => () => clearInterval(timerRef.current ?? undefined), []);
 
   const reportId = findReportId(messages);
   const busy = status === "submitted" || status === "streaming";
@@ -101,6 +109,8 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
       rec.start();
       recorderRef.current = rec;
       setRecording(true);
+      setRecordSeconds(0);
+      timerRef.current = setInterval(() => setRecordSeconds((s) => s + 1), 1000);
     } catch {
       /* mic permission denied */
     }
@@ -109,6 +119,8 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
   function stopRecording() {
     recorderRef.current?.stop();
     recorderRef.current = null;
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
     setRecording(false);
   }
 
@@ -134,6 +146,12 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
 
       {!reportId && (
         <div className="shrink-0 border-t border-gray-200 bg-gray-50 pt-3 pb-4">
+          {recording && (
+            <div className="mb-2 flex items-center gap-2 text-xs font-medium text-red-600">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+              Gravando {formatDuration(recordSeconds)}
+            </div>
+          )}
           {attached.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-2">
               {attached.map((f, i) => (
@@ -241,7 +259,11 @@ function Message({ message }: { message: LaudoAgentUIMessage }) {
                 isUser ? "self-end bg-blue-600 text-white" : "self-start bg-gray-100 text-gray-900"
               }`}
             >
-              {isUser ? <span className="whitespace-pre-wrap">{part.text}</span> : <Streamdown>{part.text}</Streamdown>}
+              {isUser ? (
+                <span className="whitespace-pre-wrap">{part.text}</span>
+              ) : (
+                <Streamdown parseIncompleteMarkdown={false}>{part.text}</Streamdown>
+              )}
             </div>
           );
         }
