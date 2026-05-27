@@ -134,6 +134,13 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
                 setAttached((prev) => [...prev, ...Array.from(e.target.files ?? [])]);
               }}
             />
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={busy}
+              placeholder="Digite sua resposta (ou Enter para seguir)..."
+              className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
+            />
             <button
               type="button"
               onClick={() => (dictation.listening ? dictation.stop() : dictation.start(input))}
@@ -151,13 +158,6 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
             >
               {dictation.listening ? "⏹" : "🎤"}
             </button>
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={busy}
-              placeholder="Digite sua resposta (ou Enter para seguir)..."
-              className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
-            />
             <button
               type="submit"
               disabled={busy}
