@@ -6,7 +6,7 @@ const pdfmake = require("pdfmake");
 
 const FONT_URLS: Record<string, string> = {
   "Roboto-Regular.ttf": "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/fonts/Roboto/Roboto-Regular.ttf",
-  "Roboto-Medium.ttf": "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/fonts/Roboto/Roboto-Medium.ttf",
+  "Roboto-Bold.ttf": "https://cdn.jsdelivr.net/gh/openmaptiles/fonts@master/roboto/Roboto-Bold.ttf",
 };
 
 const SIGNATURE_FONT_URLS: Record<string, string> = {
@@ -144,21 +144,18 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
   const crmvLabel = crmvState ? `CRMV-${crmvState} ${crmv}` : `CRMV ${crmv}`;
 
   // Fetch fonts from CDN (cached after first call)
-  const [fontRegular, fontMedium] = await Promise.all([
-    fetchFont("Roboto-Regular.ttf"),
-    fetchFont("Roboto-Medium.ttf"),
-  ]);
+  const [fontRegular, fontBold] = await Promise.all([fetchFont("Roboto-Regular.ttf"), fetchFont("Roboto-Bold.ttf")]);
 
   // Register fonts via VFS Buffers on the singleton each call
   pdfmake.virtualfs.writeFileSync("Roboto-Regular.ttf", fontRegular);
-  pdfmake.virtualfs.writeFileSync("Roboto-Medium.ttf", fontMedium);
+  pdfmake.virtualfs.writeFileSync("Roboto-Bold.ttf", fontBold);
 
   const fontDefs: Record<string, object> = {
     Roboto: {
       normal: "Roboto-Regular.ttf",
-      bold: "Roboto-Medium.ttf",
+      bold: "Roboto-Bold.ttf",
       italics: "Roboto-Regular.ttf",
-      bolditalics: "Roboto-Medium.ttf",
+      bolditalics: "Roboto-Bold.ttf",
     },
   };
 
@@ -249,28 +246,19 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
       logoBase64
         ? { image: logoBase64, fit: [PAGE_W - 100, LOGO_H], alignment: "center", margin: [0, 0, 0, 20] }
         : {
-            columns: [
-              { width: "*", text: "" },
+            stack: [
               {
-                width: "auto",
-                table: {
-                  body: [
-                    [
-                      {
-                        text: "LAUDAI",
-                        color: "#ffffff",
-                        bold: true,
-                        fontSize: 20,
-                        characterSpacing: 4,
-                        fillColor: "#1e3a5f",
-                        margin: [24, 12, 24, 12],
-                      },
-                    ],
-                  ],
-                },
-                layout: "noBorders",
+                canvas: [{ type: "rect", x: (PAGE_W - 100 - 170) / 2, y: 0, w: 170, h: 46, r: 8, color: "#1e3a5f" }],
               },
-              { width: "*", text: "" },
+              {
+                text: "LAUDAI",
+                bold: true,
+                color: "#ffffff",
+                fontSize: 20,
+                characterSpacing: 4,
+                alignment: "center",
+                relativePosition: { x: 0, y: -34 },
+              },
             ],
             margin: [0, 0, 0, 20],
           },
