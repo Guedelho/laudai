@@ -7,13 +7,20 @@ import Link from "next/link";
 import ImageLightbox from "@/components/ImageLightbox";
 import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE, TABLES } from "@/shared/constants";
 import { uploadReportImages } from "@/lib/services/reports";
+import { listPets } from "@/lib/services/pets";
+import { listClients } from "@/lib/services/clients";
 import { recordingToWav } from "@/lib/audio-wav";
 import { Streamdown } from "streamdown";
 import type { LaudoAgentUIMessage } from "@/lib/agents/laudo-agent";
-import { REPORT_STATUSES, type Report, type ReportStatus, type ParsedReport } from "@/shared/models";
-import { parseReportContent, sexLabel, splitBoldSegments } from "@/lib/utils";
+import { REPORT_STATUSES, type Report, type ReportStatus, type Pet, type Client } from "@/shared/models";
 import { createClient } from "@/lib/supabase/client";
-import { openReportPdfTab } from "@/lib/pdf-tab";
+import { useReportEditor } from "@/app/(auth)/report/[id]/useReportEditor";
+import {
+  ReportEditorPatientFields,
+  ReportEditorContent,
+  ReportEditorActions,
+} from "@/app/(auth)/report/[id]/ReportEditor";
+import { SPECIALTIES } from "@/lib/report/templates";
 
 function formatDuration(s: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -428,6 +435,10 @@ function ImageStep({ reportId, onDone }: { reportId: string; onDone: (files: Fil
           images={objectUrls.map((url) => ({ key: url, src: url }))}
           selectedIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
+          onDelete={(i) => {
+            removeFile(i);
+            setLightboxIndex(null);
+          }}
         />
       )}
 
@@ -445,89 +456,6 @@ function ImageStep({ reportId, onDone }: { reportId: string; onDone: (files: Fil
   );
 }
 
-function RichText({ text }: { text: string }) {
-  return (
-    <>
-      {splitBoldSegments(text).map((seg, i) =>
-        seg.bold ? (
-          <strong key={i} className="font-semibold text-gray-900">
-            {seg.text}
-          </strong>
-        ) : (
-          <span key={i}>{seg.text}</span>
-        ),
-      )}
-    </>
-  );
-}
-
-function ReportPreviewContent({ parsedReport }: { parsedReport: ParsedReport }) {
-  return (
-    <div className="text-sm text-gray-800 leading-relaxed space-y-2">
-      {parsedReport.sections.map((section, i) => (
-        <div key={i} className="text-justify">
-          <span className="font-semibold text-gray-900">{section.label}:</span> <RichText text={section.content} />
-        </div>
-      ))}
-
-      {(parsedReport.conclusion || parsedReport.impression?.length) && (
-        <div className="border-t border-gray-100 pt-3 mt-3">
-          <p className="font-bold text-gray-900 text-sm mb-2">CONCLUSÃO</p>
-        </div>
-      )}
-
-      {parsedReport.conclusion && !parsedReport.impression?.length && (
-        <p className="text-justify">
-          <RichText text={parsedReport.conclusion} />
-        </p>
-      )}
-
-      {parsedReport.impression?.length ? (
-        <div>
-          <p className="font-semibold text-sm mb-1">IMPRESSÃO DIAGNÓSTICA:</p>
-          <ul className="space-y-1.5 ml-1">
-            {parsedReport.impression.map((line, i) => (
-              <li key={i} className="flex gap-2 text-justify">
-                <span className="text-gray-500 shrink-0">•</span>
-                <span>
-                  <RichText text={line} />
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {parsedReport.recommendations?.length ? (
-        <div className="mt-2">
-          <p className="font-semibold text-sm mb-1">RECOMENDAÇÕES:</p>
-          <ul className="space-y-1.5 ml-1">
-            {parsedReport.recommendations.map((line, i) => (
-              <li key={i} className="flex gap-2 text-justify">
-                <span className="text-gray-500 shrink-0">•</span>
-                <span>
-                  <RichText text={line} />
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {parsedReport.observations?.length ? (
-        <div className="mt-2">
-          <p className="font-semibold text-sm mb-1">OBS:</p>
-          {parsedReport.observations.map((line, i) => (
-            <p key={i} className="mb-1 text-justify">
-              <RichText text={line} />
-            </p>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 function ReportPreviewInChat({
   reportId,
   orgId,
@@ -539,14 +467,6 @@ function ReportPreviewInChat({
 }) {
   const [phase, setPhase] = useState<"waiting" | "completed" | "failed" | "error">("waiting");
   const [report, setReport] = useState<Report | null>(null);
-  const [fileUrls, setFileUrls] = useState<string[]>([]);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-
-  useEffect(() => {
-    const urls = previewFiles.map((f) => URL.createObjectURL(f));
-    setFileUrls(urls);
-    return () => urls.forEach(URL.revokeObjectURL);
-  }, [previewFiles]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -621,61 +541,74 @@ function ReportPreviewInChat({
     );
   }
 
-  if (!report?.edited_content) return null;
+  if (!report) return null;
 
-  let parsedReport: ParsedReport;
-  try {
-    parsedReport = parseReportContent(report.edited_content);
-  } catch {
-    return null;
-  }
+  return <ReportEditorInChat report={report} previewFiles={previewFiles} />;
+}
 
-  const displayDate = new Date(report.exam_date + "T12:00:00").toLocaleDateString("pt-BR");
-  const neuteredLabel = report.neutered
-    ? report.sex === "M"
-      ? "Castrado"
-      : "Castrada"
-    : report.sex === "M"
-      ? "Não castrado"
-      : "Não castrada";
+function ReportEditorInChat({ report, previewFiles }: { report: Report; previewFiles: File[] }) {
+  const editor = useReportEditor(report, () => {});
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [fileUrls, setFileUrls] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    Promise.all([listPets(), listClients()])
+      .then(([p, c]) => {
+        setPets(p);
+        setClients(c);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const urls = previewFiles.map((f) => URL.createObjectURL(f));
+    setFileUrls(urls);
+    return () => urls.forEach(URL.revokeObjectURL);
+  }, [previewFiles]);
+
+  const breedSuggestions = [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
 
   return (
-    <div className="max-w-[90%] self-start space-y-3 rounded-2xl bg-gray-100 px-4 py-3 text-sm text-gray-900">
-      <p className="font-medium">Laudo pronto. Revise antes de confirmar:</p>
+    <div className="self-start w-full space-y-3 rounded-2xl bg-gray-100 px-4 py-3">
+      <p className="text-sm font-medium text-gray-900">Laudo pronto. Revise e edite antes de confirmar:</p>
 
-      <div className="rounded-xl bg-white px-3 py-2.5 text-xs">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Paciente</p>
-        <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-gray-700">
-          <span className="text-gray-400">Nome</span>
-          <span className="font-medium text-gray-900">{report.patient_name}</span>
-          <span className="text-gray-400">Espécie</span>
-          <span>{report.species}</span>
-          <span className="text-gray-400">Raça</span>
-          <span>{report.breed}</span>
-          <span className="text-gray-400">Idade</span>
-          <span>{report.age}</span>
-          <span className="text-gray-400">Sexo</span>
-          <span>
-            {sexLabel(report.sex)} · {neuteredLabel}
-          </span>
-          <span className="text-gray-400">Tutor</span>
-          <span>{report.owner_name}</span>
-        </div>
-        <p className="mb-2 mt-3 border-t border-gray-100 pt-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-          Atendimento
-        </p>
-        <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-gray-700">
-          <span className="text-gray-400">Cliente</span>
-          <span className="font-medium text-gray-900">{report.client_name}</span>
-          <span className="text-gray-400">Médico</span>
-          <span>{report.responsible_vet}</span>
-          <span className="text-gray-400">Data do exame</span>
-          <span>{displayDate}</span>
-        </div>
+      <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-700">
+        Gerado por IA — revise todas as informações com atenção antes de confirmar.
       </div>
 
-      <div className="rounded-xl bg-white px-3 py-2.5">
-        <ReportPreviewContent parsedReport={parsedReport} />
+      {editor.error && <p className="text-sm text-red-600">{editor.error}</p>}
+
+      <ReportEditorPatientFields
+        fields={editor.fields}
+        setFields={editor.setFields}
+        pets={pets}
+        clients={clients}
+        breedSuggestions={breedSuggestions}
+        selectedClientId={editor.selectedClientId}
+        selectPet={editor.selectPet}
+        selectClient={editor.selectClient}
+        selectVet={editor.selectVet}
+      />
+
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="border-b border-gray-200 bg-gray-50 px-4 py-2 text-center">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-700">
+            {SPECIALTIES[report.specialty].label}
+          </h2>
+        </div>
+        <div className="p-4">
+          <ReportEditorContent
+            editedParsed={editor.editedParsed}
+            setEditedParsed={editor.setEditedParsed}
+            updateSection={editor.updateSection}
+            removeSection={editor.removeSection}
+            updateList={editor.updateList}
+            addToList={editor.addToList}
+            removeFromList={editor.removeFromList}
+          />
+        </div>
       </div>
 
       {fileUrls.length > 0 && (
@@ -703,19 +636,13 @@ function ReportPreviewInChat({
         </div>
       )}
 
-      <p className="text-xs text-gray-400">Gerado por IA — revise antes de confirmar.</p>
-
-      <div className="flex items-center justify-between gap-2">
-        <Link href={`/report/${reportId}`} className="text-xs text-gray-500 underline hover:text-gray-700">
-          Editar laudo
-        </Link>
-        <button
-          type="button"
-          onClick={() => openReportPdfTab(reportId)}
-          className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-        >
-          Confirmar e gerar PDF
-        </button>
+      <div className="flex items-center justify-end gap-2">
+        <ReportEditorActions
+          saving={editor.saving}
+          printing={editor.printing}
+          onSalvar={editor.handleSalvar}
+          onImprimir={editor.handleImprimir}
+        />
       </div>
     </div>
   );

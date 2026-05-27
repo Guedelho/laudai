@@ -124,6 +124,7 @@ export default function ImageManager({
           images={images.map((img) => ({ key: img.id, src: img.url, alt: img.file_name }))}
           selectedIndex={selectedIndex}
           onClose={() => setSelectedIndex(null)}
+          onDelete={editable ? (i) => handleDelete(images[i].id) : undefined}
         />
       )}
     </>

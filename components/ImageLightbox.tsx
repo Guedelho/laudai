@@ -12,10 +12,12 @@ export default function ImageLightbox({
   images,
   selectedIndex,
   onClose,
+  onDelete,
 }: {
   images: LightboxImage[];
   selectedIndex: number;
   onClose: () => void;
+  onDelete?: (index: number) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -42,7 +44,20 @@ export default function ImageLightbox({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex flex-col" onClick={onClose}>
-      <div className="flex justify-end p-4">
+      <div className="flex justify-end gap-2 p-4">
+        {onDelete && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(currentIndex);
+              onClose();
+            }}
+            className="text-white text-sm bg-red-500/70 px-3 py-1 rounded-full hover:bg-red-600/90"
+          >
+            Remover
+          </button>
+        )}
         <button
           type="button"
           onClick={onClose}
