@@ -28,15 +28,19 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-function findReportId(messages: LaudoAgentUIMessage[]): string | null {
-  for (const m of messages) {
-    for (const p of m.parts) {
+function splitAtReport(messages: LaudoAgentUIMessage[]): {
+  before: LaudoAgentUIMessage[];
+  after: LaudoAgentUIMessage[];
+  reportId: string | null;
+} {
+  for (let i = 0; i < messages.length; i++) {
+    for (const p of messages[i].parts) {
       if (p.type === "tool-createReportDraft" && p.state === "output-available" && "reportId" in p.output) {
-        return p.output.reportId;
+        return { before: messages.slice(0, i + 1), after: messages.slice(i + 1), reportId: p.output.reportId };
       }
     }
   }
-  return null;
+  return { before: messages, after: [], reportId: null };
 }
 
 export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: string; orgId: string }) {
@@ -58,7 +62,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
 
   useEffect(() => () => clearInterval(timerRef.current ?? undefined), []);
 
-  const reportId = findReportId(messages);
+  const { before, after, reportId } = splitAtReport(messages);
   const busy = status === "submitted" || status === "streaming";
   const last = messages[messages.length - 1];
   const showThinking =
@@ -154,7 +158,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
         <div className="max-w-[85%] self-start rounded-2xl bg-gray-100 px-4 py-2 text-sm whitespace-pre-wrap text-gray-900">
           {greeting}
         </div>
-        {messages.map((message) => (
+        {before.map((message) => (
           <Message key={message.id} message={message} />
         ))}
         {showThinking && !imagesUploaded && <TypingDots />}
@@ -170,6 +174,9 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
         {reportId && imagesUploaded && (
           <ReportPreviewInChat reportId={reportId} orgId={orgId} previewFiles={previewFiles} />
         )}
+        {after.map((message) => (
+          <Message key={message.id} message={message} />
+        ))}
         {showThinking && imagesUploaded && <TypingDots />}
         <div ref={endRef} />
       </div>
