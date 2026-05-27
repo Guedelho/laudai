@@ -132,7 +132,7 @@ export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) 
         species: z.enum(["Canina", "Felina"]),
         breed: z.string(),
         age: z.string().describe("ex: 3 anos"),
-        sex: z.enum(["M", "F"]),
+        sex: z.enum(["M", "F"]).describe("M para macho, F para fêmea"),
         neutered: z.boolean(),
         ownerName: z.string().describe("Nome do tutor do paciente"),
         clientName: z.string().describe("Nome do cliente/clínica"),
