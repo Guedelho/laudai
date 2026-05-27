@@ -54,18 +54,19 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 
 ## Key routes
 
-| Route                            | Purpose                                              |
-| -------------------------------- | ---------------------------------------------------- |
-| `/new`                           | Submit a new report (enqueues background generation) |
-| `/dashboard`                     | Live list of reports, in-progress and completed      |
-| `/report/[id]`                   | View / edit / download a completed report            |
-| `/profile`                       | Vet profile (name, CRMV, logo, signature, account)   |
-| `/pets`                          | Manage patients                                      |
-| `/clients`                       | Manage clients and responsible vets                  |
-| `/legal/politica-de-privacidade` | Privacy policy (LGPD)                                |
-| `/legal/termos-de-uso`           | Terms of use                                         |
-| `/login`                         | Public login page                                    |
-| `/signup`                        | Disabled (redirects to `/login`)                     |
+| Route                            | Purpose                                                                          |
+| -------------------------------- | -------------------------------------------------------------------------------- |
+| `/new`                           | Form-based report creation (direct field entry + voice dictation)                |
+| `/new/chat`                      | Conversational agent — collects patient/client/exam data, previews laudo in-chat |
+| `/dashboard`                     | Live list of reports, in-progress and completed                                  |
+| `/report/[id]`                   | View / edit / download a completed report                                        |
+| `/profile`                       | Vet profile (name, CRMV, logo, signature, account)                               |
+| `/pets`                          | Manage patients                                                                  |
+| `/clients`                       | Manage clients and responsible vets                                              |
+| `/legal/politica-de-privacidade` | Privacy policy (LGPD)                                                            |
+| `/legal/termos-de-uso`           | Terms of use                                                                     |
+| `/login`                         | Public login page                                                                |
+| `/signup`                        | Disabled (redirects to `/login`)                                                 |
 
 ## Multi-tenancy
 
@@ -86,9 +87,13 @@ Each report type (`report_types` catalog) is gated by two tables:
 
 ## How laudo generation works
 
-Generation is asynchronous. `POST /api/generate` inserts a `reports` row with `status='pending'`, schedules the Gemini call via Next.js `after()`, and returns `{ reportId }` in <300ms. The user is redirected to `/dashboard` immediately and can start another laudo while the worker runs.
+Generation is asynchronous regardless of which creation flow is used:
 
-The dashboard subscribes to a private Supabase Realtime **Broadcast** channel (`org:<org_id>:reports`) and shows in-progress rows with a spinner. A Postgres trigger on the `reports` table emits `report_changed` events via `realtime.send()` whenever a row mutates, so all org members see updates as the worker flips `status` to `completed`. A toast fires and the row becomes clickable. Failed laudos show a "Tentar novamente" button → `/api/reports/[id]/regenerate`.
+**Form flow (`/new`)** — `POST /api/generate` inserts a `reports` row with `status='pending'`, schedules the Gemini call via Next.js `after()`, and returns `{ reportId }`. The user is redirected to `/dashboard` immediately and can start another laudo while the worker runs.
+
+**Chat flow (`/new/chat`)** — A `ToolLoopAgent` (AI SDK) drives a conversational Gemini session at `POST /api/chat`. When all data is collected the agent calls the `createReportDraft` tool, which inserts the report row and fires `runGeneration` via `after()` — then returns `{ reportId }` to the UI. The image upload panel appears immediately; generation runs in parallel while the vet selects images. Once images are submitted, `ReportPreviewInChat` subscribes to the org Realtime broadcast channel: if generation already finished, the laudo renders at once; otherwise it appears the moment the broadcast fires. The vet reviews the laudo inline, then confirms with "Gerar PDF" (no page redirect required).
+
+Both flows converge on the same worker (`lib/report/worker.ts`) and the same `reports_broadcast` Postgres trigger that drives the dashboard's live list.
 
 **Reliability layers:**
 
@@ -118,7 +123,8 @@ The dashboard subscribes to a private Supabase Realtime **Broadcast** channel (`
 app/
   (auth)/                           # Auth-required route group
     dashboard/                      # Live reports list (Supabase Realtime)
-    new/                            # New report form
+    new/                            # Form-based report creation
+      chat/                         # Conversational agent (ToolLoopAgent + in-chat preview)
     report/[id]/                    # View / edit / print report
     profile/                        # Profile editor + privacy controls (export, delete)
     pets/ clients/                  # Pet & client management

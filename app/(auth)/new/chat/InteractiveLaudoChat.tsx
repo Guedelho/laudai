@@ -3,14 +3,17 @@
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type FileUIPart } from "ai";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ImageLightbox from "@/components/ImageLightbox";
-import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE } from "@/shared/constants";
+import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE, TABLES } from "@/shared/constants";
 import { uploadReportImages } from "@/lib/services/reports";
 import { recordingToWav } from "@/lib/audio-wav";
 import { Streamdown } from "streamdown";
 import type { LaudoAgentUIMessage } from "@/lib/agents/laudo-agent";
+import { REPORT_STATUSES, type Report, type ReportStatus, type ParsedReport } from "@/shared/models";
+import { parseReportContent, sexLabel, splitBoldSegments } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import { openReportPdfTab } from "@/lib/pdf-tab";
 
 function formatDuration(s: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -36,12 +39,7 @@ function findReportId(messages: LaudoAgentUIMessage[]): string | null {
   return null;
 }
 
-export default function InteractiveLaudoChat({ greeting }: { greeting: string }) {
-  const router = useRouter();
-
-  // The greeting is rendered as a static bubble (below) rather than seeded into
-  // useChat — Gemini requires the message history to start with a user turn, so
-  // the first POST must not lead with an assistant message.
+export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: string; orgId: string }) {
   const { messages, sendMessage, status, setMessages } = useChat<LaudoAgentUIMessage>({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
@@ -50,6 +48,7 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [audioError, setAudioError] = useState("");
+  const [imagesUploaded, setImagesUploaded] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -66,7 +65,7 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, busy, reportId]);
+  }, [messages, busy, reportId, imagesUploaded]);
 
   async function send() {
     if (busy || recording) return;
@@ -105,7 +104,6 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
           const wav = await recordingToWav(raw);
           setAttached((prev) => [...prev, new File([wav], `audio-${Date.now()}.wav`, { type: "audio/wav" })]);
         } catch {
-          // Conversion failed — attach the raw recording so it's still playable/sendable.
           const ext = (raw.type.split("/")[1] || "webm").split(";")[0];
           setAttached((prev) => [...prev, new File([raw], `audio-${Date.now()}.${ext}`, { type: raw.type })]);
         }
@@ -134,6 +132,7 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
     setInput("");
     setAttached([]);
     setAudioError("");
+    setImagesUploaded(false);
   }
 
   return (
@@ -157,7 +156,8 @@ export default function InteractiveLaudoChat({ greeting }: { greeting: string })
           <Message key={message.id} message={message} />
         ))}
         {showThinking && <TypingDots />}
-        {reportId && <ImageStep reportId={reportId} onDone={() => router.push(`/report/${reportId}?review=1`)} />}
+        {reportId && !imagesUploaded && <ImageStep reportId={reportId} onDone={() => setImagesUploaded(true)} />}
+        {reportId && imagesUploaded && <ReportPreviewInChat reportId={reportId} orgId={orgId} />}
         <div ref={endRef} />
       </div>
 
@@ -419,8 +419,246 @@ function ImageStep({ reportId, onDone }: { reportId: string; onDone: () => void 
         disabled={uploading || files.length === 0}
         className="w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {uploading ? "Enviando imagens..." : "Ver laudo"}
+        {uploading ? "Enviando imagens..." : "Enviar imagens"}
       </button>
+    </div>
+  );
+}
+
+function RichText({ text }: { text: string }) {
+  return (
+    <>
+      {splitBoldSegments(text).map((seg, i) =>
+        seg.bold ? (
+          <strong key={i} className="font-semibold text-gray-900">
+            {seg.text}
+          </strong>
+        ) : (
+          <span key={i}>{seg.text}</span>
+        ),
+      )}
+    </>
+  );
+}
+
+function ReportPreviewContent({ parsedReport }: { parsedReport: ParsedReport }) {
+  return (
+    <div className="text-sm text-gray-800 leading-relaxed space-y-2">
+      {parsedReport.sections.map((section, i) => (
+        <div key={i} className="text-justify">
+          <span className="font-semibold text-gray-900">{section.label}:</span> <RichText text={section.content} />
+        </div>
+      ))}
+
+      {(parsedReport.conclusion || parsedReport.impression?.length) && (
+        <div className="border-t border-gray-100 pt-3 mt-3">
+          <p className="font-bold text-gray-900 text-sm mb-2">CONCLUSÃO</p>
+        </div>
+      )}
+
+      {parsedReport.conclusion && !parsedReport.impression?.length && (
+        <p className="text-justify">
+          <RichText text={parsedReport.conclusion} />
+        </p>
+      )}
+
+      {parsedReport.impression?.length ? (
+        <div>
+          <p className="font-semibold text-sm mb-1">IMPRESSÃO DIAGNÓSTICA:</p>
+          <ul className="space-y-1.5 ml-1">
+            {parsedReport.impression.map((line, i) => (
+              <li key={i} className="flex gap-2 text-justify">
+                <span className="text-gray-500 shrink-0">•</span>
+                <span>
+                  <RichText text={line} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {parsedReport.recommendations?.length ? (
+        <div className="mt-2">
+          <p className="font-semibold text-sm mb-1">RECOMENDAÇÕES:</p>
+          <ul className="space-y-1.5 ml-1">
+            {parsedReport.recommendations.map((line, i) => (
+              <li key={i} className="flex gap-2 text-justify">
+                <span className="text-gray-500 shrink-0">•</span>
+                <span>
+                  <RichText text={line} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {parsedReport.observations?.length ? (
+        <div className="mt-2">
+          <p className="font-semibold text-sm mb-1">OBS:</p>
+          {parsedReport.observations.map((line, i) => (
+            <p key={i} className="mb-1 text-justify">
+              <RichText text={line} />
+            </p>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ReportPreviewInChat({ reportId, orgId }: { reportId: string; orgId: string }) {
+  const [phase, setPhase] = useState<"waiting" | "completed" | "failed" | "error">("waiting");
+  const [report, setReport] = useState<Report | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    async function fetchAndResolve() {
+      const { data, error } = await supabase.from(TABLES.reports).select("*").eq("id", reportId).single();
+      if (cancelled) return;
+      if (error) {
+        setPhase("error");
+        return;
+      }
+      if (data.status === REPORT_STATUSES.completed && data.edited_content) {
+        setReport(data as Report);
+        setPhase("completed");
+      } else if (data.status === REPORT_STATUSES.failed) {
+        setPhase("failed");
+      }
+    }
+
+    async function init() {
+      await supabase.realtime.setAuth();
+      if (cancelled) return;
+
+      // Subscribe first, then poll — eliminates the race window between a status
+      // check and the channel becoming active.
+      await new Promise<void>((resolve) => {
+        channel = supabase
+          .channel(`org:${orgId}:reports`, { config: { private: true } })
+          .on<{ id: string; status: ReportStatus }>("broadcast", { event: "report_changed" }, async ({ payload }) => {
+            if (payload.id !== reportId) return;
+            if (payload.status === REPORT_STATUSES.completed) {
+              await fetchAndResolve();
+            } else if (payload.status === REPORT_STATUSES.failed) {
+              if (!cancelled) setPhase("failed");
+            }
+          })
+          .subscribe((s) => {
+            if (s === "SUBSCRIBED") resolve();
+          });
+      });
+
+      // Now that the channel is live, check current status — any completion
+      // that happened before subscribe will be caught here; anything after is
+      // caught by the broadcast handler.
+      await fetchAndResolve();
+    }
+
+    init().catch(() => {
+      if (!cancelled) setPhase("error");
+    });
+
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [reportId, orgId]);
+
+  if (phase === "waiting") {
+    return (
+      <div className="space-y-2 rounded-xl border border-gray-200 bg-white p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="h-2 w-2 animate-bounce rounded-full bg-blue-400"
+                style={{ animationDelay: `${i * 150}ms` }}
+              />
+            ))}
+          </div>
+          <p className="text-sm text-gray-600">Gerando laudo...</p>
+        </div>
+        <p className="text-xs text-gray-400">O laudo aparecerá aqui quando ficar pronto.</p>
+      </div>
+    );
+  }
+
+  if (phase === "failed" || phase === "error") {
+    return (
+      <div className="space-y-2 rounded-xl border border-red-200 bg-red-50 p-4">
+        <p className="text-sm font-semibold text-red-700">
+          {phase === "failed" ? "Falha ao gerar laudo." : "Erro ao carregar laudo."}
+        </p>
+        <Link href={`/report/${reportId}`} className="text-sm text-red-600 underline hover:text-red-700">
+          Ver laudo →
+        </Link>
+      </div>
+    );
+  }
+
+  if (!report?.edited_content) return null;
+
+  let parsedReport: ParsedReport;
+  try {
+    parsedReport = parseReportContent(report.edited_content);
+  } catch {
+    return null;
+  }
+
+  const displayDate = new Date(report.exam_date + "T12:00:00").toLocaleDateString("pt-BR");
+
+  return (
+    <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-4">
+      <div className="grid grid-cols-2 gap-3 text-xs text-gray-700">
+        <div className="space-y-1">
+          <p className="font-semibold uppercase tracking-wide text-gray-500">Paciente</p>
+          <p className="font-medium text-gray-900">{report.patient_name}</p>
+          <p>
+            {report.species} · {report.breed}
+          </p>
+          <p>
+            {report.age} · {sexLabel(report.sex)} · {report.neutered ? "Castrado(a)" : "Não castrado(a)"}
+          </p>
+          <p>Tutor: {report.owner_name}</p>
+        </div>
+        <div className="space-y-1">
+          <p className="font-semibold uppercase tracking-wide text-gray-500">Atendimento</p>
+          <p className="font-medium text-gray-900">{report.client_name}</p>
+          <p>{report.responsible_vet}</p>
+          <p>{displayDate}</p>
+        </div>
+      </div>
+
+      <div className="border-t border-gray-100 pt-3">
+        <ReportPreviewContent parsedReport={parsedReport} />
+      </div>
+
+      <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+        Este laudo foi gerado por IA e pode conter imprecisões. Revise todas as informações antes de confirmar.
+      </p>
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => openReportPdfTab(reportId)}
+          className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+        >
+          Confirmar e gerar PDF
+        </button>
+        <Link
+          href={`/report/${reportId}`}
+          className="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Editar laudo
+        </Link>
+      </div>
     </div>
   );
 }
