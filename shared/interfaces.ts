@@ -7,8 +7,8 @@ import type {
   ClientVet,
   ReportImage,
   ReportSummary,
-  ReportType,
 } from "./models";
+import type { ReportType } from "@/shared/constants";
 // ─── Request types ───────────────────────────────────────────────────────────
 
 export interface GenerateRequest extends ReportFields {

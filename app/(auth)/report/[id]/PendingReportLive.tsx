@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { REPORT_STATUSES, type ReportStatus } from "@/shared/models";
+import { REPORT_STATUSES, type ReportStatus } from "@/shared/constants";
 import { useOrgReportsChannel } from "@/lib/hooks/use-org-reports-channel";
 
 interface Props {

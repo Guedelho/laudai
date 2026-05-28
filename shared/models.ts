@@ -1,9 +1,5 @@
 import type { ReportType, ReportStatus } from "@/shared/constants";
 
-// Re-exports kept temporarily for callers; prefer importing from @/shared/constants directly.
-export { REPORT_STATUSES } from "@/shared/constants";
-export type { ReportType, ReportStatus };
-
 export interface ReportSection {
   label: string;
   content: string;

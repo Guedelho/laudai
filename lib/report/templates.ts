@@ -1,4 +1,5 @@
-import { ReportType, type ParsedReport } from "@/shared/models";
+import { type ParsedReport } from "@/shared/models";
+import { type ReportType } from "@/shared/constants";
 
 export const SPECIALTIES: Record<ReportType, { label: string; reportTitle: string; abbr: string }> = {
   ultrasound_abdominal: {

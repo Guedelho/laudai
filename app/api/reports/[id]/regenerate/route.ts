@@ -2,8 +2,7 @@ import { after, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { withApiHandler } from "@/lib/api-handler";
 import { runGeneration } from "@/lib/report/worker";
-import { TABLES } from "@/shared/constants";
-import { REPORT_STATUSES } from "@/shared/models";
+import { REPORT_STATUSES, TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 
 export const maxDuration = 300;

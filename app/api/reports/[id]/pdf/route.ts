@@ -3,10 +3,9 @@ import { getProfile } from "@/lib/supabase/profile";
 import { parseReportContent } from "@/lib/utils";
 import { generatePdfBuffer } from "@/lib/report/pdf";
 import { PdfData } from "@/shared/interfaces";
-import { ReportType } from "@/shared/models";
 import { SPECIALTIES } from "@/lib/report/templates";
 import { withApiHandler } from "@/lib/api-handler";
-import { PDF_CACHE_TTL_MS, SIGNED_URL_TTL, STORAGE_BUCKETS, TABLES } from "@/shared/constants";
+import { PDF_CACHE_TTL_MS, SIGNED_URL_TTL, STORAGE_BUCKETS, TABLES, type ReportType } from "@/shared/constants";
 import { logError } from "@/lib/log";
 import sharp from "sharp";
 

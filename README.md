@@ -91,7 +91,7 @@ Generation is asynchronous regardless of which creation flow is used:
 
 **Form flow (`/new`)** — `POST /api/generate` inserts a `reports` row with `status='pending'`, schedules the Gemini call via Next.js `after()`, and returns `{ reportId }`. The user is redirected to `/dashboard` immediately and can start another laudo while the worker runs.
 
-**Chat flow (`/new/chat`)** — A `ToolLoopAgent` (AI SDK) drives a conversational Gemini session at `POST /api/chat`. When all data is collected the agent calls the `createReportDraft` tool, which inserts the report row and fires `runGeneration` via `after()` — then returns `{ reportId }` to the UI. The image upload panel appears immediately; generation runs in parallel while the vet selects images. Once images are submitted, the laudo preview renders as an assistant-style bubble in the chat via `ReportPreviewInChat` (subscribes to the org Realtime broadcast; shows immediately if already done, otherwise on the next broadcast). The input bar stays active so the vet can ask questions or request inline edits — the agent can add items to impressão diagnóstica, recomendações, observações, or replace the conclusão via the `updateReportSections` tool (appends to existing lists, writes a `report_versions` snapshot, revalidates cache, and the preview re-renders automatically via the broadcast). For all other content changes the agent directs to the "Editar laudo" page. The vet confirms with "Gerar PDF" when satisfied (no redirect required).
+**Chat flow (`/new/chat`)** — A `ToolLoopAgent` (AI SDK) drives a conversational Gemini session at `POST /api/chat`. When all data is collected the agent calls the `createReportDraft` tool, which inserts the report row and fires `runGeneration` via `after()` — then returns `{ reportId }` to the UI. The image upload panel appears immediately; generation runs in parallel while the vet selects images. Once images are submitted, the laudo renders as an embedded, fully editable widget in the chat via `ReportPreviewInChat` (subscribes to the org Realtime broadcast through the shared `useOrgReportsChannel` hook; shows immediately if already done, otherwise on the next broadcast). The vet edits every field — sections, impressão diagnóstica, recomendações, observações, conclusão, and patient data — directly in that widget; the chat agent does not mutate the laudo, it only answers clinical questions. The vet confirms with "Gerar PDF" when satisfied (no redirect required).
 
 Both flows converge on the same worker (`lib/report/worker.ts`) and the same `reports_broadcast` Postgres trigger that drives the dashboard's live list.
 
@@ -143,24 +143,31 @@ app/
 components/                         # AppHeader, Typeahead, ImageLightbox, ...
 lib/
   services/                         # Client-side typed fetch wrappers
+  client/                           # Browser-only helpers (pdf-tab, audio-wav, dictation, use-is-client)
+  hooks/                            # use-report-editor, use-directory, use-org-reports-channel
   report/
     generate.ts                     # Gemini single-call streaming + retry
     worker.ts                       # runGeneration — background task with 5min timeout
     pdf.ts                          # pdfmake builder
     templates.ts                    # Prompts, specialty config
+    cache.ts                        # invalidateUser/OrgPdfCache
   supabase/
     admin.ts client.ts server.ts    # Three Supabase client variants
-    auth.ts                         # getUserId, getProfile, getCurrentOrgId
-    db.ts                           # find-or-create, resolveOwnedFks, hasReportTypeAccess, canWriteReport
+    auth.ts                         # getUserId, getServerUser, getCurrentOrgId
+    profile.ts                      # getProfile
+    entitlements.ts                 # hasReportTypeAccess, canWriteReport
+    upserts.ts                      # find-or-create, resolveOwnedFks
+    org.ts                          # isOrgOwner
+  images.ts                         # parseProfileImage, serveProfileImage, detectImageFormat
   api-handler.ts                    # withApiHandler — provides orgId, admin, audit() to handlers
   audit.ts                          # logAudit + AUDIT_ACTIONS/AUDIT_ENTITIES
   log.ts                            # Structured logError
-  utils.ts server-utils.ts          # Helpers
+  utils.ts ui.ts                    # Helpers + shared Tailwind class strings
 shared/
-  models.ts                         # Domain types + REPORT_STATUSES
+  models.ts                         # Domain types
   interfaces.ts                     # API request/response types
-  constants.ts                      # TABLES, STORAGE_BUCKETS, LEGAL_VERSIONS, REPORT_TYPES,
-                                    # ORG_ROLES, SIGNED_URL_TTL, SPECIES_OPTIONS, ...
+  constants.ts                      # TABLES, STORAGE_BUCKETS, LEGAL_VERSIONS, REPORT_TYPES, REPORT_STATUSES,
+                                    # ORG_ROLES, SIGNED_URL_TTL, SUBSCRIPTION_REPORT_TYPES, SPECIES_OPTIONS, ...
 supabase/
   migrations/                       # Single consolidated initial.sql (source of truth)
 proxy.ts                            # Auth gate (Next.js 16 middleware)

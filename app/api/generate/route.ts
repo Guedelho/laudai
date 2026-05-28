@@ -7,8 +7,7 @@ import { GenerateRequest } from "@/shared/interfaces";
 import { canWriteReport, hasReportTypeAccess } from "@/lib/supabase/entitlements";
 import { findOrCreatePet, resolveOwnedFks } from "@/lib/supabase/upserts";
 import { withApiHandler } from "@/lib/api-handler";
-import { REPORT_TYPES, TABLES } from "@/shared/constants";
-import { REPORT_STATUSES } from "@/shared/models";
+import { REPORT_TYPES, REPORT_STATUSES, TABLES } from "@/shared/constants";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { logError } from "@/lib/log";
 

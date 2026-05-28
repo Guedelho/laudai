@@ -4,9 +4,9 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { generateReport } from "@/lib/report/generate";
 import { createAdmin } from "@/lib/supabase/admin";
 import { reportCacheTag } from "@/lib/utils";
-import { TABLES } from "@/shared/constants";
+import { REPORT_STATUSES, TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
-import { REPORT_STATUSES, type PatientFields } from "@/shared/models";
+import { type PatientFields } from "@/shared/models";
 
 type Admin = ReturnType<typeof createAdmin>;
 
