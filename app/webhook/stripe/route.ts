@@ -74,7 +74,14 @@ async function syncSubscription(admin: ReturnType<typeof createAdmin>, sub: Stri
   if (ENTITLED_SUBSCRIPTION_STATUSES.has(sub.status)) {
     // Period end carries the trial end date during the trial, and the next
     // renewal date after the first invoice — both map to "access until X".
-    const expiresAt = new Date(subscriptionPeriodEnd(sub) * 1000).toISOString();
+    const periodEnd = subscriptionPeriodEnd(sub);
+    if (periodEnd === null) {
+      // Missing period end is a Stripe-side anomaly, not a transient error —
+      // log and ack so Stripe stops retrying instead of looping forever.
+      logError("Stripe webhook: subscription has no item period end", null, { subscriptionId: sub.id });
+      return;
+    }
+    const expiresAt = new Date(periodEnd * 1000).toISOString();
     const { error } = await admin.from(TABLES.organization_report_types).upsert(
       SUBSCRIPTION_REPORT_TYPES.map((report_type_id) => ({ org_id: orgId, report_type_id, expires_at: expiresAt })),
       { onConflict: "org_id,report_type_id" },
@@ -91,10 +98,9 @@ async function syncSubscription(admin: ReturnType<typeof createAdmin>, sub: Stri
 }
 
 // The dahlia API moved current_period_end from Subscription to SubscriptionItem.
-function subscriptionPeriodEnd(sub: Stripe.Subscription): number {
+function subscriptionPeriodEnd(sub: Stripe.Subscription): number | null {
   const ends = sub.items.data.map((i) => i.current_period_end).filter((n): n is number => typeof n === "number");
-  if (ends.length === 0) throw new Error(`Subscription ${sub.id} has no item period end`);
-  return Math.max(...ends);
+  return ends.length === 0 ? null : Math.max(...ends);
 }
 
 function invoiceSubscriptionId(invoice: Stripe.Invoice): string | null {

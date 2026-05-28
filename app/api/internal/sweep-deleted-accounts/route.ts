@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { STORAGE_BUCKETS, TABLES } from "@/shared/constants";
-import { logError } from "@/lib/log";
+import { logError, logInfo } from "@/lib/log";
 
 type Admin = ReturnType<typeof createAdmin>;
 
@@ -61,6 +61,9 @@ export async function GET(req: NextRequest) {
       logError("Auth deleteUser failed in sweep", deleteError, { userId });
       continue;
     }
+    // deleteUser cascades audit_log rows, so the LGPD deletion trail must live in
+    // the log drain — it outlives the DB record.
+    logInfo("LGPD sweep purged account", { userId, retentionDays: RETENTION_DAYS });
     purged += 1;
   }
 

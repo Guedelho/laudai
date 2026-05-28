@@ -89,7 +89,7 @@ export const GET = withApiHandler<{ id: string }>(
           .from(PDF_BUCKET)
           .createSignedUrl(report.pdf_storage_path, SIGNED_URL_TTL.serverFetch);
         if (signed?.signedUrl) {
-          const cached = await fetch(signed.signedUrl);
+          const cached = await fetch(signed.signedUrl, { cache: "no-store" });
           if (cached.ok) {
             return new NextResponse(await cached.arrayBuffer(), {
               headers: {

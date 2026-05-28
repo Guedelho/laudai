@@ -4,6 +4,21 @@ import { useId, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
+function translateAuthError(code: string | undefined, fallback: string): string {
+  switch (code) {
+    case "invalid_credentials":
+    case "user_not_found":
+      return "Email ou senha incorretos.";
+    case "email_not_confirmed":
+      return "Email ainda não confirmado. Verifique sua caixa de entrada.";
+    case "over_request_rate_limit":
+    case "over_email_send_rate_limit":
+      return "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
+    default:
+      return fallback || "Erro ao entrar. Tente novamente.";
+  }
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,21 +42,6 @@ export default function LoginPage() {
       setLoading(false);
     } else {
       router.push("/dashboard");
-    }
-  }
-
-  function translateAuthError(code: string | undefined, fallback: string): string {
-    switch (code) {
-      case "invalid_credentials":
-      case "user_not_found":
-        return "Email ou senha incorretos.";
-      case "email_not_confirmed":
-        return "Email ainda não confirmado. Verifique sua caixa de entrada.";
-      case "over_request_rate_limit":
-      case "over_email_send_rate_limit":
-        return "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
-      default:
-        return fallback || "Erro ao entrar. Tente novamente.";
     }
   }
 
