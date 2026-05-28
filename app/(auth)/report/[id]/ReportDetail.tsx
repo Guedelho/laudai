@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { SPECIALTIES } from "@/lib/report/templates";
-import { Report, ReportImage, Pet, Client } from "@/shared/models";
-import { listPets } from "@/lib/services/pets";
-import { listClients } from "@/lib/services/clients";
+import { Report, ReportImage } from "@/shared/models";
+import { formatExamDate } from "@/lib/utils";
+import { useDirectory } from "@/lib/hooks/use-directory";
 import ImageManager from "./ImageManager";
 import { useReportEditor } from "@/lib/hooks/use-report-editor";
 import { ReportEditorActions, ReportEditorContent, ReportEditorPatientFields } from "./ReportEditor";
@@ -24,22 +24,9 @@ export default function ReportDetail({
   const [editing, setEditing] = useState(isEditing);
   const [chatOpen, setChatOpen] = useState(false);
   const editor = useReportEditor(report, () => setEditing(false));
-  const [pets, setPets] = useState<Pet[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
+  const { pets, clients, breedSuggestions } = useDirectory();
 
-  useEffect(() => {
-    Promise.all([listPets(), listClients()])
-      .then(([p, c]) => {
-        setPets(p);
-        setClients(c);
-      })
-      .catch(() => {
-        /* dropdowns just won't be offered */
-      });
-  }, []);
-
-  const breedSuggestions = [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
-  const displayDate = new Date(editor.fields.examDate + "T12:00:00").toLocaleDateString("pt-BR");
+  const displayDate = formatExamDate(editor.fields.examDate);
 
   return (
     <>

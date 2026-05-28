@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { REALTIME_SUBSCRIBE_STATES } from "@supabase/supabase-js";
 import { SPECIALTIES } from "@/lib/report/templates";
 import { REPORT_STATUSES, ReportSummary } from "@/shared/models";
 import { DASHBOARD_PAGE_SIZE } from "@/shared/constants";
-import { createClient } from "@/lib/supabase/client";
 import { listReports, regenerateReport } from "@/lib/services/reports";
+import { formatExamDate } from "@/lib/utils";
+import { useOrgReportsChannel } from "@/lib/hooks/use-org-reports-channel";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 
 interface Props {
@@ -82,60 +82,35 @@ export default function ReportList({ userId, orgId }: Props) {
     }
   };
 
-  useEffect(() => {
-    const supabase = createClient();
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    let cancelled = false;
+  function maybeToastCompletion(row: ReportRealtimeRow) {
+    if (row.status !== REPORT_STATUSES.completed) return;
+    if (knownCompletedRef.current.has(row.id)) return;
+    knownCompletedRef.current.add(row.id);
+    setToast(`Laudo de ${row.patient_name} pronto.`);
+  }
 
-    function maybeToastCompletion(row: ReportRealtimeRow) {
-      if (row.status !== REPORT_STATUSES.completed) return;
-      if (knownCompletedRef.current.has(row.id)) return;
-      knownCompletedRef.current.add(row.id);
-      setToast(`Laudo de ${row.patient_name} pronto.`);
+  function handleChange(row: ReportRealtimeRow) {
+    if (row.event === "delete" || row.deleted_at) {
+      knownCompletedRef.current.delete(row.id);
+      setReports((prev) => prev.filter((r) => r.id !== row.id));
+      return;
     }
-
-    function handleChange(row: ReportRealtimeRow) {
-      if (row.event === "delete" || row.deleted_at) {
-        knownCompletedRef.current.delete(row.id);
-        setReports((prev) => prev.filter((r) => r.id !== row.id));
-        return;
-      }
-      const summary = toSummary(row);
-      if (row.event === "insert") {
-        setReports((prev) => (prev.some((r) => r.id === summary.id) ? prev : [summary, ...prev]));
-      } else {
-        setReports((prev) => {
-          const idx = prev.findIndex((r) => r.id === summary.id);
-          if (idx === -1) return [summary, ...prev];
-          const next = prev.slice();
-          next[idx] = summary;
-          return next;
-        });
-      }
-      maybeToastCompletion(row);
+    const summary = toSummary(row);
+    if (row.event === "insert") {
+      setReports((prev) => (prev.some((r) => r.id === summary.id) ? prev : [summary, ...prev]));
+    } else {
+      setReports((prev) => {
+        const idx = prev.findIndex((r) => r.id === summary.id);
+        if (idx === -1) return [summary, ...prev];
+        const next = prev.slice();
+        next[idx] = summary;
+        return next;
+      });
     }
+    maybeToastCompletion(row);
+  }
 
-    async function init() {
-      await supabase.realtime.setAuth();
-      if (cancelled) return;
-
-      channel = supabase
-        .channel(`org:${orgId}:reports`, { config: { private: true } })
-        .on<ReportRealtimeRow>("broadcast", { event: "report_changed" }, ({ payload }) => handleChange(payload))
-        .subscribe((status, err) => {
-          if (status === REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR || status === REALTIME_SUBSCRIBE_STATES.TIMED_OUT) {
-            console.error(`Realtime channel ${status}`, err);
-          }
-        });
-    }
-
-    init();
-
-    return () => {
-      cancelled = true;
-      if (channel) supabase.removeChannel(channel);
-    };
-  }, [orgId]);
+  useOrgReportsChannel<ReportRealtimeRow>(orgId, { onEvent: handleChange });
 
   useEffect(() => {
     if (!toast) return;
@@ -263,7 +238,7 @@ function ReportRow({ report, retrying, onRetry }: { report: ReportSummary; retry
       </p>
       <p className="text-xs text-gray-500 mt-1">
         Criado: {new Date(report.created_at).toLocaleDateString("pt-BR")}
-        {report.exam_date && <> · Exame: {new Date(report.exam_date + "T12:00:00").toLocaleDateString("pt-BR")}</>}
+        {report.exam_date && <> · Exame: {formatExamDate(report.exam_date)}</>}
       </p>
     </>
   );

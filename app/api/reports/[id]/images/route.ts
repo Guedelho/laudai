@@ -1,31 +1,17 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { reportCacheTag } from "@/lib/utils";
+import { detectImageFormat } from "@/lib/images";
 import { createAdmin } from "@/lib/supabase/admin";
 import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE, SIGNED_URL_TTL, STORAGE_BUCKETS, TABLES } from "@/shared/constants";
 import { withApiHandler } from "@/lib/api-handler";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { logError } from "@/lib/log";
-import sharp from "sharp";
 
 const BUCKET = STORAGE_BUCKETS.reportImages;
 
-const SHARP_FORMAT_TO_MIME: Record<string, string> = {
-  jpeg: "image/jpeg",
-  png: "image/png",
-  webp: "image/webp",
-};
+// Report images accept WebP in addition to JPEG/PNG (vs. profile images).
 const ALLOWED_FORMATS = new Set(["jpeg", "png", "webp"]);
-
-async function detectImageFormat(buf: Buffer): Promise<{ mime: string; ext: string } | null> {
-  try {
-    const { format } = await sharp(buf).metadata();
-    if (!format || !ALLOWED_FORMATS.has(format)) return null;
-    return { mime: SHARP_FORMAT_TO_MIME[format] ?? "image/jpeg", ext: format === "jpeg" ? "jpg" : format };
-  } catch {
-    return null;
-  }
-}
 
 async function getSignedUrl(admin: ReturnType<typeof createAdmin>, storagePath: string): Promise<string | null> {
   const { data, error } = await admin.storage.from(BUCKET).createSignedUrl(storagePath, SIGNED_URL_TTL.display);
@@ -90,7 +76,7 @@ export const POST = withApiHandler<{ id: string }>(async ({ userId, orgId, admin
         return { validationError: `Arquivo muito grande (máx 5MB): ${file.name}` } as const;
       }
       const buf = Buffer.from(await file.arrayBuffer());
-      const detected = await detectImageFormat(buf);
+      const detected = await detectImageFormat(buf, ALLOWED_FORMATS);
       if (!detected) {
         return { validationError: `Formato não suportado: ${file.name}. Use JPEG, PNG ou WebP.` } as const;
       }

@@ -39,7 +39,7 @@ export default function ReportChatPanel({
       examDate: report.exam_date,
       content,
     };
-  }, [report.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [report]);
 
   const transport = useMemo(
     () => new DefaultChatTransport({ api: "/api/laudo-chat", body: { report: reportBody } }),

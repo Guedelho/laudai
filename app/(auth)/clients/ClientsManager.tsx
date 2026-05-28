@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Client, ClientVet } from "@/shared/models";
 import * as api from "@/lib/services/clients";
+import { inputCls } from "@/lib/ui";
 
 export default function ClientsManager({ initialClients }: { initialClients: Client[] }) {
   const [clients, setClients] = useState<Client[]>(initialClients);
@@ -131,20 +132,11 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Nome do cliente</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
+              <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} required />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Médico responsável (opcional)</label>
-              <input
-                value={vetName}
-                onChange={(e) => setVetName(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <input value={vetName} onChange={(e) => setVetName(e.target.value)} className={inputCls} />
             </div>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
@@ -177,7 +169,7 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
                     <input
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={inputCls}
                       required
                     />
                   </div>
@@ -214,7 +206,7 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
                       value={newVetName}
                       onChange={(e) => setNewVetName(e.target.value)}
                       placeholder="Nome do médico"
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`flex-1 ${inputCls}`}
                     />
                     <button
                       type="submit"

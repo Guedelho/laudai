@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type FileUIPart } from "ai";
 import Link from "next/link";
 import ImageLightbox from "@/components/ImageLightbox";
 import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE, TABLES } from "@/shared/constants";
 import { uploadReportImages } from "@/lib/services/reports";
-import { listPets } from "@/lib/services/pets";
-import { listClients } from "@/lib/services/clients";
 import { recordingToWav } from "@/lib/client/audio-wav";
 import { Streamdown } from "streamdown";
 import type { LaudoAgentUIMessage } from "@/lib/agents/laudo-agent";
-import { REPORT_STATUSES, type Report, type ReportStatus, type Pet, type Client } from "@/shared/models";
+import { REPORT_STATUSES, type Report, type ReportStatus } from "@/shared/models";
 import { createClient } from "@/lib/supabase/client";
 import { useReportEditor } from "@/lib/hooks/use-report-editor";
+import { useDirectory } from "@/lib/hooks/use-directory";
+import { useOrgReportsChannel } from "@/lib/hooks/use-org-reports-channel";
 import {
   ReportEditorPatientFields,
   ReportEditorContent,
@@ -472,63 +472,37 @@ function ReportPreviewInChat({
   const [phase, setPhase] = useState<"waiting" | "completed" | "failed" | "error">("waiting");
   const [report, setReport] = useState<Report | null>(null);
 
-  useEffect(() => {
+  async function fetchAndResolve() {
     const supabase = createClient();
-    let cancelled = false;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
+    const { data, error } = await supabase.from(TABLES.reports).select("*").eq("id", reportId).single();
+    if (error) {
+      setPhase("error");
+      return;
+    }
+    if (data.status === REPORT_STATUSES.completed && data.edited_content) {
+      setReport(data as Report);
+      setPhase("completed");
+    } else if (data.status === REPORT_STATUSES.failed) {
+      setPhase("failed");
+    }
+  }
 
-    async function fetchAndResolve() {
-      const { data, error } = await supabase.from(TABLES.reports).select("*").eq("id", reportId).single();
-      if (cancelled) return;
-      if (error) {
-        setPhase("error");
-        return;
-      }
-      if (data.status === REPORT_STATUSES.completed && data.edited_content) {
-        setReport(data as Report);
-        setPhase("completed");
-      } else if (data.status === REPORT_STATUSES.failed) {
+  // The hook subscribes first, then fires onSubscribed — so any completion that
+  // landed before the channel went live is caught by the poll, and anything
+  // after by onEvent. No race window.
+  useOrgReportsChannel<{ id: string; status: ReportStatus }>(orgId, {
+    onSubscribed: () => {
+      fetchAndResolve().catch(() => setPhase("error"));
+    },
+    onEvent: (payload) => {
+      if (payload.id !== reportId) return;
+      if (payload.status === REPORT_STATUSES.completed) {
+        fetchAndResolve().catch(() => setPhase("error"));
+      } else if (payload.status === REPORT_STATUSES.failed) {
         setPhase("failed");
       }
-    }
-
-    async function init() {
-      await supabase.realtime.setAuth();
-      if (cancelled) return;
-
-      // Subscribe first, then poll — eliminates the race window between a status
-      // check and the channel becoming active.
-      await new Promise<void>((resolve) => {
-        channel = supabase
-          .channel(`org:${orgId}:reports`, { config: { private: true } })
-          .on<{ id: string; status: ReportStatus }>("broadcast", { event: "report_changed" }, async ({ payload }) => {
-            if (payload.id !== reportId) return;
-            if (payload.status === REPORT_STATUSES.completed) {
-              await fetchAndResolve();
-            } else if (payload.status === REPORT_STATUSES.failed) {
-              if (!cancelled) setPhase("failed");
-            }
-          })
-          .subscribe((s) => {
-            if (s === "SUBSCRIBED") resolve();
-          });
-      });
-
-      // Now that the channel is live, check current status — any completion
-      // that happened before subscribe will be caught here; anything after is
-      // caught by the broadcast handler.
-      await fetchAndResolve();
-    }
-
-    init().catch(() => {
-      if (!cancelled) setPhase("error");
-    });
-
-    return () => {
-      cancelled = true;
-      if (channel) supabase.removeChannel(channel);
-    };
-  }, [reportId, orgId]);
+    },
+  });
 
   if (phase === "waiting") {
     return <TypingDots />;
@@ -552,27 +526,11 @@ function ReportPreviewInChat({
 
 function ReportEditorInChat({ report, previewFiles }: { report: Report; previewFiles: File[] }) {
   const editor = useReportEditor(report, () => {});
-  const [pets, setPets] = useState<Pet[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [fileUrls, setFileUrls] = useState<string[]>([]);
+  const { pets, clients, breedSuggestions } = useDirectory();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    Promise.all([listPets(), listClients()])
-      .then(([p, c]) => {
-        setPets(p);
-        setClients(c);
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const urls = previewFiles.map((f) => URL.createObjectURL(f));
-    setFileUrls(urls);
-    return () => urls.forEach(URL.revokeObjectURL);
-  }, [previewFiles]);
-
-  const breedSuggestions = [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
+  const fileUrls = useMemo(() => previewFiles.map((f) => URL.createObjectURL(f)), [previewFiles]);
+  useEffect(() => () => fileUrls.forEach(URL.revokeObjectURL), [fileUrls]);
 
   return (
     <div className="self-start w-full space-y-3 rounded-2xl bg-gray-100 px-4 py-3">

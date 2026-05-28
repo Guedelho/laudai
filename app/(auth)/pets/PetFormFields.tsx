@@ -2,6 +2,7 @@
 
 import { SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared/constants";
 import Typeahead from "@/components/Typeahead";
+import { inputCls } from "@/lib/ui";
 
 export type PetFormValues = {
   name: string;
@@ -12,9 +13,6 @@ export type PetFormValues = {
   sex: string;
   neutered: boolean;
 };
-
-const inputCls =
-  "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
 export default function PetFormFields({
   values,

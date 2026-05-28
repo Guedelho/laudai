@@ -4,14 +4,8 @@ import { ParsedReport, Pet, Client, ClientVet } from "@/shared/models";
 import { SEX_OPTIONS } from "@/shared/constants";
 import EntityTypeahead from "@/components/EntityTypeahead";
 import Typeahead from "@/components/Typeahead";
-import { ReportFieldsState } from "@/lib/hooks/use-report-editor";
-
-const inputCls =
-  "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
-const textareaCls =
-  "w-full border border-blue-200 rounded px-2 py-1 text-sm text-gray-800 resize-none focus:outline-none focus:ring-1 focus:ring-blue-400";
-
-type ListKey = "impression" | "recommendations" | "observations";
+import { ReportFieldsState, type ListKey } from "@/lib/hooks/use-report-editor";
+import { inputCls, textareaCls } from "@/lib/ui";
 
 function EditableList({
   title,
@@ -35,7 +29,7 @@ function EditableList({
             value={line}
             onChange={(e) => onUpdate(i, e.target.value)}
             rows={2}
-            className="w-full border border-blue-200 rounded px-2 py-1 text-sm text-gray-800 resize-none focus:outline-none focus:ring-1 focus:ring-blue-400 flex-1"
+            className={`${textareaCls} flex-1`}
           />
           <button
             type="button"

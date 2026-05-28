@@ -19,7 +19,7 @@ export type ReportFieldsState = {
   examDate: string;
 };
 
-type ListKey = "impression" | "recommendations" | "observations";
+export type ListKey = "impression" | "recommendations" | "observations";
 
 export function useReportEditor(report: Report, onAfterImprimir: () => void) {
   const [printing, setPrinting] = useState(false);

@@ -12,6 +12,8 @@ import { listClients, createClient, addVet } from "@/lib/services/clients";
 import { enqueueGeneration, uploadReportImages } from "@/lib/services/reports";
 import { redirectToDashboard } from "@/app/actions/reports";
 import { useDictation } from "@/lib/client/use-dictation";
+import { inputCls } from "@/lib/ui";
+import { uniqueBreeds } from "@/lib/utils";
 
 export default function NewReportPage() {
   const specialty = "ultrasound_abdominal" as const;
@@ -139,7 +141,7 @@ export default function NewReportPage() {
   const clientName = selectedClient?.name ?? newClientName;
   const responsibleVet = vets.find((v) => v.id === selectedVetId)?.name ?? newVetName;
 
-  const breedSuggestions = [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
+  const breedSuggestions = uniqueBreeds(pets);
 
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
@@ -251,9 +253,6 @@ export default function NewReportPage() {
     if (imageInputRef.current) imageInputRef.current.value = "";
     dictation.reset();
   }
-
-  const inputCls =
-    "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
   return (
     <main className="max-w-2xl mx-auto px-6 py-8">
