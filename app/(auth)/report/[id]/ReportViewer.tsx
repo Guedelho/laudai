@@ -4,7 +4,6 @@ import { ParsedReport } from "@/shared/models";
 import { sexLabel } from "@/lib/utils";
 import { ReportFieldsState } from "@/lib/hooks/use-report-editor";
 import DownloadPDFButton from "./DownloadPDFButton";
-import DeleteReportButton from "./DeleteReportButton";
 import ReportContent from "./ReportContent";
 
 function InfoItem({ label, value }: { label: string; value: string }) {
@@ -24,7 +23,6 @@ interface ActionsProps {
 export function ReportViewerActions({ reportId, onEdit }: ActionsProps) {
   return (
     <>
-      <DeleteReportButton reportId={reportId} />
       <button
         onClick={onEdit}
         className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
