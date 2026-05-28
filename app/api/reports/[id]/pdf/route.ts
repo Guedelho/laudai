@@ -22,20 +22,16 @@ function slugify(s: string) {
     .slice(0, 20);
 }
 
-async function fetchAsBase64(url: string, maxWidth?: number, maxHeight?: number): Promise<string> {
+async function fetchAsBase64(url: string): Promise<string> {
   const res = await fetch(url);
   const arrayBuffer = await res.arrayBuffer();
   let buf = Buffer.from(arrayBuffer);
   const contentType = res.headers.get("content-type") ?? "image/jpeg";
   const mime = contentType.split(";")[0].trim();
 
-  const needsConvert = !SUPPORTED_MIME.has(mime) || maxWidth || maxHeight;
+  const needsConvert = !SUPPORTED_MIME.has(mime);
   if (needsConvert) {
-    let s = sharp(buf);
-    if (maxWidth || maxHeight) {
-      s = s.resize(maxWidth ?? null, maxHeight ?? null, { fit: "inside" });
-    }
-    buf = Buffer.from(await s.jpeg({ quality: 85 }).toBuffer());
+    buf = Buffer.from(await sharp(buf).jpeg({ quality: 85 }).toBuffer());
   }
 
   const finalMime = needsConvert ? "image/jpeg" : mime;

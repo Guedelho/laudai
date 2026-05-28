@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe/server";
 import { createAdmin } from "@/lib/supabase/admin";
-import { TABLES, REPORT_TYPES, ENTITLED_SUBSCRIPTION_STATUSES } from "@/shared/constants";
+import { TABLES, SUBSCRIPTION_REPORT_TYPES, ENTITLED_SUBSCRIPTION_STATUSES } from "@/shared/constants";
 import { logError, logInfo } from "@/lib/log";
 
 export async function POST(req: NextRequest) {
@@ -75,19 +75,17 @@ async function syncSubscription(admin: ReturnType<typeof createAdmin>, sub: Stri
     // Period end carries the trial end date during the trial, and the next
     // renewal date after the first invoice — both map to "access until X".
     const expiresAt = new Date(subscriptionPeriodEnd(sub) * 1000).toISOString();
-    const { error } = await admin
-      .from(TABLES.organization_report_types)
-      .upsert(
-        { org_id: orgId, report_type_id: REPORT_TYPES.ultrasound_abdominal, expires_at: expiresAt },
-        { onConflict: "org_id,report_type_id" },
-      );
+    const { error } = await admin.from(TABLES.organization_report_types).upsert(
+      SUBSCRIPTION_REPORT_TYPES.map((report_type_id) => ({ org_id: orgId, report_type_id, expires_at: expiresAt })),
+      { onConflict: "org_id,report_type_id" },
+    );
     if (error) logError("Stripe webhook: upsert entitlement failed", error, { orgId, subscriptionId: sub.id });
   } else {
     const { error } = await admin
       .from(TABLES.organization_report_types)
       .delete()
       .eq("org_id", orgId)
-      .eq("report_type_id", REPORT_TYPES.ultrasound_abdominal);
+      .in("report_type_id", [...SUBSCRIPTION_REPORT_TYPES]);
     if (error) logError("Stripe webhook: delete entitlement failed", error, { orgId, subscriptionId: sub.id });
   }
 }

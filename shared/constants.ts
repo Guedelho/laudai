@@ -59,6 +59,11 @@ export const REPORT_TYPES = {
 
 export type ReportType = (typeof REPORT_TYPES)[keyof typeof REPORT_TYPES];
 
+// Report types an active subscription grants. Today there is a single product;
+// when another type becomes sellable end-to-end, add it here and the Stripe
+// webhook will grant/revoke it automatically.
+export const SUBSCRIPTION_REPORT_TYPES: readonly ReportType[] = [REPORT_TYPES.ultrasound_abdominal];
+
 export const ORG_ROLES = {
   owner: "owner",
   member: "member",

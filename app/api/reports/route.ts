@@ -19,9 +19,7 @@ export const GET = withApiHandler(async ({ userId, orgId, admin, req }) => {
 
   let query = admin
     .from(TABLES.reports)
-    .select(
-      "id, patient_name, owner_name, client_name, specialty, created_at, exam_date, status, error_message, user_id",
-    )
+    .select("id, patient_name, owner_name, client_name, specialty, created_at, exam_date, status, error_message")
     .eq("org_id", orgId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })

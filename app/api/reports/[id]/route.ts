@@ -100,7 +100,7 @@ export const DELETE = withApiHandler<{ id: string }>(async ({ userId, orgId, adm
   const id = params.id;
   const { error } = await admin
     .from(TABLES.reports)
-    .update({ deleted_at: new Date().toISOString() })
+    .update({ deleted_at: new Date().toISOString(), pdf_storage_path: null })
     .eq("id", id)
     .eq("org_id", orgId)
     .eq("user_id", userId);

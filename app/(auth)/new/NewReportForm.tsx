@@ -446,13 +446,15 @@ export default function NewReportPage() {
             <p className="text-sm font-semibold text-gray-700">
               Imagens do exame
               {selectedFiles.length > 0 && (
-                <span className="ml-2 text-xs font-normal text-gray-500">{selectedFiles.length}/30</span>
+                <span className="ml-2 text-xs font-normal text-gray-500">
+                  {selectedFiles.length}/{MAX_REPORT_IMAGES}
+                </span>
               )}
             </p>
             <button
               type="button"
               onClick={() => imageInputRef.current?.click()}
-              disabled={selectedFiles.length >= 30}
+              disabled={selectedFiles.length >= MAX_REPORT_IMAGES}
               className="text-xs text-blue-600 hover:text-blue-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Adicionar imagens

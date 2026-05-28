@@ -21,13 +21,11 @@ function isRetryable(err: unknown): boolean {
 }
 
 async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  for (let attempt = 0; ; attempt++) {
     try {
       return await fn();
     } catch (err) {
       if (!isRetryable(err) || attempt === maxRetries) throw err;
-      lastErr = err;
       logWarn("Gemini retry", {
         attempt: attempt + 1,
         maxRetries,
@@ -37,7 +35,6 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> {
       await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
     }
   }
-  throw lastErr;
 }
 
 export async function generateReport(params: GenerateParams): Promise<string> {

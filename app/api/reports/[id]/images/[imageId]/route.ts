@@ -21,15 +21,17 @@ export const DELETE = withApiHandler<{ id: string; imageId: string }>(async ({ u
 
   if (!image) return NextResponse.json({ error: "Imagem não encontrada." }, { status: 404 });
 
-  await admin.storage.from(BUCKET).remove([image.storage_path]);
-
+  // Delete the DB row first; only remove the storage object once that succeeds,
+  // so a failed delete never leaves an orphaned file.
   const { error } = await admin.from(TABLES.report_images).delete().eq("id", imageId).eq("user_id", userId);
   if (error) {
     logError("Image delete failed", error, { userId, reportId: id, imageId });
     return NextResponse.json({ error: "Erro ao remover imagem." }, { status: 500 });
   }
 
-  await admin.from(TABLES.reports).update({ pdf_storage_path: null }).eq("id", id).eq("user_id", userId);
+  await admin.storage.from(BUCKET).remove([image.storage_path]);
+
+  await admin.from(TABLES.reports).update({ pdf_storage_path: null }).eq("id", id).eq("org_id", image.org_id);
   revalidateTag(reportCacheTag(id), "max");
   await audit({
     action: AUDIT_ACTIONS.delete,

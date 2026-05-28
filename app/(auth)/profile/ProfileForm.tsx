@@ -99,9 +99,6 @@ export default function ProfileForm({
     setSigUploading(true);
     setSigError("");
     try {
-      const formData = new FormData();
-      formData.append("signature", file);
-
       await profileApi.uploadSignature(file);
       setSigVersion(Date.now());
       setSignatureFont("");
@@ -135,10 +132,6 @@ export default function ProfileForm({
         { full_name: fullName, cpf, signature_font: next, signature, signature_image_url: null },
         controller.signal,
       );
-      if (next !== "") {
-        // Eagerly remove stored signature image path from DB — already done server-side,
-        // but also delete the file preview locally
-      }
     } catch {
       // non-critical, silent fail (includes aborted requests)
     }

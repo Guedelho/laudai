@@ -392,7 +392,11 @@ function ImageStep({ reportId, onDone }: { reportId: string; onDone: (files: Fil
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-gray-700">
           Imagens do exame (obrigatório)
-          {files.length > 0 && <span className="ml-2 text-xs font-normal text-gray-500">{files.length}/50</span>}
+          {files.length > 0 && (
+            <span className="ml-2 text-xs font-normal text-gray-500">
+              {files.length}/{MAX_REPORT_IMAGES}
+            </span>
+          )}
         </p>
         <button
           type="button"
