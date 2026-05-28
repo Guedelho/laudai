@@ -42,7 +42,7 @@ export function createLaudoAgent(ctx: LaudoToolCtx, vetName: string) {
     model: google(GENERATE_MODEL),
     instructions: buildInstructions(vetName),
     tools: createLaudoTools(ctx),
-    stopWhen: stepCountIs(15),
+    stopWhen: stepCountIs(20),
     maxOutputTokens: 2048,
   });
 }

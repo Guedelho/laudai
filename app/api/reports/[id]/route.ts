@@ -46,6 +46,7 @@ export const PATCH = withApiHandler<{ id: string }>(async ({ userId, orgId, admi
       ...(vetId !== undefined ? { vet_id: owned.vetId } : {}),
     })
     .eq("id", id)
+    .eq("org_id", orgId)
     .eq("user_id", userId);
 
   if (error) {
@@ -95,12 +96,13 @@ export const PATCH = withApiHandler<{ id: string }>(async ({ userId, orgId, admi
   return NextResponse.json({ ok: true });
 });
 
-export const DELETE = withApiHandler<{ id: string }>(async ({ userId, admin, audit, params }) => {
+export const DELETE = withApiHandler<{ id: string }>(async ({ userId, orgId, admin, audit, params }) => {
   const id = params.id;
   const { error } = await admin
     .from(TABLES.reports)
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id)
+    .eq("org_id", orgId)
     .eq("user_id", userId);
 
   if (error) {
