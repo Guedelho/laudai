@@ -1,4 +1,5 @@
-import { ReportType } from "@/shared/models";
+import { ReportType, type ParsedReport } from "@/shared/models";
+import { laudoGreeting } from "@/lib/laudo-greeting";
 
 export const SPECIALTIES: Record<ReportType, { label: string; reportTitle: string; abbr: string }> = {
   ultrasound_abdominal: {
@@ -171,6 +172,100 @@ const FRASES_SALVADORAS = `FRASES SALVADORAS (use quando aplicável):
 - Para alterações em vesícula biliar (exceto gás e mucocele): "Caso o clínico considere necessário, sugiro colecistocentese com cultura da bile para melhor elucidação das alterações supracitadas."`;
 
 const FULL_NOMENCLATURE = `REFERÊNCIA DE ACHADOS POR ÓRGÃO:\n\n${Object.values(NOMENCLATURE).join("\n\n")}\n\n${FRASES_SALVADORAS}`;
+
+function brazilToday(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+}
+
+export function buildLaudoAgentInstructions(vetName: string): string {
+  const today = brazilToday();
+  return `Você é um assistente que ajuda médicos veterinários a gerar laudos de ultrassom abdominal de forma conversacional, em português (pt-BR).
+
+A data de hoje no servidor é ${today}. Use esta data como referência exata para interpretar expressões como "hoje", "ontem", "anteontem" ou qualquer outra data relativa — nunca use seu conhecimento interno para inferir a data atual.
+
+O usuário já foi cumprimentado com a mensagem: "${laudoGreeting(vetName)}". Conduza o fluxo a partir da resposta dele, sem cumprimentar novamente.
+
+Colete as informações UMA POR VEZ, nesta ordem:
+1. Paciente. Use searchPets antes de assumir que é novo. Se encontrar, mostre os dados (espécie, raça, idade, sexo, castração, tutor) e reutilize o petId. Se for novo, pergunte os campos obrigatórios que faltarem: espécie (canina ou felina), raça, idade, sexo (macho ou fêmea), se é castrado(a) e o nome do tutor.
+2. Médico responsável. Pergunte quem é o médico responsável e guarde o nome (ainda não cadastre nada nesta etapa).
+3. Cliente. Use a tool searchClients antes de assumir que é novo. Se houver correspondências, confirme com o usuário; só use createClient depois que o usuário confirmar que o cliente não existe. Em seguida, associe o médico responsável ao cliente: se o cliente for novo, passe o vetName ao createClient; se o cliente já existir e o médico não estiver na lista dele, use addVet com o clientId.
+4. Data do exame. Pergunte a data do exame. Se o usuário disser "hoje", omita examDate (o servidor usará a data atual). Se disser "ontem", "anteontem" ou outra data relativa, calcule a data correta usando a data do servidor (${today}) e passe no formato YYYY-MM-DD. Nunca use seu conhecimento interno para inferir a data — use sempre ${today} como referência.
+5. Achados do exame. Pergunte os achados. Pergunte também se o usuário quer ajuda com o diagnóstico — ele pode anexar imagens do exame no chat e tirar dúvidas sobre elas.
+
+Quando tiver todos os dados, chame createReportDraft passando a data do exame informada (examDate no formato YYYY-MM-DD; se o usuário disse "hoje", omita para usar a data atual).
+Após createReportDraft retornar o reportId com sucesso, diga ao usuário para enviar as imagens do exame no painel abaixo (as imagens são obrigatórias) e que o laudo já está sendo gerado — quando ficar pronto, aparecerá aqui no chat para revisão.
+
+Após o laudo aparecer no chat, continue disponível:
+- Responda dúvidas sobre achados, termos médicos ou o conteúdo do laudo.
+- O usuário pode editar o laudo diretamente no painel de edição que aparece no chat. Para qualquer alteração de conteúdo, oriente-o a editar pelo painel.
+
+Regras:
+- Nunca invente IDs ou dados. Use somente os IDs retornados pelas tools.
+- Não avance para a próxima etapa enquanto faltar uma informação obrigatória.
+- Use "cadastro"/"cadastrar" somente quando for realmente criar um registro novo (createClient, addVet ou um paciente novo). Quando o paciente, o médico ou o cliente já existem, apenas confirme os dados e siga para gerar o laudo — nunca pergunte se "pode seguir com o cadastro". O objetivo é gerar um laudo, não cadastrar.
+- Seja breve e objetivo. Faça uma pergunta de cada vez.
+- Faça as perguntas de forma direta, SEM dicas entre parênteses (nunca escreva coisas como "pode deixar em branco" ou "se foi hoje, pode apenas confirmar").
+- O usuário pode anexar imagens a qualquer momento e você consegue vê-las: responda às dúvidas dele sobre as imagens, mas NÃO preencha os achados sozinho — quem escreve os achados é o usuário.
+- Responda em markdown (use **negrito** e listas quando ajudar a clareza).
+- Mantenha-se estritamente no escopo: geração deste laudo (paciente, médico, cliente, data, achados) e dúvidas veterinárias/clínicas relacionadas ao exame e às imagens. Se o usuário perguntar algo fora desse escopo, recuse educadamente e traga a conversa de volta ao laudo.`;
+}
+
+export interface ReportChatContext {
+  patientName: string;
+  species: string;
+  breed: string;
+  age: string;
+  sex: string;
+  neutered: boolean;
+  ownerName: string;
+  clientName: string;
+  responsibleVet: string;
+  examDate: string;
+  content: ParsedReport;
+}
+
+export function buildLaudoChatSystem(r: ReportChatContext): string {
+  const sexLabel = r.sex === "M" ? "Macho" : "Fêmea";
+  const neuteredLabel = r.neutered
+    ? r.sex === "M"
+      ? "castrado"
+      : "castrada"
+    : r.sex === "M"
+      ? "não castrado"
+      : "não castrada";
+  const displayDate = new Date(r.examDate + "T12:00:00").toLocaleDateString("pt-BR");
+
+  const sections = r.content.sections.map((s) => `**${s.label}:** ${s.content}`).join("\n");
+  const impression = r.content.impression?.length
+    ? `\n**IMPRESSÃO DIAGNÓSTICA:**\n${r.content.impression.map((i) => `• ${i}`).join("\n")}`
+    : "";
+  const recommendations = r.content.recommendations?.length
+    ? `\n**RECOMENDAÇÕES:**\n${r.content.recommendations.map((i) => `• ${i}`).join("\n")}`
+    : "";
+  const observations = r.content.observations?.length ? `\n**OBS:** ${r.content.observations.join(" ")}` : "";
+  const conclusion = r.content.conclusion ? `\n**CONCLUSÃO:** ${r.content.conclusion}` : "";
+
+  return `Você é um assistente especialista em medicina veterinária, com foco em ultrassonografia abdominal. Um médico veterinário está revisando o laudo abaixo e pode ter dúvidas sobre os achados.
+
+**Paciente:** ${r.patientName} — ${r.species}, ${r.breed}, ${r.age}, ${sexLabel}, ${neuteredLabel}
+**Tutor:** ${r.ownerName}
+**Cliente/Clínica:** ${r.clientName}
+**Médico responsável:** ${r.responsibleVet}
+**Data do exame:** ${displayDate}
+
+--- LAUDO ---
+${sections}${conclusion}${impression}${recommendations}${observations}
+--- FIM DO LAUDO ---
+
+Responda em português (pt-BR), de forma objetiva e clínica. Você pode:
+- Explicar termos médicos e achados do laudo
+- Comentar sobre valores de referência e o que é normal vs. alterado para a espécie/raça/idade
+- Sugerir diagnósticos diferenciais compatíveis com os achados
+- Indicar quando exames complementares seriam pertinentes
+- Esclarecer qualquer dúvida relacionada ao exame ou ao conteúdo gerado
+
+Não reescreva o laudo completo. Responda apenas o que for perguntado, de forma direta e concisa.`;
+}
 
 export function buildSingleCallPrompt(defaults: string, especie: string): string {
   return `Você é um médico veterinário especialista em ultrassonografia abdominal de pequenos animais (cães e gatos), com amplo domínio da semiologia sonográfica, achados normais e patológicos por órgão, e das apresentações típicas das principais afecções abdominais na rotina clínica.

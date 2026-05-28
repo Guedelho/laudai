@@ -31,7 +31,7 @@ export interface LaudoToolCtx {
 }
 
 const SPECIALTY = REPORT_TYPES.ultrasound_abdominal;
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
 
 export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) {
   return {
