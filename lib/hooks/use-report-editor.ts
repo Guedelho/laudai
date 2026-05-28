@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Report, ParsedReport, Pet, Client, ClientVet } from "@/shared/models";
 import { parseReportContent } from "@/lib/utils";
 import { updateReport } from "@/lib/services/reports";
-import { openReportPdfTab } from "@/lib/pdf-tab";
+import { openReportPdfTab } from "@/lib/client/pdf-tab";
 
 export type ReportFieldsState = {
   patientName: string;

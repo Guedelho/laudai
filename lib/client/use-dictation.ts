@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
-import { useIsClient } from "@/lib/use-is-client";
+import { useIsClient } from "@/lib/client/use-is-client";
 
 export function useDictation(setText: (value: string) => void) {
   const anchorRef = useRef("");

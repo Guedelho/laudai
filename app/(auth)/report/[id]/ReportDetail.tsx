@@ -7,7 +7,7 @@ import { Report, ReportImage, Pet, Client } from "@/shared/models";
 import { listPets } from "@/lib/services/pets";
 import { listClients } from "@/lib/services/clients";
 import ImageManager from "./ImageManager";
-import { useReportEditor } from "./useReportEditor";
+import { useReportEditor } from "@/lib/hooks/use-report-editor";
 import { ReportEditorActions, ReportEditorContent, ReportEditorPatientFields } from "./ReportEditor";
 import { ReportViewerActions, ReportViewerContent, ReportViewerInfo } from "./ReportViewer";
 import ReportChatPanel from "./ReportChatPanel";

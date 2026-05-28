@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { parseProfileImage } from "@/lib/server-utils";
+import { parseProfileImage, serveProfileImage } from "@/lib/images";
 import { STORAGE_BUCKETS, TABLES } from "@/shared/constants";
 import { withApiHandler } from "@/lib/api-handler";
-import { invalidateUserPdfCache } from "@/lib/supabase/db";
-import { serveProfileImage } from "@/lib/profile-image";
+import { invalidateUserPdfCache } from "@/lib/report/cache";
 import { logError } from "@/lib/log";
 
 const BUCKET = STORAGE_BUCKETS.profileLogos;

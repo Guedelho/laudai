@@ -1,7 +1,6 @@
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
-import { getCurrentOrgId } from "@/lib/supabase/auth";
+import { getServerUser, getCurrentOrgId } from "@/lib/supabase/auth";
 import { notFound } from "next/navigation";
 import { cacheTag, cacheLife } from "next/cache";
 import { Report, REPORT_STATUSES } from "@/shared/models";
@@ -43,9 +42,7 @@ async function getReportData(id: string, orgId: string) {
 }
 
 async function ReportContents({ id, review }: { id: string; review: boolean }) {
-  const {
-    data: { user },
-  } = await (await createClient()).auth.getUser();
+  const user = await getServerUser();
   if (!user) return null;
 
   const orgId = await getCurrentOrgId(user.id);

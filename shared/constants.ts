@@ -64,6 +64,15 @@ export const ORG_ROLES = {
   member: "member",
 } as const;
 
+export const REPORT_STATUSES = {
+  pending: "pending",
+  generating: "generating",
+  completed: "completed",
+  failed: "failed",
+} as const;
+
+export type ReportStatus = (typeof REPORT_STATUSES)[keyof typeof REPORT_STATUSES];
+
 // past_due stays entitled so a failed card keeps access during Stripe dunning.
 export const ENTITLED_SUBSCRIPTION_STATUSES: ReadonlySet<string> = new Set(["trialing", "active", "past_due"]);
 

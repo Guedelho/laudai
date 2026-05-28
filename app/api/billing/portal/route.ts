@@ -3,7 +3,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { withApiHandler } from "@/lib/api-handler";
 import { getStripe } from "@/lib/stripe/server";
-import { isOrgOwner } from "@/lib/supabase/db";
+import { isOrgOwner } from "@/lib/supabase/org";
 import { TABLES } from "@/shared/constants";
 
 export const POST = withApiHandler(async ({ admin, userId, orgId }) => {

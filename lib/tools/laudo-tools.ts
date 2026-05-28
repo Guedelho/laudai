@@ -4,14 +4,8 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createAdmin } from "@/lib/supabase/admin";
 import { runGeneration } from "@/lib/report/worker";
-import {
-  canWriteReport,
-  findOrCreateClient,
-  findOrCreateVet,
-  findOrCreatePet,
-  hasReportTypeAccess,
-  resolveOwnedFks,
-} from "@/lib/supabase/db";
+import { canWriteReport, hasReportTypeAccess } from "@/lib/supabase/entitlements";
+import { findOrCreateClient, findOrCreateVet, findOrCreatePet, resolveOwnedFks } from "@/lib/supabase/upserts";
 import { REPORT_TYPES, TABLES } from "@/shared/constants";
 import { REPORT_STATUSES } from "@/shared/models";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES, type AuditAction, type AuditEntity } from "@/lib/audit";

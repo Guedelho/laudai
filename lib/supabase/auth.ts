@@ -1,7 +1,6 @@
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
-import { TABLES } from "@/shared/constants";
-import { Profile } from "@/shared/models";
+import { TABLES, ORG_ROLES } from "@/shared/constants";
 
 export async function getUserId(): Promise<string | null> {
   const supabase = await createServerClient();
@@ -11,10 +10,12 @@ export async function getUserId(): Promise<string | null> {
   return user?.id ?? null;
 }
 
-export async function getProfile(userId: string): Promise<Profile | null> {
-  const admin = createAdmin();
-  const { data } = await admin.from("profiles").select("*").eq("id", userId).single();
-  return data ?? null;
+export async function getServerUser() {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
 }
 
 export async function getCurrentOrgId(userId: string): Promise<string> {
@@ -25,6 +26,6 @@ export async function getCurrentOrgId(userId: string): Promise<string> {
     throw new Error(`No organization for user ${userId}`);
   }
 
-  const owned = data.find((m) => m.role === "owner");
+  const owned = data.find((m) => m.role === ORG_ROLES.owner);
   return (owned ?? data[0]).org_id;
 }

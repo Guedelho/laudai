@@ -1,6 +1,8 @@
-import { ReportType } from "@/shared/constants";
+import type { ReportType, ReportStatus } from "@/shared/constants";
 
-export type { ReportType };
+// Re-exports kept temporarily for callers; prefer importing from @/shared/constants directly.
+export { REPORT_STATUSES } from "@/shared/constants";
+export type { ReportType, ReportStatus };
 
 export interface ReportSection {
   label: string;
@@ -36,17 +38,19 @@ export interface Profile {
   id: string;
   full_name: string;
   crmv: string;
+  crmv_state: string;
   cpf: string;
   created_at: string;
-  signature_font?: string;
-  signature?: string;
-  signature_image_url?: string;
-  crmv_state?: string;
+  signature_font: string | null;
+  signature: string | null;
+  signature_image_url: string | null;
+  deletion_scheduled_at: string | null;
 }
 
 export interface Pet {
   id: string;
   user_id: string;
+  org_id: string;
   name: string;
   species: string;
   breed: string;
@@ -61,6 +65,7 @@ export interface ClientVet {
   id: string;
   client_id: string;
   user_id: string;
+  org_id: string;
   name: string;
   created_at: string;
 }
@@ -68,19 +73,11 @@ export interface ClientVet {
 export interface Client {
   id: string;
   user_id: string;
+  org_id: string;
   name: string;
   created_at: string;
   client_vets: ClientVet[];
 }
-
-export const REPORT_STATUSES = {
-  pending: "pending",
-  generating: "generating",
-  completed: "completed",
-  failed: "failed",
-} as const;
-
-export type ReportStatus = (typeof REPORT_STATUSES)[keyof typeof REPORT_STATUSES];
 
 export interface ReportSummary {
   id: string;
@@ -97,6 +94,7 @@ export interface ReportSummary {
 export interface Report {
   id: string;
   user_id: string;
+  org_id: string;
   specialty: ReportType;
   patient_name: string;
   species: string;
@@ -118,8 +116,12 @@ export interface Report {
   error_message: string | null;
   generation_started_at: string | null;
   generation_completed_at: string | null;
+  pdf_storage_path: string | null;
+  pdf_cached_at: string | null;
+  updated_by: string | null;
+  deleted_at: string | null;
   created_at: string;
-  updated_at?: string;
+  updated_at: string | null;
 }
 
 export interface ReportImage {

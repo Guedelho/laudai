@@ -2,7 +2,7 @@
 
 import { ParsedReport } from "@/shared/models";
 import { sexLabel } from "@/lib/utils";
-import { ReportFieldsState } from "./useReportEditor";
+import { ReportFieldsState } from "@/lib/hooks/use-report-editor";
 import DownloadPDFButton from "./DownloadPDFButton";
 import DeleteReportButton from "./DeleteReportButton";
 import ReportContent from "./ReportContent";

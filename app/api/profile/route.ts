@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { UpdateProfileRequest } from "@/shared/interfaces";
 import { withApiHandler } from "@/lib/api-handler";
-import { invalidateUserPdfCache } from "@/lib/supabase/db";
+import { invalidateUserPdfCache } from "@/lib/report/cache";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";

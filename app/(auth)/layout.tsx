@@ -1,27 +1,20 @@
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
-import { getCurrentOrgId } from "@/lib/supabase/auth";
+import { getServerUser, getCurrentOrgId } from "@/lib/supabase/auth";
 import { redirect } from "next/navigation";
-import { isOrgOwner } from "@/lib/supabase/db";
+import { isOrgOwner } from "@/lib/supabase/org";
 import { TABLES, REPORT_TYPES, ENTITLED_SUBSCRIPTION_STATUSES } from "@/shared/constants";
 import AppHeader from "@/components/AppHeader";
 import SubscriptionChip from "./SubscriptionChip";
 
 async function AuthGate({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getServerUser();
   if (!user) redirect("/login");
   return <>{children}</>;
 }
 
 async function HeaderWithChip() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getServerUser();
   if (!user) return <AppHeader />;
 
   const orgId = await getCurrentOrgId(user.id);

@@ -1,16 +1,13 @@
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
-import { getCurrentOrgId } from "@/lib/supabase/auth";
+import { getServerUser, getCurrentOrgId } from "@/lib/supabase/auth";
 import { TABLES, ENTITLED_SUBSCRIPTION_STATUSES } from "@/shared/constants";
 import ReportList from "./ReportList";
 import SubscribeGate from "./SubscribeGate";
 import Loading from "./loading";
 
 async function DashboardContents() {
-  const {
-    data: { user },
-  } = await (await createClient()).auth.getUser();
+  const user = await getServerUser();
   if (!user) return null;
 
   const orgId = await getCurrentOrgId(user.id);

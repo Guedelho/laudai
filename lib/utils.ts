@@ -1,8 +1,14 @@
 import { SEX_OPTIONS } from "@/shared/constants";
-import { ParsedReport } from "@/shared/models";
+import { ParsedReport, Pet } from "@/shared/models";
 
 export function brazilToday(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+}
+
+// Exam dates are stored as YYYY-MM-DD strings. Anchor to noon so the date
+// doesn't shift across timezones when the browser formats it.
+export function formatExamDate(date: string): string {
+  return new Date(date + "T12:00:00").toLocaleDateString("pt-BR");
 }
 
 export function sexLabel(value: string): string {
@@ -11,6 +17,10 @@ export function sexLabel(value: string): string {
 
 export function reportCacheTag(id: string): string {
   return `report-${id}`;
+}
+
+export function uniqueBreeds(pets: Pick<Pet, "breed">[]): string[] {
+  return [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
 }
 
 export function parseReportContent(content: string): ParsedReport {

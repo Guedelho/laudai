@@ -1,6 +1,6 @@
 "use client";
 
-import { openReportPdfTab } from "@/lib/pdf-tab";
+import { openReportPdfTab } from "@/lib/client/pdf-tab";
 
 export default function DownloadPDFButton({ reportId }: { reportId: string }) {
   return (

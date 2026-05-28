@@ -4,7 +4,7 @@ import { ParsedReport, Pet, Client, ClientVet } from "@/shared/models";
 import { SEX_OPTIONS } from "@/shared/constants";
 import EntityTypeahead from "@/components/EntityTypeahead";
 import Typeahead from "@/components/Typeahead";
-import { ReportFieldsState } from "./useReportEditor";
+import { ReportFieldsState } from "@/lib/hooks/use-report-editor";
 
 const inputCls =
   "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500";

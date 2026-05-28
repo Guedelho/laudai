@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getProfile } from "@/lib/supabase/auth";
+import { getProfile } from "@/lib/supabase/profile";
 import { parseReportContent } from "@/lib/utils";
 import { generatePdfBuffer } from "@/lib/report/pdf";
 import { PdfData } from "@/shared/interfaces";
@@ -109,7 +109,7 @@ export const GET = withApiHandler<{ id: string }>(
       }
     }
 
-    const profile = await getProfile(pdfAuthorUserId);
+    const profile = await getProfile(admin, pdfAuthorUserId);
     if (!profile) return NextResponse.json({ error: "Perfil não encontrado." }, { status: 400 });
 
     const { data: rawImages } = await admin
@@ -183,7 +183,7 @@ export const GET = withApiHandler<{ id: string }>(
       parsedReport: parseReportContent(report.edited_content),
       imageBase64List,
       logoBase64,
-      signatureFont: profile.signature_font,
+      signatureFont: profile.signature_font ?? undefined,
       signatureImageBase64,
       crmvState: profile.crmv_state,
     };

@@ -1,15 +1,12 @@
-import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
-import { getCurrentOrgId } from "@/lib/supabase/auth";
-import { isOrgOwner } from "@/lib/supabase/db";
+import { getServerUser, getCurrentOrgId } from "@/lib/supabase/auth";
+import { isOrgOwner } from "@/lib/supabase/org";
 import { TABLES } from "@/shared/constants";
 import ProfileForm from "./ProfileForm";
 import OrgLogo from "./OrgLogo";
 
 export default async function ProfilePage() {
-  const {
-    data: { user },
-  } = await (await createClient()).auth.getUser();
+  const user = await getServerUser();
   if (!user) return null;
 
   const admin = createAdmin();

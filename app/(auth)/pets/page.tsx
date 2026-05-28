@@ -1,14 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
-import { getCurrentOrgId } from "@/lib/supabase/auth";
+import { getServerUser, getCurrentOrgId } from "@/lib/supabase/auth";
 import { TABLES } from "@/shared/constants";
 import PetsManager from "./PetsManager";
 import { Pet } from "@/shared/models";
 
 export default async function PetsPage() {
-  const {
-    data: { user },
-  } = await (await createClient()).auth.getUser();
+  const user = await getServerUser();
   if (!user) return null;
 
   const orgId = await getCurrentOrgId(user.id);

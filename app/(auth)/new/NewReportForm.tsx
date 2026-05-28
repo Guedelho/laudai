@@ -11,7 +11,7 @@ import { listPets } from "@/lib/services/pets";
 import { listClients, createClient, addVet } from "@/lib/services/clients";
 import { enqueueGeneration, uploadReportImages } from "@/lib/services/reports";
 import { redirectToDashboard } from "@/app/actions/reports";
-import { useDictation } from "@/lib/use-dictation";
+import { useDictation } from "@/lib/client/use-dictation";
 
 export default function NewReportPage() {
   const specialty = "ultrasound_abdominal" as const;

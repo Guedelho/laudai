@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findOrCreatePet } from "@/lib/supabase/db";
+import { findOrCreatePet } from "@/lib/supabase/upserts";
 import { PetRequest } from "@/shared/interfaces";
 import { withApiHandler } from "@/lib/api-handler";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";

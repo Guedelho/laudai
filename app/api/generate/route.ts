@@ -2,9 +2,10 @@ import { after } from "next/server";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { runGeneration } from "@/lib/report/worker";
-import { getProfile } from "@/lib/supabase/auth";
+import { getProfile } from "@/lib/supabase/profile";
 import { GenerateRequest } from "@/shared/interfaces";
-import { canWriteReport, findOrCreatePet, hasReportTypeAccess, resolveOwnedFks } from "@/lib/supabase/db";
+import { canWriteReport, hasReportTypeAccess } from "@/lib/supabase/entitlements";
+import { findOrCreatePet, resolveOwnedFks } from "@/lib/supabase/upserts";
 import { withApiHandler } from "@/lib/api-handler";
 import { REPORT_TYPES, TABLES } from "@/shared/constants";
 import { REPORT_STATUSES } from "@/shared/models";
@@ -15,7 +16,7 @@ export const maxDuration = 300;
 
 export const POST = withApiHandler(
   async ({ userId, orgId, admin, audit, req }) => {
-    const [profile, body] = await Promise.all([getProfile(userId), req.json() as Promise<GenerateRequest>]);
+    const [profile, body] = await Promise.all([getProfile(admin, userId), req.json() as Promise<GenerateRequest>]);
 
     if (!profile) return NextResponse.json({ error: "Perfil não encontrado. Complete seu cadastro." }, { status: 400 });
 

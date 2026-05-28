@@ -9,12 +9,12 @@ import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE, TABLES } from "@/shared/constan
 import { uploadReportImages } from "@/lib/services/reports";
 import { listPets } from "@/lib/services/pets";
 import { listClients } from "@/lib/services/clients";
-import { recordingToWav } from "@/lib/audio-wav";
+import { recordingToWav } from "@/lib/client/audio-wav";
 import { Streamdown } from "streamdown";
 import type { LaudoAgentUIMessage } from "@/lib/agents/laudo-agent";
 import { REPORT_STATUSES, type Report, type ReportStatus, type Pet, type Client } from "@/shared/models";
 import { createClient } from "@/lib/supabase/client";
-import { useReportEditor } from "@/app/(auth)/report/[id]/useReportEditor";
+import { useReportEditor } from "@/lib/hooks/use-report-editor";
 import {
   ReportEditorPatientFields,
   ReportEditorContent,

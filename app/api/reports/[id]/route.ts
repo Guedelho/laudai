@@ -3,7 +3,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { reportCacheTag } from "@/lib/utils";
 import { UpdateReportRequest } from "@/shared/interfaces";
 import { withApiHandler } from "@/lib/api-handler";
-import { resolveOwnedFks } from "@/lib/supabase/db";
+import { resolveOwnedFks } from "@/lib/supabase/upserts";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
