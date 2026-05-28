@@ -1,6 +1,10 @@
 import { SEX_OPTIONS } from "@/shared/constants";
 import { ParsedReport } from "@/shared/models";
 
+export function brazilToday(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+}
+
 export function sexLabel(value: string): string {
   return SEX_OPTIONS.find((o) => o.value === value)?.label ?? value;
 }
