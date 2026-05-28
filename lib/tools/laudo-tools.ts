@@ -15,6 +15,7 @@ import {
 import { REPORT_TYPES, TABLES } from "@/shared/constants";
 import { REPORT_STATUSES } from "@/shared/models";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES, type AuditAction, type AuditEntity } from "@/lib/audit";
+import { brazilToday } from "@/lib/utils";
 
 type Admin = ReturnType<typeof createAdmin>;
 
@@ -31,7 +32,6 @@ export interface LaudoToolCtx {
 }
 
 const SPECIALTY = REPORT_TYPES.ultrasound_abdominal;
-const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
 
 export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) {
   return {
@@ -156,7 +156,7 @@ export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) 
         vetId: z.string().optional(),
       }),
       execute: async (input) => {
-        const examDate = input.examDate?.trim() || today();
+        const examDate = input.examDate?.trim() || brazilToday();
         const required: [string, string][] = [
           [input.patientName, "Nome do paciente"],
           [input.ownerName, "Nome do tutor"],
