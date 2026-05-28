@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pet } from "@/shared/models";
 import { sexLabel } from "@/lib/utils";
 import * as api from "@/lib/services/pets";
+import ConfirmDelete from "@/components/ConfirmDelete";
 import PetFormFields, { PetFormValues } from "./PetFormFields";
 
 const EMPTY_FORM: PetFormValues = {
@@ -34,8 +35,6 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
   const [newForm, setNewForm] = useState<PetFormValues>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [deleteError, setDeleteError] = useState("");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<PetFormValues>(EMPTY_FORM);
@@ -85,16 +84,8 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
   }
 
   async function handleDelete(id: string) {
-    setDeletingId(id);
-    setDeleteError("");
-    try {
-      await api.deletePet(id);
-      setPets((prev) => prev.filter((p) => p.id !== id));
-    } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Erro ao excluir paciente.");
-    } finally {
-      setDeletingId(null);
-    }
+    await api.deletePet(id);
+    setPets((prev) => prev.filter((p) => p.id !== id));
   }
 
   async function handleAdd(e: React.FormEvent) {
@@ -150,11 +141,12 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
         </form>
       )}
 
-      {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
-
       {!pets.length && !showForm && (
         <div className="text-center py-16 text-gray-500">
-          <p>Nenhum paciente cadastrado ainda</p>
+          <p className="mb-3">Nenhum paciente cadastrado ainda</p>
+          <button type="button" onClick={() => setShowForm(true)} className="text-sm text-blue-600 hover:underline">
+            Cadastrar primeiro paciente
+          </button>
         </div>
       )}
 
@@ -197,13 +189,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                   <button onClick={() => startEdit(pet)} className="text-xs text-blue-600 hover:text-blue-700">
                     Editar
                   </button>
-                  <button
-                    onClick={() => handleDelete(pet.id)}
-                    disabled={deletingId === pet.id}
-                    className="text-xs text-red-600 hover:text-red-700 disabled:opacity-40"
-                  >
-                    {deletingId === pet.id ? "Excluindo..." : "Excluir"}
-                  </button>
+                  <ConfirmDelete noun="Paciente" onConfirm={() => handleDelete(pet.id)} />
                 </div>
               </div>
             )}

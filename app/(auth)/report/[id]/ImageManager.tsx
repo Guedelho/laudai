@@ -106,7 +106,8 @@ export default function ImageManager({
                   <button
                     type="button"
                     onClick={() => handleDelete(img.id)}
-                    className="absolute top-1 right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                    aria-label="Remover imagem"
+                    className="absolute top-1.5 right-1.5 bg-red-500 text-white text-sm w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:bg-red-600"
                   >
                     ×
                   </button>

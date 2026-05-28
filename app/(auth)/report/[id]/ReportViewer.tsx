@@ -3,6 +3,7 @@
 import { ParsedReport } from "@/shared/models";
 import { sexLabel } from "@/lib/utils";
 import { ReportFieldsState } from "@/lib/hooks/use-report-editor";
+import { btnSecondary } from "@/lib/ui";
 import DownloadPDFButton from "./DownloadPDFButton";
 import ReportContent from "./ReportContent";
 
@@ -23,10 +24,7 @@ interface ActionsProps {
 export function ReportViewerActions({ reportId, onEdit }: ActionsProps) {
   return (
     <>
-      <button
-        onClick={onEdit}
-        className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-      >
+      <button onClick={onEdit} aria-label="Editar laudo" title="Editar laudo" className={btnSecondary}>
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
           <path
             strokeLinecap="round"
@@ -34,7 +32,7 @@ export function ReportViewerActions({ reportId, onEdit }: ActionsProps) {
             d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
           />
         </svg>
-        Editar
+        <span className="hidden sm:inline">Editar</span>
       </button>
       <DownloadPDFButton reportId={reportId} />
     </>

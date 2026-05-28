@@ -5,9 +5,10 @@ import { useState } from "react";
 interface Props {
   status: "trialing" | "active" | "past_due";
   periodEnd: string | null;
+  canManage: boolean;
 }
 
-export default function SubscriptionChip({ status, periodEnd }: Props) {
+export default function SubscriptionChip({ status, periodEnd, canManage }: Props) {
   const [loading, setLoading] = useState(false);
 
   async function openPortal() {
@@ -24,6 +25,15 @@ export default function SubscriptionChip({ status, periodEnd }: Props) {
 
   const label = labelFor(status, periodEnd);
   const tone = toneFor(status);
+  const className = `text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${tone}`;
+
+  if (!canManage) {
+    return (
+      <span className={className} title="Status da assinatura">
+        {label}
+      </span>
+    );
+  }
 
   return (
     <button
@@ -31,7 +41,7 @@ export default function SubscriptionChip({ status, periodEnd }: Props) {
       onClick={openPortal}
       disabled={loading}
       title="Gerenciar assinatura"
-      className={`text-xs font-medium px-2.5 py-1 rounded-full border transition-colors disabled:opacity-50 ${tone}`}
+      className={`${className} hover:opacity-90 disabled:opacity-50`}
     >
       {loading ? "..." : label}
     </button>

@@ -228,17 +228,21 @@ function ReportRow({ report, retrying, onRetry }: { report: ReportSummary; retry
   const isPending = report.status === REPORT_STATUSES.pending || report.status === REPORT_STATUSES.generating;
   const isFailed = report.status === REPORT_STATUSES.failed;
 
+  const dotTone = isFailed ? "bg-red-500" : isPending ? "bg-amber-400" : "bg-green-500";
+
   const meta = (
     <>
-      <p className="font-medium text-gray-900">
+      <p className="font-medium text-gray-900 flex items-center gap-2">
+        <span aria-hidden className={`inline-block h-2 w-2 rounded-full ${dotTone}`} />
         {report.patient_name} · {report.owner_name}
       </p>
       <p className="text-sm text-gray-500">
         {SPECIALTIES[report.specialty].label} · {report.client_name}
       </p>
       <p className="text-xs text-gray-500 mt-1">
-        Criado: {new Date(report.created_at).toLocaleDateString("pt-BR")}
-        {report.exam_date && <> · Exame: {formatExamDate(report.exam_date)}</>}
+        {report.exam_date
+          ? `Exame: ${formatExamDate(report.exam_date)}`
+          : `Criado: ${new Date(report.created_at).toLocaleDateString("pt-BR")}`}
       </p>
     </>
   );

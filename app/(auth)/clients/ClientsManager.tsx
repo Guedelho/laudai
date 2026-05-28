@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Client, ClientVet } from "@/shared/models";
 import * as api from "@/lib/services/clients";
 import { inputCls } from "@/lib/ui";
+import ConfirmDelete from "@/components/ConfirmDelete";
 
 export default function ClientsManager({ initialClients }: { initialClients: Client[] }) {
   const [clients, setClients] = useState<Client[]>(initialClients);
@@ -12,8 +13,6 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
   const [vetName, setVetName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [deleteError, setDeleteError] = useState("");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -21,7 +20,6 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
   const [editError, setEditError] = useState("");
   const [newVetName, setNewVetName] = useState("");
   const [addingVet, setAddingVet] = useState(false);
-  const [removingVetId, setRemovingVetId] = useState<string | null>(null);
 
   function startEdit(client: Client) {
     setEditingId(client.id);
@@ -68,19 +66,10 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
   }
 
   async function handleRemoveVet(clientId: string, vetId: string) {
-    setRemovingVetId(vetId);
-    setEditError("");
-
-    try {
-      await api.removeVet(clientId, vetId);
-      setClients((prev) =>
-        prev.map((c) => (c.id === clientId ? { ...c, client_vets: c.client_vets.filter((v) => v.id !== vetId) } : c)),
-      );
-    } catch (err) {
-      setEditError(err instanceof Error ? err.message : "Erro ao remover médico.");
-    } finally {
-      setRemovingVetId(null);
-    }
+    await api.removeVet(clientId, vetId);
+    setClients((prev) =>
+      prev.map((c) => (c.id === clientId ? { ...c, client_vets: c.client_vets.filter((v) => v.id !== vetId) } : c)),
+    );
   }
 
   async function handleAdd(e: React.FormEvent) {
@@ -102,16 +91,8 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
   }
 
   async function handleDelete(id: string) {
-    setDeletingId(id);
-    setDeleteError("");
-    try {
-      await api.deleteClient(id);
-      setClients((prev) => prev.filter((c) => c.id !== id));
-    } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Erro ao excluir cliente.");
-    } finally {
-      setDeletingId(null);
-    }
+    await api.deleteClient(id);
+    setClients((prev) => prev.filter((c) => c.id !== id));
   }
 
   return (
@@ -150,11 +131,12 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
         </form>
       )}
 
-      {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
-
       {!clients.length && !showForm && (
         <div className="text-center py-16 text-gray-500">
-          <p>Nenhum cliente cadastrado ainda</p>
+          <p className="mb-3">Nenhum cliente cadastrado ainda</p>
+          <button type="button" onClick={() => setShowForm(true)} className="text-sm text-blue-600 hover:underline">
+            Cadastrar primeiro cliente
+          </button>
         </div>
       )}
 
@@ -188,13 +170,11 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
                     {client.client_vets.map((vet: ClientVet) => (
                       <div key={vet.id} className="flex items-center justify-between text-sm">
                         <span className="text-gray-700">{vet.name}</span>
-                        <button
-                          onClick={() => handleRemoveVet(client.id, vet.id)}
-                          disabled={removingVetId === vet.id}
-                          className="text-xs text-red-600 hover:text-red-700 disabled:opacity-40"
-                        >
-                          {removingVetId === vet.id ? "Removendo..." : "Remover"}
-                        </button>
+                        <ConfirmDelete
+                          noun="Médico"
+                          label="Remover"
+                          onConfirm={() => handleRemoveVet(client.id, vet.id)}
+                        />
                       </div>
                     ))}
                     {client.client_vets.length === 0 && (
@@ -236,13 +216,7 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
                   <button onClick={() => startEdit(client)} className="text-xs text-blue-600 hover:text-blue-700">
                     Editar
                   </button>
-                  <button
-                    onClick={() => handleDelete(client.id)}
-                    disabled={deletingId === client.id}
-                    className="text-xs text-red-600 hover:text-red-700 disabled:opacity-40"
-                  >
-                    {deletingId === client.id ? "Excluindo..." : "Excluir"}
-                  </button>
+                  <ConfirmDelete noun="Cliente" onConfirm={() => handleDelete(client.id)} />
                 </div>
               </div>
             )}

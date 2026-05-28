@@ -93,7 +93,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
       );
       sendMessage({ text, files });
     } else {
-      sendMessage({ text: text || "Pode seguir." });
+      sendMessage({ text: text || "Continuar" });
     }
     setInput("");
     setAttached([]);
@@ -154,11 +154,16 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
         <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700">
           ← Laudos
         </Link>
-        {messages.length > 0 && (
-          <button type="button" onClick={resetChat} className="text-sm text-blue-600 hover:text-blue-700">
-            Novo laudo
-          </button>
-        )}
+        <div className="flex items-center gap-4">
+          <Link href="/new" className="text-sm text-gray-500 hover:text-gray-700">
+            Modo formulário
+          </Link>
+          {messages.length > 0 && (
+            <button type="button" onClick={resetChat} className="text-sm text-blue-600 hover:text-blue-700">
+              Novo laudo
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-4">
@@ -227,6 +232,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={busy}
+              aria-label="Anexar imagens"
               title="Anexar imagens para perguntar"
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600 hover:border-blue-400 hover:text-blue-600 disabled:opacity-50"
             >
@@ -253,6 +259,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
               type="button"
               onClick={() => (recording ? stopRecording() : startRecording())}
               disabled={busy}
+              aria-label={recording ? "Parar gravação" : "Gravar áudio"}
               title={recording ? "Parar gravação" : "Gravar áudio"}
               className={`rounded-lg border px-3 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                 recording
@@ -423,7 +430,8 @@ function ImageStep({ reportId, onDone }: { reportId: string; onDone: (files: Fil
               <button
                 type="button"
                 onClick={() => removeFile(i)}
-                className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-600"
+                aria-label="Remover imagem"
+                className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-sm text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-red-600"
               >
                 ×
               </button>
@@ -557,7 +565,7 @@ function ReportEditorInChat({ report, previewFiles }: { report: Report; previewF
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="border-b border-gray-200 bg-gray-50 px-4 py-2 text-center">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-700">
-            {SPECIALTIES[report.specialty].label}
+            {SPECIALTIES[report.specialty].reportTitle}
           </h2>
         </div>
         <div className="p-4">

@@ -73,7 +73,12 @@ export default function ReportChatPanel({
             <p className="text-sm font-semibold text-gray-900">Assistente do laudo</p>
             <p className="text-xs text-gray-400">{report.patient_name}</p>
           </div>
-          <button type="button" onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar painel"
+            className="p-1 text-gray-400 hover:text-gray-600"
+          >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
@@ -147,6 +152,7 @@ export default function ReportChatPanel({
             <button
               type="submit"
               disabled={busy || !input.trim()}
+              aria-label="Enviar pergunta"
               className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
             >
               →

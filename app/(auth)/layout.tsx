@@ -31,15 +31,16 @@ async function HeaderWithChip() {
   ]);
 
   const status = org?.stripe_subscription_status ?? "";
-  // Only the owner manages billing, so only they see the subscription chip.
-  if (!owner || !ENTITLED_SUBSCRIPTION_STATUSES.has(status)) return <AppHeader />;
+  if (!ENTITLED_SUBSCRIPTION_STATUSES.has(status)) return <AppHeader />;
 
+  // Every member sees the plan status; only owners can open the billing portal.
   return (
     <AppHeader
       subscriptionChip={
         <SubscriptionChip
           status={status as "trialing" | "active" | "past_due"}
           periodEnd={entitlement?.expires_at ?? null}
+          canManage={owner}
         />
       }
     />
