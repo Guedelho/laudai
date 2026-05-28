@@ -47,7 +47,7 @@ export default function AppHeader({ subscriptionChip }: Props) {
         <div className="flex items-center gap-3">
           {subscriptionChip}
           <Link
-            href="/new/chat"
+            href="/new"
             className="hidden sm:inline-flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
           >
             Novo Laudo
@@ -88,7 +88,7 @@ export default function AppHeader({ subscriptionChip }: Props) {
             </Link>
           ))}
           <Link
-            href="/new/chat"
+            href="/new"
             onClick={close}
             className="sm:hidden inline-flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
           >
