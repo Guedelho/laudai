@@ -109,9 +109,7 @@ export default function ReportChatPanel({
                       {part.text}
                     </span>
                   ) : (
-                    <Streamdown key={i} parseIncompleteMarkdown={false}>
-                      {part.text}
-                    </Streamdown>
+                    <Streamdown key={i}>{part.text}</Streamdown>
                   )
                 ) : null,
               )}

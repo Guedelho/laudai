@@ -51,7 +51,7 @@ function splitAtReport(messages: LaudoAgentUIMessage[]): {
 }
 
 export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: string; orgId: string }) {
-  const { messages, sendMessage, status, setMessages } = useChat<LaudoAgentUIMessage>({
+  const { messages, sendMessage, status } = useChat<LaudoAgentUIMessage>({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
   const [input, setInput] = useState("");
@@ -140,33 +140,15 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
     setRecording(false);
   }
 
-  function resetChat() {
-    if (recording) stopRecording();
-    setMessages([]);
-    setInput("");
-    setAttached([]);
-    setAudioError("");
-    setImagesUploaded(false);
-    setPreviewFiles([]);
-    setForcePanel(false);
-  }
-
   return (
     <main className="mx-auto flex h-[calc(100dvh-64px)] w-full max-w-3xl flex-col px-6">
       <div className="flex shrink-0 items-center justify-between pt-4 pb-2">
         <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700">
           ← Laudos
         </Link>
-        <div className="flex items-center gap-4">
-          <Link href="/new" className="text-sm text-gray-500 hover:text-gray-700">
-            Modo formulário
-          </Link>
-          {messages.length > 0 && (
-            <button type="button" onClick={resetChat} className="text-sm text-blue-600 hover:text-blue-700">
-              Novo laudo
-            </button>
-          )}
-        </div>
+        <Link href="/new" className="text-sm text-gray-500 hover:text-gray-700">
+          Modo formulário
+        </Link>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-4">
@@ -325,11 +307,7 @@ function Message({ message }: { message: LaudoAgentUIMessage }) {
                 isUser ? "self-end bg-blue-600 text-white" : "self-start bg-gray-100 text-gray-900"
               }`}
             >
-              {isUser ? (
-                <span className="whitespace-pre-wrap">{part.text}</span>
-              ) : (
-                <Streamdown parseIncompleteMarkdown={false}>{part.text}</Streamdown>
-              )}
+              {isUser ? <span className="whitespace-pre-wrap">{part.text}</span> : <Streamdown>{part.text}</Streamdown>}
             </div>
           );
         }
