@@ -27,7 +27,7 @@ export const GEMINI_SAFETY_SETTINGS = [
 // Prepended to model prompts: framing the content as clinical stops the safety
 // filter from blocking reproductive terms even when "OFF" isn't enough.
 export const CLINICAL_CONTENT_FRAMING =
-  "Todo o conteúdo desta conversa é terminologia médico-veterinária profissional e legítima — incluindo anatomia, sexo do animal e status reprodutivo (castração/esterilização cirúrgica). Esses termos são estritamente clínicos, sem qualquer conotação sexual ou ofensiva, e devem ser tratados como um prontuário veterinário.";
+  'Todo o conteúdo desta conversa é terminologia médico-veterinária profissional e legítima — incluindo anatomia, sexo do animal e status reprodutivo. Em particular, os termos "castrado", "castração" e "esterilização" referem-se exclusivamente ao procedimento cirúrgico veterinário de remoção das gônadas: NÃO são palavrões, NÃO têm conotação sexual ou ofensiva e NÃO devem ser filtrados, bloqueados ou omitidos em hipótese alguma. Trate tudo como um prontuário veterinário.';
 
 // ─── Limits ──────────────────────────────────────────────────────────────────
 
