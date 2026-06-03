@@ -1,5 +1,5 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { GENERATE_MODEL } from "@/shared/constants";
+import { GoogleGenerativeAI, type SafetySetting } from "@google/generative-ai";
+import { GENERATE_MODEL, GEMINI_SAFETY_SETTINGS } from "@/shared/constants";
 import { buildDefaults, buildSingleCallPrompt } from "@/lib/report/templates";
 import { logInfo, logWarn } from "@/lib/log";
 import type { GenerateParams } from "@/shared/interfaces";
@@ -14,7 +14,9 @@ function isRetryable(err: unknown): boolean {
       msg.includes("500") ||
       msg.includes("503") ||
       msg.includes("ECONNRESET") ||
-      msg.includes("fetch")
+      msg.includes("fetch") ||
+      msg.includes("content-filter") ||
+      msg.includes("SAFETY")
     );
   }
   return false;
@@ -46,6 +48,7 @@ export async function generateReport(params: GenerateParams): Promise<string> {
     model: GENERATE_MODEL,
     systemInstruction: buildSingleCallPrompt(resolvedDefaults, species),
     generationConfig: { temperature: 0, responseMimeType: "application/json" },
+    safetySettings: GEMINI_SAFETY_SETTINGS as unknown as SafetySetting[],
   });
 
   const userMessage =
@@ -62,6 +65,10 @@ export async function generateReport(params: GenerateParams): Promise<string> {
     for await (const chunk of result.stream) {
       text += chunk.text();
       chunks += 1;
+    }
+    const finish = (await result.response).candidates?.[0]?.finishReason;
+    if (finish && finish !== "STOP" && finish !== "MAX_TOKENS") {
+      throw new Error(`content-filter: geração interrompida (${finish})`);
     }
     logInfo("Gemini stream completed", {
       durationMs: Date.now() - startedAt,

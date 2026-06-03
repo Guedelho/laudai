@@ -1,5 +1,5 @@
 import { type ParsedReport } from "@/shared/models";
-import { type ReportType } from "@/shared/constants";
+import { type ReportType, CLINICAL_CONTENT_FRAMING } from "@/shared/constants";
 
 export const SPECIALTIES: Record<ReportType, { label: string; reportTitle: string; abbr: string }> = {
   ultrasound_abdominal: {
@@ -231,7 +231,9 @@ Não reescreva o laudo completo. Responda apenas o que for perguntado, de forma 
 }
 
 export function buildSingleCallPrompt(defaults: string, especie: string): string {
-  return `Você é um médico veterinário especialista em ultrassonografia abdominal de pequenos animais (cães e gatos), com amplo domínio da semiologia sonográfica, achados normais e patológicos por órgão, e das apresentações típicas das principais afecções abdominais na rotina clínica.
+  return `${CLINICAL_CONTENT_FRAMING}
+
+Você é um médico veterinário especialista em ultrassonografia abdominal de pequenos animais (cães e gatos), com amplo domínio da semiologia sonográfica, achados normais e patológicos por órgão, e das apresentações típicas das principais afecções abdominais na rotina clínica.
 
 Gere um laudo ultrassonográfico abdominal completo com base nos achados informados. Retorne APENAS um objeto JSON válido, sem nenhum texto antes ou depois, sem markdown, sem blocos de código:
 { "sections": [{ "label": "NOME DA SEÇÃO", "content": "Texto descritivo." }], "conclusion": "...", "impression": ["..."], "recommendations": ["..."] }

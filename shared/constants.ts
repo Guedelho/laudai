@@ -14,6 +14,21 @@ export const SEX_OPTIONS = [
 
 export const GENERATE_MODEL = "gemini-3-flash-preview";
 
+// Gemini's safety filter false-positives on veterinary reproductive terms and
+// aborts mid-stream; "OFF" disables scoring (BLOCK_NONE doesn't reliably).
+export const GEMINI_SAFETY_SETTINGS = [
+  { category: "HARM_CATEGORY_HARASSMENT", threshold: "OFF" },
+  { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "OFF" },
+  { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "OFF" },
+  { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "OFF" },
+  { category: "HARM_CATEGORY_CIVIC_INTEGRITY", threshold: "OFF" },
+] as const;
+
+// Prepended to model prompts: framing the content as clinical stops the safety
+// filter from blocking reproductive terms even when "OFF" isn't enough.
+export const CLINICAL_CONTENT_FRAMING =
+  "Todo o conteúdo desta conversa é terminologia médico-veterinária profissional e legítima — incluindo anatomia, sexo do animal e status reprodutivo (castração/esterilização cirúrgica). Esses termos são estritamente clínicos, sem qualquer conotação sexual ou ofensiva, e devem ser tratados como um prontuário veterinário.";
+
 // ─── Limits ──────────────────────────────────────────────────────────────────
 
 export const MAX_REPORT_IMAGES = 50;

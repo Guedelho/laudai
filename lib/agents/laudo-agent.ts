@@ -1,13 +1,15 @@
 import { ToolLoopAgent, stepCountIs, type InferAgentUIMessage } from "ai";
 import { google } from "@ai-sdk/google";
-import { GENERATE_MODEL } from "@/shared/constants";
+import { GENERATE_MODEL, GEMINI_SAFETY_SETTINGS, CLINICAL_CONTENT_FRAMING } from "@/shared/constants";
 import { createLaudoTools, type LaudoToolCtx } from "@/lib/tools/laudo-tools";
 import { laudoGreeting } from "@/lib/laudo-greeting";
 import { brazilToday } from "@/lib/utils";
 
 function buildInstructions(vetName: string): string {
   const today = brazilToday();
-  return `Você é um assistente que ajuda médicos veterinários a gerar laudos de ultrassom abdominal de forma conversacional, em português (pt-BR).
+  return `${CLINICAL_CONTENT_FRAMING}
+
+Você é um assistente que ajuda médicos veterinários a gerar laudos de ultrassom abdominal de forma conversacional, em português (pt-BR).
 
 A data de hoje no servidor é ${today}. Use esta data como referência exata para interpretar expressões como "hoje", "ontem", "anteontem" ou qualquer outra data relativa — nunca use seu conhecimento interno para inferir a data atual.
 
@@ -52,6 +54,7 @@ export function createLaudoAgent(ctx: LaudoToolCtx, vetName: string) {
     tools: createLaudoTools(ctx),
     stopWhen: stepCountIs(20),
     maxOutputTokens: 2048,
+    providerOptions: { google: { safetySettings: [...GEMINI_SAFETY_SETTINGS] } },
   });
 }
 
