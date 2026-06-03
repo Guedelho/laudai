@@ -1,4 +1,10 @@
-import { ToolLoopAgent, stepCountIs, type InferAgentUIMessage } from "ai";
+import {
+  ToolLoopAgent,
+  stepCountIs,
+  wrapLanguageModel,
+  type InferAgentUIMessage,
+  type LanguageModelMiddleware,
+} from "ai";
 import { google } from "@ai-sdk/google";
 import { GENERATE_MODEL, GEMINI_SAFETY_SETTINGS, CLINICAL_CONTENT_FRAMING } from "@/shared/constants";
 import { createLaudoTools, type LaudoToolCtx } from "@/lib/tools/laudo-tools";
@@ -47,9 +53,45 @@ Regras:
 - Mantenha-se estritamente no escopo: geração deste laudo (paciente, médico, cliente, data, achados) e dúvidas veterinárias/clínicas relacionadas ao exame e às imagens. Se o usuário perguntar algo fora desse escopo, recuse educadamente e traga a conversa de volta ao laudo.`;
 }
 
+// Gemini's safety filter sporadically aborts a generation mid-stream
+// (finishReason "content-filter") on benign clinical text. Buffer each model
+// stream below the tool loop and retry on a filtered finish, so the response
+// re-rolls without re-running any tools (no duplicate reports/clients).
+const CONTENT_FILTER_ATTEMPTS = 3;
+
+const retryContentFilter: LanguageModelMiddleware = {
+  specificationVersion: "v3",
+  wrapStream: async ({ doStream }) => {
+    type Part = Awaited<ReturnType<typeof doStream>>["stream"] extends ReadableStream<infer T> ? T : never;
+    for (let attempt = 1; ; attempt++) {
+      const result = await doStream();
+      const parts: Part[] = [];
+      let filtered = false;
+      const reader = result.stream.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        parts.push(value);
+        if (value.type === "finish" && value.finishReason.unified === "content-filter") filtered = true;
+      }
+      if (!filtered || attempt >= CONTENT_FILTER_ATTEMPTS) {
+        return {
+          ...result,
+          stream: new ReadableStream<Part>({
+            start(controller) {
+              for (const part of parts) controller.enqueue(part);
+              controller.close();
+            },
+          }),
+        };
+      }
+    }
+  },
+};
+
 export function createLaudoAgent(ctx: LaudoToolCtx, vetName: string) {
   return new ToolLoopAgent({
-    model: google(GENERATE_MODEL),
+    model: wrapLanguageModel({ model: google(GENERATE_MODEL), middleware: retryContentFilter }),
     instructions: buildInstructions(vetName),
     tools: createLaudoTools(ctx),
     stopWhen: stepCountIs(20),
