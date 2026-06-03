@@ -81,9 +81,11 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy, reportId, imagesUploaded]);
 
+  const text = input.trim();
+  const canSend = !busy && !recording && (text.length > 0 || attached.length > 0);
+
   async function send() {
-    if (busy || recording) return;
-    const text = input.trim();
+    if (!canSend) return;
     if (attached.length > 0) {
       const files: FileUIPart[] = await Promise.all(
         attached.map(async (f) => ({
@@ -95,7 +97,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
       );
       sendMessage({ text, files });
     } else {
-      sendMessage({ text: text || "Continuar" });
+      sendMessage({ text });
     }
     setInput("");
     setAttached([]);
@@ -248,7 +250,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={busy}
-              placeholder="Digite sua resposta (ou Enter para seguir)..."
+              placeholder="Digite sua resposta..."
               className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
             />
             <button
@@ -267,7 +269,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
             </button>
             <button
               type="submit"
-              disabled={busy}
+              disabled={!canSend}
               className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Enviar
