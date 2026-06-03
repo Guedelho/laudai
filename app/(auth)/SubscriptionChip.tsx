@@ -23,8 +23,14 @@ export default function SubscriptionChip({ status, periodEnd, canManage }: Props
     }
   }
 
-  const label = labelFor(status, periodEnd);
-  const tone = toneFor(status);
+  // A trialing status whose period end has passed means the trial has lapsed and
+  // Stripe has converted it — our mirror is just behind. Show it as the active plan
+  // rather than a stuck "Teste termina hoje" countdown.
+  const trialLapsed = status === "trialing" && periodEnd !== null && new Date(periodEnd).getTime() <= Date.now();
+  const effectiveStatus = trialLapsed ? "active" : status;
+
+  const label = labelFor(effectiveStatus, periodEnd);
+  const tone = toneFor(effectiveStatus);
   const className = `text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${tone}`;
 
   if (!canManage) {
@@ -55,7 +61,6 @@ function labelFor(status: Props["status"], periodEnd: string | null): string {
   const daysLeft = Math.ceil((new Date(periodEnd).getTime() - Date.now()) / 86_400_000);
 
   if (status === "trialing") {
-    if (daysLeft <= 0) return "Teste termina hoje";
     if (daysLeft === 1) return "Teste: 1 dia";
     return `Teste: ${daysLeft} dias`;
   }

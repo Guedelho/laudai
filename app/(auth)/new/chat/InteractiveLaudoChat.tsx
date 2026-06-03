@@ -61,6 +61,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
   const [audioError, setAudioError] = useState("");
   const [imagesUploaded, setImagesUploaded] = useState(false);
   const [previewFiles, setPreviewFiles] = useState<File[]>([]);
+  const [forcePanel, setForcePanel] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -70,6 +71,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
   useEffect(() => () => clearInterval(timerRef.current ?? undefined), []);
 
   const { before, after, reportId } = splitAtReport(messages);
+  const chatImages = collectChatImages(before);
   const busy = status === "submitted" || status === "streaming";
   const last = messages[messages.length - 1];
   const showThinking =
@@ -146,6 +148,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
     setAudioError("");
     setImagesUploaded(false);
     setPreviewFiles([]);
+    setForcePanel(false);
   }
 
   return (
@@ -174,7 +177,18 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
           <Message key={message.id} message={message} />
         ))}
         {showThinking && !imagesUploaded && <TypingDots />}
-        {reportId && !imagesUploaded && (
+        {reportId && !imagesUploaded && !forcePanel && chatImages.length > 0 && (
+          <AutoAttachImages
+            reportId={reportId}
+            images={chatImages}
+            onDone={(files) => {
+              setPreviewFiles(files);
+              setImagesUploaded(true);
+            }}
+            onFallback={() => setForcePanel(true)}
+          />
+        )}
+        {reportId && !imagesUploaded && (forcePanel || chatImages.length === 0) && (
           <ImageStep
             reportId={reportId}
             onDone={(files) => {
@@ -336,6 +350,80 @@ function Message({ message }: { message: LaudoAgentUIMessage }) {
         return null;
       })}
     </>
+  );
+}
+
+type ChatImage = { url: string; filename: string; mediaType: string };
+
+function collectChatImages(messages: LaudoAgentUIMessage[]): ChatImage[] {
+  const out: ChatImage[] = [];
+  for (const message of messages) {
+    if (message.role !== "user") continue;
+    for (const part of message.parts) {
+      if (part.type === "file" && part.mediaType?.startsWith("image/")) {
+        out.push({
+          url: part.url,
+          filename: part.filename ?? `imagem-${out.length + 1}.jpg`,
+          mediaType: part.mediaType,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+// The vet already attached the exam images in the chat (so the agent could read
+// the measurements). Persist those same images to the report instead of asking
+// for them again in the panel.
+function AutoAttachImages({
+  reportId,
+  images,
+  onDone,
+  onFallback,
+}: {
+  reportId: string;
+  images: ChatImage[];
+  onDone: (files: File[]) => void;
+  onFallback: () => void;
+}) {
+  const [error, setError] = useState("");
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    (async () => {
+      try {
+        const files = await Promise.all(
+          images.map(async (img) => {
+            const blob = await (await fetch(img.url)).blob();
+            return new File([blob], img.filename, { type: img.mediaType || blob.type });
+          }),
+        );
+        await uploadReportImages(reportId, files);
+        onDone(files);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erro ao anexar as imagens.");
+      }
+    })();
+  }, [reportId, images, onDone]);
+
+  if (error) {
+    return (
+      <div className="space-y-2 self-start rounded-2xl bg-gray-100 px-4 py-3 text-sm">
+        <p className="text-red-600">{error}</p>
+        <button type="button" onClick={onFallback} className="font-medium text-blue-600 hover:text-blue-700">
+          Anexar imagens manualmente
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 self-start rounded-2xl bg-gray-100 px-4 py-3 text-sm text-gray-600">
+      <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
+      Anexando as imagens do exame ao laudo...
+    </div>
   );
 }
 

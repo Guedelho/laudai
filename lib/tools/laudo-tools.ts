@@ -133,7 +133,11 @@ export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) 
       description:
         "Cria o laudo e inicia a geração. Chame apenas quando tiver cliente, médico responsável, todos os dados do paciente e os achados do exame. Retorna o reportId para o upload das imagens.",
       inputSchema: z.object({
-        rawInput: z.string().describe("Achados do exame (até 2000 caracteres). Pode ser vazio para laudo normal."),
+        rawInput: z
+          .string()
+          .describe(
+            "Texto combinado dos achados: medidas e nomes de órgãos extraídos das imagens (apenas os legíveis ou confirmados pelo usuário) somados às alterações descritas pelo usuário. Nunca inclua medidas inventadas.",
+          ),
         patientName: z.string(),
         species: z.enum(["Canina", "Felina"]),
         breed: z.string(),
