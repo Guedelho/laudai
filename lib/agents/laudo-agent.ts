@@ -54,6 +54,8 @@ export function createLaudoAgent(ctx: LaudoToolCtx, vetName: string) {
     tools: createLaudoTools(ctx),
     stopWhen: stepCountIs(20),
     maxOutputTokens: 2048,
+    temperature: 0,
+    seed: 42,
     providerOptions: { google: { safetySettings: [...GEMINI_SAFETY_SETTINGS] } },
   });
 }
