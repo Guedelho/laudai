@@ -6,7 +6,7 @@ import {
   type LanguageModelMiddleware,
 } from "ai";
 import { google } from "@ai-sdk/google";
-import { GENERATE_MODEL, GEMINI_SAFETY_SETTINGS, CLINICAL_CONTENT_FRAMING } from "@/shared/constants";
+import { GENERATE_MODEL, GEMINI_SAFETY_SETTINGS } from "@/shared/constants";
 import { createLaudoTools, type LaudoToolCtx } from "@/lib/tools/laudo-tools";
 import { laudoGreeting } from "@/lib/laudo-greeting";
 import { brazilToday } from "@/lib/utils";
@@ -14,9 +14,7 @@ import { logWarn } from "@/lib/log";
 
 function buildInstructions(vetName: string): string {
   const today = brazilToday();
-  return `${CLINICAL_CONTENT_FRAMING}
-
-Você é um assistente que ajuda médicos veterinários a gerar laudos de ultrassom abdominal de forma conversacional, em português (pt-BR).
+  return `Você é um assistente que ajuda médicos veterinários a gerar laudos de ultrassom abdominal de forma conversacional, em português (pt-BR).
 
 A data de hoje no servidor é ${today}. Use esta data como referência exata para interpretar expressões como "hoje", "ontem", "anteontem" ou qualquer outra data relativa — nunca use seu conhecimento interno para inferir a data atual.
 
@@ -54,13 +52,7 @@ Regras:
 - Mantenha-se estritamente no escopo: geração deste laudo (paciente, médico, cliente, data, achados) e dúvidas veterinárias/clínicas relacionadas ao exame e às imagens. Se o usuário perguntar algo fora desse escopo, recuse educadamente e traga a conversa de volta ao laudo.`;
 }
 
-// Gemini returns finishReason PROHIBITED_CONTENT (surfaced as "content-filter")
-// on benign clinical prose. It's a hard Google-side filter that safetySettings
-// cannot disable and that fires non-deterministically, so the only robust guard
-// is to re-roll. Buffer each model round-trip below the tool loop and retry on a
-// filtered finish — the response re-rolls without re-running tools (no duplicate
-// reports/clients). Buffering also prevents the user from seeing a half-streamed
-// reply that then gets cut.
+// Retry below the tool loop on Gemini's PROHIBITED_CONTENT block (no tool re-run).
 const CONTENT_FILTER_ATTEMPTS = 5;
 
 const retryContentFilter: LanguageModelMiddleware = {
