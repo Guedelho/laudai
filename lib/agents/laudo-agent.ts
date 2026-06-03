@@ -10,6 +10,7 @@ import { GENERATE_MODEL, GEMINI_SAFETY_SETTINGS, CLINICAL_CONTENT_FRAMING } from
 import { createLaudoTools, type LaudoToolCtx } from "@/lib/tools/laudo-tools";
 import { laudoGreeting } from "@/lib/laudo-greeting";
 import { brazilToday } from "@/lib/utils";
+import { logWarn } from "@/lib/log";
 
 function buildInstructions(vetName: string): string {
   const today = brazilToday();
@@ -53,11 +54,14 @@ Regras:
 - Mantenha-se estritamente no escopo: geração deste laudo (paciente, médico, cliente, data, achados) e dúvidas veterinárias/clínicas relacionadas ao exame e às imagens. Se o usuário perguntar algo fora desse escopo, recuse educadamente e traga a conversa de volta ao laudo.`;
 }
 
-// Gemini's safety filter sporadically aborts a generation mid-stream
-// (finishReason "content-filter") on benign clinical text. Buffer each model
-// stream below the tool loop and retry on a filtered finish, so the response
-// re-rolls without re-running any tools (no duplicate reports/clients).
-const CONTENT_FILTER_ATTEMPTS = 3;
+// Gemini returns finishReason PROHIBITED_CONTENT (surfaced as "content-filter")
+// on benign clinical prose. It's a hard Google-side filter that safetySettings
+// cannot disable and that fires non-deterministically, so the only robust guard
+// is to re-roll. Buffer each model round-trip below the tool loop and retry on a
+// filtered finish — the response re-rolls without re-running tools (no duplicate
+// reports/clients). Buffering also prevents the user from seeing a half-streamed
+// reply that then gets cut.
+const CONTENT_FILTER_ATTEMPTS = 5;
 
 const retryContentFilter: LanguageModelMiddleware = {
   specificationVersion: "v3",
@@ -75,6 +79,7 @@ const retryContentFilter: LanguageModelMiddleware = {
         if (value.type === "finish" && value.finishReason.unified === "content-filter") filtered = true;
       }
       if (!filtered || attempt >= CONTENT_FILTER_ATTEMPTS) {
+        if (filtered) logWarn("Chat content-filter: exhausted retries", { attempts: attempt });
         return {
           ...result,
           stream: new ReadableStream<Part>({
@@ -85,6 +90,7 @@ const retryContentFilter: LanguageModelMiddleware = {
           }),
         };
       }
+      logWarn("Chat content-filter: retrying", { attempt });
     }
   },
 };
