@@ -67,6 +67,24 @@ export interface UpdateProfileRequest {
   crmv_state?: string;
 }
 
+export interface AccountProfileFields {
+  full_name: string;
+  cpf: string;
+  crmv: string;
+  crmv_state: string;
+}
+
+export interface SignupValidateRequest extends AccountProfileFields {
+  email: string;
+  password: string;
+}
+
+export type OnboardingRequest = AccountProfileFields;
+
+export interface AccountFieldError extends ApiResponse {
+  field?: "cpf" | "crmv" | "crmv_state" | "email" | "password" | "full_name";
+}
+
 // ─── Response types ──────────────────────────────────────────────────────────
 
 export interface ApiResponse {

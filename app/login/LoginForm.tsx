@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
@@ -25,6 +26,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
   const emailId = useId();
@@ -42,6 +44,19 @@ export default function LoginPage() {
       setLoading(false);
     } else {
       router.push("/dashboard");
+    }
+  }
+
+  async function handleGoogle() {
+    setGoogleLoading(true);
+    setError("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
+    });
+    if (error) {
+      setError("Erro ao conectar com o Google. Tente novamente.");
+      setGoogleLoading(false);
     }
   }
 
@@ -108,12 +123,34 @@ export default function LoginPage() {
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || googleLoading}
             className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
           >
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
+
+        <div className="flex items-center gap-3 my-4">
+          <span className="h-px flex-1 bg-gray-200" />
+          <span className="text-xs text-gray-400">ou</span>
+          <span className="h-px flex-1 bg-gray-200" />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGoogle}
+          disabled={loading || googleLoading}
+          className="w-full border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+        >
+          {googleLoading ? "Conectando..." : "Continuar com Google"}
+        </button>
+
+        <p className="mt-6 text-center text-sm text-gray-500">
+          Não tem conta?{" "}
+          <Link href="/signup" className="text-blue-600 hover:underline">
+            Criar conta
+          </Link>
+        </p>
       </div>
     </div>
   );

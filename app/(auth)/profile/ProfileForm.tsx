@@ -5,22 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as profileApi from "@/lib/services/profile";
 import { logout } from "@/app/actions/auth";
-
-function validateCpf(value: string): boolean {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length !== 11) return false;
-  if (/^(\d)\1+$/.test(digits)) return false;
-  let sum = 0;
-  for (let i = 0; i < 9; i++) sum += parseInt(digits[i]) * (10 - i);
-  let r = (sum * 10) % 11;
-  if (r === 10 || r === 11) r = 0;
-  if (r !== parseInt(digits[9])) return false;
-  sum = 0;
-  for (let i = 0; i < 10; i++) sum += parseInt(digits[i]) * (11 - i);
-  r = (sum * 10) % 11;
-  if (r === 10 || r === 11) r = 0;
-  return r === parseInt(digits[10]);
-}
+import { validateCpf, formatCpf } from "@/lib/cpf";
 
 const SIGNATURE_FONTS = [
   { key: "sacramento", label: "Sacramento", css: "'Sacramento', cursive" },
@@ -49,7 +34,7 @@ export default function ProfileForm({
   hasSignatureImage: boolean;
 }) {
   const [fullName, setFullName] = useState(initialFullName);
-  const [cpf, setCpf] = useState(initialCpf);
+  const [cpf, setCpf] = useState(formatCpf(initialCpf));
   const crmv = initialCrmv;
   const crmvState = initialCrmvState;
   const [sigVersion, setSigVersion] = useState(() => (hasSignatureImage ? Date.now() : 0));
@@ -138,12 +123,7 @@ export default function ProfileForm({
   }
 
   function handleCpfChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value.replace(/\D/g, "").slice(0, 11);
-    const formatted = raw
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-    setCpf(formatted);
+    setCpf(formatCpf(e.target.value));
     if (cpfError) setCpfError("");
   }
 

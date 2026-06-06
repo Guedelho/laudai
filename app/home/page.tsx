@@ -12,12 +12,20 @@ export default function HomePage() {
         <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">Laudai</h1>
         <p className="mt-4 text-lg text-gray-600">Gerador de laudos veterinários</p>
         <p className="mt-2 text-sm text-gray-500">Transforme achados ditados em laudos estruturados, em segundos.</p>
-        <a
-          href="https://app.laudai.vet/login"
-          className="mt-8 inline-block bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700"
-        >
-          Entrar
-        </a>
+        <div className="mt-8 flex items-center justify-center gap-3">
+          <a
+            href="https://app.laudai.vet/signup"
+            className="inline-block bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700"
+          >
+            Criar conta
+          </a>
+          <a
+            href="https://app.laudai.vet/login"
+            className="inline-block border border-gray-300 text-gray-700 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50"
+          >
+            Entrar
+          </a>
+        </div>
       </div>
     </main>
   );

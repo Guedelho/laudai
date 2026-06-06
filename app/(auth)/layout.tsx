@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { createAdmin } from "@/lib/supabase/admin";
 import { getServerUser, getCurrentOrgId } from "@/lib/supabase/auth";
+import { getProfile } from "@/lib/supabase/profile";
 import { redirect } from "next/navigation";
 import { isOrgOwner } from "@/lib/supabase/org";
 import { TABLES, REPORT_TYPES, ENTITLED_SUBSCRIPTION_STATUSES } from "@/shared/constants";
@@ -10,6 +11,8 @@ import SubscriptionChip from "./SubscriptionChip";
 async function AuthGate({ children }: { children: React.ReactNode }) {
   const user = await getServerUser();
   if (!user) redirect("/login");
+  const profile = await getProfile(createAdmin(), user.id);
+  if (!profile) redirect("/onboarding");
   return <>{children}</>;
 }
 
@@ -17,7 +20,12 @@ async function HeaderWithChip() {
   const user = await getServerUser();
   if (!user) return <AppHeader />;
 
-  const orgId = await getCurrentOrgId(user.id);
+  let orgId: string;
+  try {
+    orgId = await getCurrentOrgId(user.id);
+  } catch {
+    return <AppHeader />;
+  }
   const admin = createAdmin();
   const [{ data: org }, { data: entitlement }, owner] = await Promise.all([
     admin.from(TABLES.organizations).select("stripe_subscription_status").eq("id", orgId).single(),

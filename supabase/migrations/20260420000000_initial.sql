@@ -351,7 +351,43 @@ begin
 end;
 $$;
 
-revoke all on function create_solo_org(uuid, text, text) from anon, authenticated;
+revoke all on function create_solo_org(uuid, text, text) from public, anon, authenticated;
+grant execute on function create_solo_org(uuid, text, text) to service_role;
+
+-- Profile + solo org + owner membership in one tx; a cpf/crmv unique violation
+-- aborts it whole, leaving no orphan org.
+create or replace function provision_account(
+  p_user_id    uuid,
+  p_full_name  text,
+  p_cpf        text,
+  p_crmv       text,
+  p_crmv_state text,
+  p_slug       text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_org_id uuid;
+begin
+  insert into profiles (id, full_name, cpf, crmv, crmv_state)
+  values (p_user_id, p_full_name, p_cpf, p_crmv, p_crmv_state);
+
+  insert into organizations (name, slug, plan, owner_user_id)
+  values (p_full_name, p_slug, 'individual', p_user_id)
+  returning id into v_org_id;
+
+  insert into organization_members (org_id, user_id, role)
+  values (v_org_id, p_user_id, 'owner');
+
+  return v_org_id;
+end;
+$$;
+
+revoke all on function provision_account(uuid, text, text, text, text, text) from public, anon, authenticated;
+grant execute on function provision_account(uuid, text, text, text, text, text) to service_role;
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- pets

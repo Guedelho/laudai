@@ -5,6 +5,8 @@ import { invalidateUserPdfCache } from "@/lib/report/cache";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
+import { normalizeCpf } from "@/lib/cpf";
+import { normalizeCrmv } from "@/lib/crmv";
 
 export const PUT = withApiHandler(async ({ userId, admin, audit, req }) => {
   const body: UpdateProfileRequest = await req.json();
@@ -17,7 +19,13 @@ export const PUT = withApiHandler(async ({ userId, admin, audit, req }) => {
     full_name,
     signature_font,
     signature,
-    ...(!existing ? { cpf: body.cpf, crmv: body.crmv, crmv_state: body.crmv_state } : {}),
+    ...(!existing
+      ? {
+          cpf: normalizeCpf(body.cpf ?? ""),
+          crmv: normalizeCrmv(body.crmv ?? ""),
+          crmv_state: (body.crmv_state ?? "").trim().toUpperCase(),
+        }
+      : {}),
     ...("signature_image_url" in body ? { signature_image_url } : {}),
   };
 
