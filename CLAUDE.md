@@ -77,7 +77,7 @@ For local dev, `stripe listen --forward-to localhost:3000/webhook/stripe` prints
 
 ## Domains & environments
 
-- **Production** — app at `app.laudai.vet`; `laudai.vet`/`www.laudai.vet` 307-redirect to `app.laudai.vet` (proxy.ts) so the Supabase auth cookie stays anchored to one host. Root domain is reserved for a future landing page. Supabase project `rgemiayidnumeotplozm`. Stripe is in **live mode**.
+- **Production** — app at `app.laudai.vet`. On the root domain (`laudai.vet`/`www.laudai.vet`), proxy.ts rewrites `/` to the public landing page (`app/home/page.tsx`); every other root-domain path 307-redirects to `app.laudai.vet` so the Supabase auth cookie stays anchored to one host. Supabase project `rgemiayidnumeotplozm`. Stripe is in **live mode**.
 - **Staging** — branch `staging`, deployed to `laudai-staging.vercel.app` (manual `vercel deploy` from the branch; the alias must be re-pointed at the new deployment each time — git auto-deploy for non-main isn't enabled). Separate Supabase project `jrspzfygwkjercxdqyqx` and Stripe **test mode**. All staging env vars are scoped to the `staging` git branch in Vercel's Preview environment.
 - **Env var naming** — Supabase keys use the modern format: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (was `ANON_KEY`) and `SUPABASE_SECRET_KEY` (was `SERVICE_ROLE_KEY`). The values are `sb_publishable_…` / `sb_secret_…`.
 
@@ -101,7 +101,7 @@ RLS: org members read; insert is gated to `user_id = auth.uid()` (no impersonati
 
 ## Page structure
 
-All authenticated pages live inside `app/(auth)/`. The route group layout handles auth check + `<AppHeader />` + outer wrapper. Public pages: `/login`, `/legal/*` (politica-de-privacidade, termos-de-uso), `/signup` (disabled, redirects to `/login`).
+All authenticated pages live inside `app/(auth)/`. The route group layout handles auth check + `<AppHeader />` + outer wrapper. Public pages: `/home` (root-domain landing — proxy rewrites `laudai.vet/` here), `/login`, `/legal/*` (politica-de-privacidade, termos-de-uso), `/signup` (disabled, redirects to `/login`).
 
 1. **Auth**: `proxy.ts` redirects unauthenticated users to `/login`. Layout (`app/(auth)/layout.tsx`) double-checks with `getUser()` inside an `<AuthGate>` Suspense boundary. Pages call `getUser()` only to get `user.id` for queries — return `null` if not authenticated.
 2. **Data**: Use `createAdmin()` for all server-side queries (never the anon client). Scope reads by `org_id` via `getCurrentOrgId(user.id)`.

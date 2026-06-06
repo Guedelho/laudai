@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_EXACT = new Set(["/login"]);
+const PUBLIC_EXACT = new Set(["/login", "/home"]);
 // /webhook — Stripe (and future server-to-server callers). Outside /api so
 // Vercel BotID doesn't challenge the request before our signature check runs.
 const PUBLIC_PREFIXES = ["/legal", "/webhook/"];
@@ -11,10 +11,14 @@ function isPublicPath(path: string): boolean {
 }
 
 export default async function proxy(request: NextRequest) {
-  // App lives at app.laudai.vet; root domain is reserved for a future landing
-  // page. Forwarding everything else keeps cookies anchored to one host.
+  // Root domain serves the public landing page at "/"; every other path is
+  // forwarded to app.laudai.vet so the auth cookie stays anchored to one host.
   const host = request.headers.get("host");
+  const path = request.nextUrl.pathname;
   if (host === "laudai.vet" || host === "www.laudai.vet") {
+    if (path === "/") {
+      return NextResponse.rewrite(new URL("/home", request.url));
+    }
     const url = request.nextUrl.clone();
     url.host = "app.laudai.vet";
     return NextResponse.redirect(url, 307);
@@ -42,7 +46,6 @@ export default async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const path = request.nextUrl.pathname;
 
   if (!user && !isPublicPath(path) && !path.startsWith("/api/")) {
     return NextResponse.redirect(new URL("/login", request.url));

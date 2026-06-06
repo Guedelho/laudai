@@ -67,6 +67,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 | `/legal/termos-de-uso`           | Terms of use                                                                     |
 | `/login`                         | Public login page                                                                |
 | `/signup`                        | Disabled (redirects to `/login`)                                                 |
+| `/home`                          | Public landing page — proxy rewrites `laudai.vet/` here (app stays on subdomain) |
 
 ## Multi-tenancy
 
