@@ -33,7 +33,7 @@ All schema names, statuses, buckets, plan ids, audit actions, etc. live in const
 - **Database**: Supabase Postgres (project `rgemiayidnumeotplozm`, region `sa-east-1`). Multi-tenant via `organizations`. Every domain table (`pets`, `clients`, `client_vets`, `reports`, `report_images`) has `org_id NOT NULL` + `user_id NOT NULL`. RLS: reads scope by org membership (team-visible); mutations stay user_id-self (only creator edits). All FK / `user_id` / `org_id` columns are indexed.
 - **Storage**: Three private buckets — `STORAGE_BUCKETS.reportImages`, `STORAGE_BUCKETS.reportPdfs`, `STORAGE_BUCKETS.profileLogos`. RLS scopes anon-client access to `auth.uid() = first folder in path`. All writes via service role.
 - **Auth**: Supabase Auth via cookies (SSR). `proxy.ts` syncs session and redirects unauthenticated users to `/login` (except `/legal/*`). `/signup` exists but is disabled — page redirects to `/login`. `withApiHandler` uses `getUserId()` from `@/lib/supabase/auth` — cookie-only, no Bearer tokens.
-- **Deployment**: Vercel. Git auto-deploy is enabled — pushes to `main` deploy automatically. Personal repo (`Guedelho/laudai`); push as the `Guedelho` gh account.
+- **Deployment**: Vercel. Git auto-deploy is enabled — pushes to `main` (production) and `staging` deploy automatically. Personal repo (`Guedelho/laudai`); push as the `Guedelho` gh account.
 
 ## Multi-tenancy
 
@@ -78,7 +78,7 @@ For local dev, `stripe listen --forward-to localhost:3000/webhook/stripe` prints
 ## Domains & environments
 
 - **Production** — app at `app.laudai.vet`. On the root domain (`laudai.vet`/`www.laudai.vet`), proxy.ts rewrites `/` to the public landing page (`app/home/page.tsx`); every other root-domain path 307-redirects to `app.laudai.vet` so the Supabase auth cookie stays anchored to one host. Supabase project `rgemiayidnumeotplozm`. Stripe is in **live mode**.
-- **Staging** — branch `staging`, deployed to `laudai-staging.vercel.app` (manual `vercel deploy` from the branch; the alias must be re-pointed at the new deployment each time — git auto-deploy for non-main isn't enabled). Separate Supabase project `jrspzfygwkjercxdqyqx` and Stripe **test mode**. All staging env vars are scoped to the `staging` git branch in Vercel's Preview environment.
+- **Staging** — branch `staging`, auto-deploys to `laudai-staging.vercel.app` on push (git auto-deploy is enabled for the branch). Separate Supabase project `jrspzfygwkjercxdqyqx` and Stripe **test mode**. All staging env vars are scoped to the `staging` git branch in Vercel's Preview environment.
 - **Env var naming** — Supabase keys use the modern format: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (was `ANON_KEY`) and `SUPABASE_SECRET_KEY` (was `SERVICE_ROLE_KEY`). The values are `sb_publishable_…` / `sb_secret_…`.
 
 ## Audit log

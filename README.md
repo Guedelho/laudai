@@ -118,6 +118,8 @@ Both flows converge on the same worker (`lib/report/worker.ts`) and the same `re
 3. Under **Project Settings → Environment Variables**, add the values from `.env.example`, plus a random `CRON_SECRET` (long random string used as a Bearer token on the cron routes)
 4. Deploy — `vercel.json` registers the 30-day deletion sweep cron; `serverExternalPackages: ["pdfmake"]` is already set in `next.config.ts`
 
+Git auto-deploy is enabled per branch: pushes to `main` deploy to production (`app.laudai.vet`; `laudai.vet/` serves the landing page), and pushes to `staging` deploy to `laudai-staging.vercel.app` (separate Supabase project + Stripe test mode).
+
 ## Project structure
 
 ```
