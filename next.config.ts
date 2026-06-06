@@ -1,10 +1,8 @@
 import type { NextConfig } from "next";
 import { withBotId } from "botid/next/config";
 
-// Allow next/image to load signed Supabase storage URLs. NEXT_PUBLIC_SUPABASE_URL
-// is scoped per-branch in Vercel, so guard against it being absent — otherwise a
-// branch without it (e.g. a feature preview) crashes config load and the whole
-// build fails before it can even serve the env-free public landing page.
+// NEXT_PUBLIC_SUPABASE_URL is scoped to the staging branch in Vercel; other
+// branches build without it, so absent must not throw.
 function supabaseImagePatterns(): NonNullable<NextConfig["images"]>["remotePatterns"] {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!url) return [];
