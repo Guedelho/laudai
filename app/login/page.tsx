@@ -1,8 +1,10 @@
-import { cacheLife } from "next/cache";
+import { Suspense } from "react";
 import LoginForm from "./LoginForm";
 
-export default async function LoginPage() {
-  "use cache";
-  cacheLife("max");
-  return <LoginForm />;
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
 }

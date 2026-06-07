@@ -6,6 +6,7 @@ import { inputCls, btnBlock } from "@/lib/ui";
 import { validateAccountFields, normalizeAccount, type FieldErrors } from "@/lib/account";
 import * as authApi from "@/lib/services/auth";
 import { AccountError } from "@/lib/services/auth";
+import { logout } from "@/app/actions/auth";
 import CpfCrmvFields from "@/components/CpfCrmvFields";
 
 export default function OnboardingForm({ initialFullName }: { initialFullName: string }) {
@@ -90,6 +91,12 @@ export default function OnboardingForm({ initialFullName }: { initialFullName: s
 
           <button type="submit" disabled={loading} className={btnBlock}>
             {loading ? "Concluindo..." : "Concluir cadastro"}
+          </button>
+        </form>
+
+        <form action={logout} className="mt-4 text-center">
+          <button type="submit" className="text-sm text-gray-500 hover:text-gray-600">
+            Sair
           </button>
         </form>
       </div>

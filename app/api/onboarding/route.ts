@@ -1,12 +1,10 @@
 import "server-only";
 
-import { NextRequest, NextResponse } from "next/server";
-import { getUserId } from "@/lib/supabase/auth";
-import { createAdmin } from "@/lib/supabase/admin";
+import { NextResponse } from "next/server";
+import { withAuthHandler } from "@/lib/api-handler";
 import { getProfile } from "@/lib/supabase/profile";
 import { provisionAccount, AccountConflictError } from "@/lib/supabase/provisioning";
 import { logAudit, AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
-import { logError } from "@/lib/log";
 import { validateAccountFields, firstFieldError } from "@/lib/account";
 import type { OnboardingRequest, AccountFieldError } from "@/shared/interfaces";
 
@@ -14,45 +12,36 @@ function bad(field: AccountFieldError["field"], error: string, status = 400) {
   return NextResponse.json({ field, error }, { status });
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withAuthHandler(async ({ userId, req, admin }) => {
+  const body = (await req.json()) as OnboardingRequest;
+  const fieldError = firstFieldError(validateAccountFields(body));
+  if (fieldError) return bad(fieldError.field, fieldError.error);
+
+  if (await getProfile(admin, userId)) return NextResponse.json({ ok: true });
+
   try {
-    const userId = await getUserId();
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const body = (await req.json()) as OnboardingRequest;
-    const fieldError = firstFieldError(validateAccountFields(body));
-    if (fieldError) return bad(fieldError.field, fieldError.error);
-
-    const admin = createAdmin();
-    if (await getProfile(admin, userId)) return NextResponse.json({ ok: true });
-
-    try {
-      const orgId = await provisionAccount(admin, userId, body);
-      await logAudit(admin, {
-        orgId,
-        userId,
-        action: AUDIT_ACTIONS.create,
-        entityType: AUDIT_ENTITIES.profile,
-        entityId: userId,
-      });
-      await logAudit(admin, {
-        orgId,
-        userId,
-        action: AUDIT_ACTIONS.create,
-        entityType: AUDIT_ENTITIES.organization,
-        entityId: orgId,
-      });
-      return NextResponse.json({ ok: true });
-    } catch (err) {
-      if (err instanceof AccountConflictError) {
-        return err.field === "cpf"
-          ? bad("cpf", "Este CPF já está cadastrado.", 409)
-          : bad("crmv", "Este CRMV já está cadastrado neste estado.", 409);
-      }
-      throw err;
-    }
+    const orgId = await provisionAccount(admin, userId, body);
+    await logAudit(admin, {
+      orgId,
+      userId,
+      action: AUDIT_ACTIONS.create,
+      entityType: AUDIT_ENTITIES.profile,
+      entityId: userId,
+    });
+    await logAudit(admin, {
+      orgId,
+      userId,
+      action: AUDIT_ACTIONS.create,
+      entityType: AUDIT_ENTITIES.organization,
+      entityId: orgId,
+    });
+    return NextResponse.json({ ok: true });
   } catch (err) {
-    logError("onboarding failed", err, { path: "/api/onboarding" });
-    return NextResponse.json({ error: "Erro inesperado." }, { status: 500 });
+    if (err instanceof AccountConflictError) {
+      return err.field === "cpf"
+        ? bad("cpf", "Este CPF já está cadastrado.", 409)
+        : bad("crmv", "Este CRMV já está cadastrado neste estado.", 409);
+    }
+    throw err;
   }
-}
+});

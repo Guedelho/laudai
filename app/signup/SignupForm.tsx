@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { inputCls, btnBlock, btnBlockSecondary } from "@/lib/ui";
@@ -37,8 +37,18 @@ export default function SignupForm() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
+  const [resendError, setResendError] = useState("");
+  const [cooldown, setCooldown] = useState(0);
 
   const supabase = createClient();
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
   const fullNameId = useId();
   const emailId = useId();
 
@@ -52,6 +62,23 @@ export default function SignupForm() {
     if (error) {
       setError("Erro ao conectar com o Google. Tente novamente.");
       setGoogleLoading(false);
+    }
+  }
+
+  async function handleResend() {
+    if (cooldown > 0 || resending) return;
+    setResending(true);
+    setResendError("");
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim(),
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+    setResending(false);
+    if (error) setResendError("Não foi possível reenviar agora. Aguarde um momento.");
+    else {
+      setResent(true);
+      setCooldown(60);
     }
   }
 
@@ -88,6 +115,7 @@ export default function SignupForm() {
         return;
       }
       setDone(true);
+      setCooldown(60);
     } catch (err) {
       if (err instanceof AccountError && err.field) setFieldErrors({ [err.field]: err.message });
       else setError(err instanceof Error ? err.message : "Erro ao criar conta. Tente novamente.");
@@ -105,7 +133,27 @@ export default function SignupForm() {
             Enviamos um link de confirmação para <span className="font-medium">{email}</span>. Confirme seu email para
             acessar sua conta.
           </p>
-          <Link href="/login" className="mt-6 inline-block text-sm text-blue-600 hover:underline">
+          <div className="mt-6">
+            {resent && <p className="mb-1 text-sm text-green-600">Email reenviado.</p>}
+            {cooldown > 0 ? (
+              <p className="text-sm text-gray-500">Reenviar disponível em {cooldown}s</p>
+            ) : (
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resending}
+                className="text-sm text-blue-600 hover:underline disabled:opacity-50"
+              >
+                {resending ? "Reenviando..." : "Não recebeu? Reenviar email"}
+              </button>
+            )}
+            {resendError && (
+              <p role="alert" className="mt-1 text-xs text-red-600">
+                {resendError}
+              </p>
+            )}
+          </div>
+          <Link href="/login" className="mt-4 inline-block text-sm text-blue-600 hover:underline">
             Voltar para o login
           </Link>
         </div>
