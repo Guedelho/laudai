@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { btnBlock } from "@/lib/ui";
 import PasswordInput from "@/components/PasswordInput";
+import AuthCard from "@/components/AuthCard";
 
 export default function ResetPasswordForm() {
   const [password, setPassword] = useState("");
@@ -40,38 +41,36 @@ export default function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Criar nova senha</h1>
-        <p className="text-sm text-gray-500 mb-6">Escolha uma nova senha para sua conta.</p>
+    <AuthCard>
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">Criar nova senha</h1>
+      <p className="text-sm text-gray-500 mb-6">Escolha uma nova senha para sua conta.</p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <PasswordInput
-            value={password}
-            onChange={setPassword}
-            autoComplete="new-password"
-            label="Nova senha"
-            error={fieldErrors.password}
-          />
-          <PasswordInput
-            value={confirm}
-            onChange={setConfirm}
-            autoComplete="new-password"
-            label="Confirmar senha"
-            error={fieldErrors.confirm}
-          />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <PasswordInput
+          value={password}
+          onChange={setPassword}
+          autoComplete="new-password"
+          label="Nova senha"
+          error={fieldErrors.password}
+        />
+        <PasswordInput
+          value={confirm}
+          onChange={setConfirm}
+          autoComplete="new-password"
+          label="Confirmar senha"
+          error={fieldErrors.confirm}
+        />
 
-          {error && (
-            <p role="alert" className="text-sm text-red-600">
-              {error}
-            </p>
-          )}
+        {error && (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
 
-          <button type="submit" disabled={loading} className={btnBlock}>
-            {loading ? "Salvando..." : "Salvar nova senha"}
-          </button>
-        </form>
-      </div>
-    </div>
+        <button type="submit" disabled={loading} className={btnBlock}>
+          {loading ? "Salvando..." : "Salvar nova senha"}
+        </button>
+      </form>
+    </AuthCard>
   );
 }

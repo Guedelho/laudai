@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withApiHandler } from "@/lib/api-handler";
+import { withApiHandler, clientIp } from "@/lib/api-handler";
 import { LEGAL_VERSIONS, TABLES, type LegalDocType } from "@/shared/constants";
 import { logError } from "@/lib/log";
 
@@ -18,8 +18,7 @@ export const POST = withApiHandler(async ({ userId, admin, req }) => {
     return NextResponse.json({ error: "Versão do documento desatualizada." }, { status: 400 });
   }
 
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
-  const { error } = await admin.from(TABLES.consents).insert({ user_id: userId, type, version, ip });
+  const { error } = await admin.from(TABLES.consents).insert({ user_id: userId, type, version, ip: clientIp(req) });
 
   if (error) {
     logError("Consent insert failed", error, { userId, type, version });

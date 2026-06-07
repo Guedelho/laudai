@@ -109,7 +109,7 @@ Both flows converge on the same worker (`lib/report/worker.ts`) and the same `re
 ## LGPD compliance
 
 - **Privacy policy + terms** at `/legal/*` (pt-BR)
-- **Consent capture** in the `consents` table (terms + privacy_policy versioned)
+- **Consent capture** in the `consents` table (terms + privacy_policy, versioned + IP) — recorded automatically at signup/onboarding, and re-acceptable via `POST /api/consents`
 - **Account deletion is 30-day**: `DELETE /api/account` schedules deletion (sets `profiles.deletion_scheduled_at`). A daily cron at 03:00 UTC (`/api/internal/sweep-deleted-accounts`) hard-deletes storage + auth rows after the retention window. Users can `POST /api/account` to cancel before then.
 - **Data export**: `GET /api/account/export` returns a JSON document with all the user's data + signed URLs for images/PDFs.
 - **CPF / CRMV uniqueness** at the DB level — prevents account abuse.

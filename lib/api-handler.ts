@@ -20,6 +20,10 @@ export async function loadOwned<T = Record<string, unknown>>(
   return (data as T | null) ?? null;
 }
 
+export function clientIp(req: NextRequest): string | null {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+}
+
 interface BaseOpts {
   // { botId: false } for routes loaded by <img>/<a download>/top-level navigation
   // — those can't carry BotID headers. Cookies still gate access.

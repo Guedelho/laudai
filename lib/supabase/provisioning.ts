@@ -4,9 +4,20 @@ import type { createAdmin } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/supabase/auth";
 import { normalizeAccount } from "@/lib/account";
 import { logError } from "@/lib/log";
+import { LEGAL_VERSIONS, TABLES } from "@/shared/constants";
 import type { AccountProfileFields } from "@/shared/interfaces";
 
 type Admin = ReturnType<typeof createAdmin>;
+
+// LGPD: log the user's acceptance of terms + privacy at account creation.
+// Best-effort — a consent-log failure must not block the (already-created) account.
+export async function recordSignupConsents(admin: Admin, userId: string, ip: string | null): Promise<void> {
+  const { error } = await admin.from(TABLES.consents).insert([
+    { user_id: userId, type: "terms", version: LEGAL_VERSIONS.terms, ip },
+    { user_id: userId, type: "privacy_policy", version: LEGAL_VERSIONS.privacy_policy, ip },
+  ]);
+  if (error) logError("signup consent insert failed", error, { userId });
+}
 
 export class AccountConflictError extends Error {
   field: "cpf" | "crmv";

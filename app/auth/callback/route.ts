@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
+import { clientIp } from "@/lib/api-handler";
 import { getProfile } from "@/lib/supabase/profile";
-import { provisionAccount, AccountConflictError } from "@/lib/supabase/provisioning";
+import { provisionAccount, recordSignupConsents, AccountConflictError } from "@/lib/supabase/provisioning";
 import { validateAccountFields } from "@/lib/account";
 import { logError } from "@/lib/log";
 
@@ -54,6 +55,7 @@ export async function GET(req: NextRequest) {
   if (Object.keys(validateAccountFields(fields)).length === 0) {
     try {
       await provisionAccount(admin, user.id, fields);
+      await recordSignupConsents(admin, user.id, clientIp(req));
       return NextResponse.redirect(`${origin}${next}`);
     } catch (err) {
       if (!(err instanceof AccountConflictError)) logError("provision on callback failed", err, { userId: user.id });

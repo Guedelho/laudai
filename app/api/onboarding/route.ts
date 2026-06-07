@@ -1,9 +1,9 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
-import { withAuthHandler } from "@/lib/api-handler";
+import { withAuthHandler, clientIp } from "@/lib/api-handler";
 import { getProfile } from "@/lib/supabase/profile";
-import { provisionAccount, AccountConflictError } from "@/lib/supabase/provisioning";
+import { provisionAccount, recordSignupConsents, AccountConflictError } from "@/lib/supabase/provisioning";
 import { logAudit, AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { validateAccountFields, firstFieldError } from "@/lib/account";
 import type { OnboardingRequest, AccountFieldError } from "@/shared/interfaces";
@@ -35,6 +35,7 @@ export const POST = withAuthHandler(async ({ userId, req, admin }) => {
       entityType: AUDIT_ENTITIES.organization,
       entityId: orgId,
     });
+    await recordSignupConsents(admin, userId, clientIp(req));
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof AccountConflictError) {

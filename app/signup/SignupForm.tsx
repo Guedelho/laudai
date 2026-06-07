@@ -9,6 +9,7 @@ import * as authApi from "@/lib/services/auth";
 import { AccountError } from "@/lib/services/auth";
 import CpfCrmvFields from "@/components/CpfCrmvFields";
 import PasswordInput from "@/components/PasswordInput";
+import AuthCard from "@/components/AuthCard";
 
 function translateSignupError(code: string | undefined, fallback: string): string {
   switch (code) {
@@ -112,140 +113,138 @@ export default function SignupForm() {
 
   if (done) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 w-full max-w-sm text-center">
+      <AuthCard center>
+        <div role="status">
           <h1 className="text-xl font-bold text-gray-900 mb-2">Confirme seu email</h1>
           <p className="text-sm text-gray-600">
             Enviamos um link de confirmação para <span className="font-medium">{email}</span>. Confirme seu email para
             acessar sua conta.
           </p>
-          <div className="mt-6">
-            {resent && <p className="mb-1 text-sm text-green-600">Email reenviado.</p>}
-            {cooldown > 0 ? (
-              <p className="text-sm text-gray-500">Reenviar disponível em {cooldown}s</p>
-            ) : (
-              <button
-                type="button"
-                onClick={handleResend}
-                disabled={resending}
-                className="text-sm text-blue-600 hover:underline disabled:opacity-50"
-              >
-                {resending ? "Reenviando..." : "Não recebeu? Reenviar email"}
-              </button>
-            )}
-            {resendError && (
-              <p role="alert" className="mt-1 text-xs text-red-600">
-                {resendError}
-              </p>
-            )}
-          </div>
-          <Link href="/login" className="mt-4 inline-block text-sm text-blue-600 hover:underline">
-            Voltar para o login
-          </Link>
         </div>
-      </div>
+        <div className="mt-6">
+          {resent && <p className="mb-1 text-sm text-green-600">Email reenviado.</p>}
+          {cooldown > 0 ? (
+            <p className="text-sm text-gray-500">Reenviar disponível em {cooldown}s</p>
+          ) : (
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resending}
+              className="text-sm text-blue-600 hover:underline disabled:opacity-50"
+            >
+              {resending ? "Reenviando..." : "Não recebeu? Reenviar email"}
+            </button>
+          )}
+          {resendError && (
+            <p role="alert" className="mt-1 text-xs text-red-600">
+              {resendError}
+            </p>
+          )}
+        </div>
+        <Link href="/login" className="mt-4 inline-block text-sm text-blue-600 hover:underline">
+          Voltar para o login
+        </Link>
+      </AuthCard>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-10">
-      <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Criar conta</h1>
-        <p className="text-sm text-gray-500 mb-6">Laudos veterinários com IA</p>
+    <AuthCard>
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">Criar conta</h1>
+      <p className="text-sm text-gray-500 mb-6">Laudos veterinários com IA</p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor={fullNameId} className="block text-sm font-medium text-gray-700 mb-1">
-              Nome completo
-            </label>
-            <input
-              id={fullNameId}
-              type="text"
-              autoComplete="name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className={inputCls}
-              placeholder="Dra. Tatiana Brasil"
-              aria-invalid={!!fieldErrors.full_name}
-              aria-describedby={fieldErrors.full_name ? `${fullNameId}-error` : undefined}
-              required
-            />
-            {fieldErrors.full_name && (
-              <p id={`${fullNameId}-error`} role="alert" className="mt-1 text-xs text-red-600">
-                {fieldErrors.full_name}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor={emailId} className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              id={emailId}
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={inputCls}
-              aria-invalid={!!fieldErrors.email}
-              aria-describedby={fieldErrors.email ? `${emailId}-error` : undefined}
-              required
-            />
-            {fieldErrors.email && (
-              <p id={`${emailId}-error`} role="alert" className="mt-1 text-xs text-red-600">
-                {fieldErrors.email}
-              </p>
-            )}
-          </div>
-
-          <PasswordInput
-            value={password}
-            onChange={setPassword}
-            autoComplete="new-password"
-            error={fieldErrors.password}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor={fullNameId} className="block text-sm font-medium text-gray-700 mb-1">
+            Nome completo
+          </label>
+          <input
+            id={fullNameId}
+            type="text"
+            autoComplete="name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            className={inputCls}
+            placeholder="Dra. Tatiana Brasil"
+            aria-invalid={!!fieldErrors.full_name}
+            aria-describedby={fieldErrors.full_name ? `${fullNameId}-error` : undefined}
+            required
           />
-
-          <CpfCrmvFields
-            cpf={cpf}
-            setCpf={setCpf}
-            crmvState={crmvState}
-            setCrmvState={setCrmvState}
-            crmv={crmv}
-            setCrmv={setCrmv}
-            errors={fieldErrors}
-          />
-
-          {error && (
-            <p role="alert" className="text-sm text-red-600">
-              {error}
+          {fieldErrors.full_name && (
+            <p id={`${fullNameId}-error`} role="alert" className="mt-1 text-xs text-red-600">
+              {fieldErrors.full_name}
             </p>
           )}
+        </div>
 
-          <button type="submit" disabled={loading} className={btnBlock}>
-            {loading ? "Criando conta..." : "Criar conta"}
-          </button>
-        </form>
+        <div>
+          <label htmlFor={emailId} className="block text-sm font-medium text-gray-700 mb-1">
+            Email
+          </label>
+          <input
+            id={emailId}
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={inputCls}
+            aria-invalid={!!fieldErrors.email}
+            aria-describedby={fieldErrors.email ? `${emailId}-error` : undefined}
+            required
+          />
+          {fieldErrors.email && (
+            <p id={`${emailId}-error`} role="alert" className="mt-1 text-xs text-red-600">
+              {fieldErrors.email}
+            </p>
+          )}
+        </div>
 
-        <p className="mt-4 text-center text-[11px] text-gray-500">
-          Ao criar conta, você concorda com os{" "}
-          <Link href="/legal/termos-de-uso" target="_blank" className="text-blue-600 hover:underline">
-            Termos de Uso
-          </Link>{" "}
-          e a{" "}
-          <Link href="/legal/politica-de-privacidade" target="_blank" className="text-blue-600 hover:underline">
-            Política de Privacidade
-          </Link>
-          .
-        </p>
+        <PasswordInput
+          value={password}
+          onChange={setPassword}
+          autoComplete="new-password"
+          error={fieldErrors.password}
+        />
 
-        <p className="mt-4 text-center text-sm text-gray-500">
-          Já tem conta?{" "}
-          <Link href="/login" className="text-blue-600 hover:underline">
-            Entrar
-          </Link>
-        </p>
-      </div>
-    </div>
+        <CpfCrmvFields
+          cpf={cpf}
+          setCpf={setCpf}
+          crmvState={crmvState}
+          setCrmvState={setCrmvState}
+          crmv={crmv}
+          setCrmv={setCrmv}
+          errors={fieldErrors}
+        />
+
+        {error && (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
+
+        <button type="submit" disabled={loading} className={btnBlock}>
+          {loading ? "Criando conta..." : "Criar conta"}
+        </button>
+      </form>
+
+      <p className="mt-4 text-center text-[11px] text-gray-500">
+        Ao criar conta, você concorda com os{" "}
+        <Link href="/legal/termos-de-uso" target="_blank" className="text-blue-600 hover:underline">
+          Termos de Uso
+        </Link>{" "}
+        e a{" "}
+        <Link href="/legal/politica-de-privacidade" target="_blank" className="text-blue-600 hover:underline">
+          Política de Privacidade
+        </Link>
+        .
+      </p>
+
+      <p className="mt-4 text-center text-sm text-gray-500">
+        Já tem conta?{" "}
+        <Link href="/login" className="text-blue-600 hover:underline">
+          Entrar
+        </Link>
+      </p>
+    </AuthCard>
   );
 }
