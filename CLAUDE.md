@@ -32,7 +32,8 @@ All schema names, statuses, buckets, plan ids, audit actions, etc. live in const
 - **Formatting**: Prettier + pre-commit hook via lint-staged. Run `npm run format` to format all files.
 - **Database**: Supabase Postgres (project `rgemiayidnumeotplozm`, region `sa-east-1`). Multi-tenant via `organizations`. Every domain table (`pets`, `clients`, `client_vets`, `reports`, `report_images`) has `org_id NOT NULL` + `user_id NOT NULL`. RLS: reads scope by org membership (team-visible); mutations stay user_id-self (only creator edits). All FK / `user_id` / `org_id` columns are indexed.
 - **Storage**: Three private buckets — `STORAGE_BUCKETS.reportImages`, `STORAGE_BUCKETS.reportPdfs`, `STORAGE_BUCKETS.profileLogos`. RLS scopes anon-client access to `auth.uid() = first folder in path`. All writes via service role.
-- **Auth**: Supabase Auth via cookies (SSR). `proxy.ts` syncs session and redirects unauthenticated users to `/login` (except `/legal/*`). `/signup` exists but is disabled — page redirects to `/login`. `withApiHandler` uses `getUserId()` from `@/lib/supabase/auth` — cookie-only, no Bearer tokens.
+- **Auth**: Supabase Auth via cookies (SSR). `proxy.ts` syncs session and redirects unauthenticated users to `/login` (except public paths). `withApiHandler` uses `getUserId()` from `@/lib/supabase/auth` — cookie-only, no Bearer tokens.
+- **Signup**: `/signup` (`SignupForm.tsx`) registers via email+password (`supabase.auth.signUp`, email confirmation required — login already blocks unconfirmed users via the `email_not_confirmed` error) or Google OAuth. CPF + CRMV state + number are required and unique (`profiles_cpf_unique`, `profiles_crmv_unique`); validated server-side (`/api/auth/signup-validate` pre-checks, but the DB constraints are the source of truth). Both auth methods land on `/auth/callback` (`exchangeCodeForSession`/`verifyOtp`, sanitized `next`). Profile + solo org are created atomically by the `provision_account()` SQL function (service-role only) — for email/password from `signUp` metadata in the callback, for Google on the `/onboarding` screen (which collects CPF/CRMV Google can't provide). `lib/supabase/provisioning.ts` maps unique violations to friendly field errors. The `(auth)` layout gate redirects any authed user without a profile to `/onboarding`. CPF/CRMV are stored canonical (digits-only / uppercased, no spaces) — see `lib/cpf.ts`, `lib/crmv.ts`. Dashboard prerequisites (Supabase: enable Confirm email + Google provider + redirect URLs + leaked-password protection; Google Cloud OAuth client) are configured per-project, not in code.
 - **Deployment**: Vercel. Git auto-deploy is enabled — pushes to `main` (production) and `staging` deploy automatically. Personal repo (`Guedelho/laudai`); push as the `Guedelho` gh account.
 
 ## Multi-tenancy
@@ -47,7 +48,7 @@ Every user belongs to ≥1 organization. Solo users get an org-of-1 (individual 
 Helpers:
 
 - `getCurrentOrgId(userId)` in `lib/supabase/auth.ts` — returns the user's primary org (owned first, then any membership). Until the org switcher is built, this is the "current" org for every request.
-- `create_solo_org(userId, name, slug)` — SQL function (revoked from anon/authenticated). Atomically inserts the org + owner membership. No entitlement is granted — that arrives via the Stripe webhook once the vet subscribes.
+- `provision_account(userId, full_name, cpf, crmv, crmv_state, slug)` — SQL function (service-role only; `EXECUTE` revoked from `public`/anon/authenticated). Atomically inserts the profile + org + owner membership; a cpf/crmv unique violation aborts it whole (no orphan org). This is what signup/onboarding call. `create_solo_org(userId, name, slug)` is the older org-only variant (same lockdown), kept for reference. No entitlement is granted — that arrives via the Stripe webhook once the vet subscribes.
 
 Plan enforcement (member counts, features) is **application-level** — no quotas in DB.
 
@@ -101,7 +102,7 @@ RLS: org members read; insert is gated to `user_id = auth.uid()` (no impersonati
 
 ## Page structure
 
-All authenticated pages live inside `app/(auth)/`. The route group layout handles auth check + `<AppHeader />` + outer wrapper. Public pages: `/home` (root-domain landing — proxy rewrites `laudai.vet/` here), `/login`, `/legal/*` (politica-de-privacidade, termos-de-uso), `/signup` (disabled, redirects to `/login`).
+All authenticated pages live inside `app/(auth)/`. The route group layout handles auth check + profile gate (no profile → `/onboarding`) + `<AppHeader />` + outer wrapper. Public pages: `/home` (root-domain landing — proxy rewrites `laudai.vet/` here), `/login`, `/signup`, `/auth/callback` (OAuth + email-confirmation handler), `/legal/*` (politica-de-privacidade, termos-de-uso). `/onboarding` is authenticated but org-less (it runs before the profile/org exist), so it sits outside `app/(auth)/`.
 
 1. **Auth**: `proxy.ts` redirects unauthenticated users to `/login`. Layout (`app/(auth)/layout.tsx`) double-checks with `getUser()` inside an `<AuthGate>` Suspense boundary. Pages call `getUser()` only to get `user.id` for queries — return `null` if not authenticated.
 2. **Data**: Use `createAdmin()` for all server-side queries (never the anon client). Scope reads by `org_id` via `getCurrentOrgId(user.id)`.

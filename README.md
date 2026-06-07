@@ -65,8 +65,9 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 | `/clients`                       | Manage clients and responsible vets                                              |
 | `/legal/politica-de-privacidade` | Privacy policy (LGPD)                                                            |
 | `/legal/termos-de-uso`           | Terms of use                                                                     |
-| `/login`                         | Public login page                                                                |
-| `/signup`                        | Disabled (redirects to `/login`)                                                 |
+| `/login`                         | Public login page (email/password + Google)                                      |
+| `/signup`                        | Public registration (email/password + Google; requires CPF + CRMV)               |
+| `/onboarding`                    | Post-OAuth profile completion (CPF + CRMV) — authenticated, org-less             |
 | `/home`                          | Public landing page — proxy rewrites `laudai.vet/` here (app stays on subdomain) |
 
 ## Multi-tenancy
@@ -142,7 +143,8 @@ app/
     account/                        # DELETE (schedule) / POST (cancel) / GET export
     internal/sweep-deleted-accounts/ # Cron: 30-day account purge (daily 03:00 UTC)
   legal/                            # Public privacy policy + terms
-  login/ signup/                    # Auth pages (signup currently redirects)
+  login/ signup/ onboarding/        # Auth pages (login, registration, post-OAuth profile setup)
+  auth/callback/                    # OAuth + email-confirmation handler
 components/                         # AppHeader, Typeahead, ImageLightbox, ...
 lib/
   services/                         # Client-side typed fetch wrappers
