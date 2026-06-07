@@ -65,9 +65,9 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 | `/clients`                       | Manage clients and responsible vets                                              |
 | `/legal/politica-de-privacidade` | Privacy policy (LGPD)                                                            |
 | `/legal/termos-de-uso`           | Terms of use                                                                     |
-| `/login`                         | Public login page (email/password + Google)                                      |
-| `/signup`                        | Public registration (email/password + Google; requires CPF + CRMV)               |
-| `/onboarding`                    | Post-OAuth profile completion (CPF + CRMV) — authenticated, org-less             |
+| `/login`                         | Public login page (email/password)                                               |
+| `/signup`                        | Public registration (email/password; requires CPF + CRMV)                        |
+| `/onboarding`                    | Profile-completion fallback (CPF + CRMV) — authenticated, org-less               |
 | `/forgot-password`               | Public — request a password-reset email                                          |
 | `/reset-password`                | Set a new password (reached via the recovery email link)                         |
 | `/home`                          | Public landing page — proxy rewrites `laudai.vet/` here (app stays on subdomain) |
@@ -145,8 +145,9 @@ app/
     account/                        # DELETE (schedule) / POST (cancel) / GET export
     internal/sweep-deleted-accounts/ # Cron: 30-day account purge (daily 03:00 UTC)
   legal/                            # Public privacy policy + terms
-  login/ signup/ onboarding/        # Auth pages (login, registration, post-OAuth profile setup)
-  auth/callback/                    # OAuth + email-confirmation handler
+  login/ signup/ onboarding/        # Auth pages (login, registration, profile-setup fallback)
+  forgot-password/ reset-password/  # Password reset flow
+  auth/callback/                    # Email-confirmation + recovery handler
 components/                         # AppHeader, Typeahead, ImageLightbox, ...
 lib/
   services/                         # Client-side typed fetch wrappers

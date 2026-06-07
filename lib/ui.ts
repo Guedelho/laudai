@@ -22,6 +22,5 @@ export const btnSecondary = `inline-flex items-center gap-1.5 border border-gray
 // so it never out-shouts the primary blue.
 export const btnDanger = `inline-flex items-center gap-1.5 border border-red-200 text-red-600 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`;
 
-// Full-width variants for the auth/onboarding forms (stacked submit + Google).
+// Full-width primary button for the auth/onboarding forms.
 export const btnBlock = `w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`;
-export const btnBlockSecondary = `w-full border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`;

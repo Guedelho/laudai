@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import PasswordInput from "@/components/PasswordInput";
-import { inputCls, btnBlock, btnBlockSecondary } from "@/lib/ui";
+import { inputCls, btnBlock } from "@/lib/ui";
 
 function translateAuthError(code: string | undefined, fallback: string): string {
   switch (code) {
@@ -28,7 +28,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(searchParams.get("error") ? "Não foi possível autenticar. Tente novamente." : "");
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
   const emailId = useId();
@@ -45,19 +44,6 @@ export default function LoginPage() {
       setLoading(false);
     } else {
       router.push("/dashboard");
-    }
-  }
-
-  async function handleGoogle() {
-    setGoogleLoading(true);
-    setError("");
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
-    });
-    if (error) {
-      setError("Erro ao conectar com o Google. Tente novamente.");
-      setGoogleLoading(false);
     }
   }
 
@@ -93,20 +79,10 @@ export default function LoginPage() {
               {error}
             </p>
           )}
-          <button type="submit" disabled={loading || googleLoading} className={btnBlock}>
+          <button type="submit" disabled={loading} className={btnBlock}>
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
-
-        <div className="flex items-center gap-3 my-4">
-          <span className="h-px flex-1 bg-gray-200" />
-          <span className="text-xs text-gray-500">ou</span>
-          <span className="h-px flex-1 bg-gray-200" />
-        </div>
-
-        <button type="button" onClick={handleGoogle} disabled={loading || googleLoading} className={btnBlockSecondary}>
-          {googleLoading ? "Conectando..." : "Continuar com Google"}
-        </button>
 
         <p className="mt-6 text-center text-sm text-gray-500">
           Não tem conta?{" "}

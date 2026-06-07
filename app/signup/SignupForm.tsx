@@ -3,7 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { inputCls, btnBlock, btnBlockSecondary } from "@/lib/ui";
+import { inputCls, btnBlock } from "@/lib/ui";
 import { validateAccountFields, normalizeAccount, type FieldErrors } from "@/lib/account";
 import * as authApi from "@/lib/services/auth";
 import { AccountError } from "@/lib/services/auth";
@@ -35,7 +35,6 @@ export default function SignupForm() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
@@ -51,19 +50,6 @@ export default function SignupForm() {
   }, [cooldown]);
   const fullNameId = useId();
   const emailId = useId();
-
-  async function handleGoogle() {
-    setGoogleLoading(true);
-    setError("");
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
-    });
-    if (error) {
-      setError("Erro ao conectar com o Google. Tente novamente.");
-      setGoogleLoading(false);
-    }
-  }
 
   async function handleResend() {
     if (cooldown > 0 || resending) return;
@@ -236,20 +222,10 @@ export default function SignupForm() {
             </p>
           )}
 
-          <button type="submit" disabled={loading || googleLoading} className={btnBlock}>
+          <button type="submit" disabled={loading} className={btnBlock}>
             {loading ? "Criando conta..." : "Criar conta"}
           </button>
         </form>
-
-        <div className="flex items-center gap-3 my-4">
-          <span className="h-px flex-1 bg-gray-200" />
-          <span className="text-xs text-gray-500">ou</span>
-          <span className="h-px flex-1 bg-gray-200" />
-        </div>
-
-        <button type="button" onClick={handleGoogle} disabled={loading || googleLoading} className={btnBlockSecondary}>
-          {googleLoading ? "Conectando..." : "Continuar com Google"}
-        </button>
 
         <p className="mt-4 text-center text-[11px] text-gray-500">
           Ao criar conta, você concorda com os{" "}
