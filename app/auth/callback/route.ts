@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { getProfile } from "@/lib/supabase/profile";
 import { provisionAccount, AccountConflictError } from "@/lib/supabase/provisioning";
+import { validateAccountFields } from "@/lib/account";
 import { logError } from "@/lib/log";
 
 function safeNext(raw: string | null): string {
@@ -42,14 +43,17 @@ export async function GET(req: NextRequest) {
   if (await getProfile(admin, user.id)) return NextResponse.redirect(`${origin}${next}`);
 
   const md = user.user_metadata ?? {};
-  if (md.cpf && md.crmv && md.crmv_state) {
+  const fields = {
+    full_name: md.full_name ?? md.name ?? "",
+    cpf: md.cpf ?? "",
+    crmv: md.crmv ?? "",
+    crmv_state: md.crmv_state ?? "",
+  };
+
+  // metadata is client-set, so re-validate before persisting (not just presence)
+  if (Object.keys(validateAccountFields(fields)).length === 0) {
     try {
-      await provisionAccount(admin, user.id, {
-        full_name: md.full_name ?? md.name ?? "",
-        cpf: md.cpf,
-        crmv: md.crmv,
-        crmv_state: md.crmv_state,
-      });
+      await provisionAccount(admin, user.id, fields);
       return NextResponse.redirect(`${origin}${next}`);
     } catch (err) {
       if (!(err instanceof AccountConflictError)) logError("provision on callback failed", err, { userId: user.id });
