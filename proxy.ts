@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_EXACT = new Set(["/login", "/signup", "/home"]);
+const PUBLIC_EXACT = new Set(["/login", "/signup", "/forgot-password", "/home"]);
 // /webhook — Stripe (and future server-to-server callers). Outside /api so
 // Vercel BotID doesn't challenge the request before our signature check runs.
 // /auth/ — OAuth + email-confirmation callback, which runs before a session exists.

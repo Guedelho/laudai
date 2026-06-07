@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import PasswordInput from "@/components/PasswordInput";
+import { inputCls, btnBlock, btnBlockSecondary } from "@/lib/ui";
 
 function translateAuthError(code: string | undefined, fallback: string): string {
   switch (code) {
@@ -76,33 +77,33 @@ export default function LoginPage() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputCls}
               required
             />
           </div>
           <PasswordInput value={password} onChange={setPassword} autoComplete="current-password" />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading || googleLoading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-          >
+          <div className="text-right">
+            <Link href="/forgot-password" className="text-xs text-blue-600 hover:underline">
+              Esqueceu a senha?
+            </Link>
+          </div>
+          {error && (
+            <p role="alert" className="text-sm text-red-600">
+              {error}
+            </p>
+          )}
+          <button type="submit" disabled={loading || googleLoading} className={btnBlock}>
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
 
         <div className="flex items-center gap-3 my-4">
           <span className="h-px flex-1 bg-gray-200" />
-          <span className="text-xs text-gray-400">ou</span>
+          <span className="text-xs text-gray-500">ou</span>
           <span className="h-px flex-1 bg-gray-200" />
         </div>
 
-        <button
-          type="button"
-          onClick={handleGoogle}
-          disabled={loading || googleLoading}
-          className="w-full border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
-        >
+        <button type="button" onClick={handleGoogle} disabled={loading || googleLoading} className={btnBlockSecondary}>
           {googleLoading ? "Conectando..." : "Continuar com Google"}
         </button>
 

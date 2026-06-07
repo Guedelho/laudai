@@ -68,6 +68,8 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 | `/login`                         | Public login page (email/password + Google)                                      |
 | `/signup`                        | Public registration (email/password + Google; requires CPF + CRMV)               |
 | `/onboarding`                    | Post-OAuth profile completion (CPF + CRMV) — authenticated, org-less             |
+| `/forgot-password`               | Public — request a password-reset email                                          |
+| `/reset-password`                | Set a new password (reached via the recovery email link)                         |
 | `/home`                          | Public landing page — proxy rewrites `laudai.vet/` here (app stays on subdomain) |
 
 ## Multi-tenancy

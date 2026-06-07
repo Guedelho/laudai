@@ -7,11 +7,13 @@ export default function PasswordInput({
   onChange,
   label = "Senha",
   autoComplete,
+  error,
 }: {
   value: string;
   onChange: (value: string) => void;
   label?: string;
   autoComplete: "current-password" | "new-password";
+  error?: string;
 }) {
   const [show, setShow] = useState(false);
   const id = useId();
@@ -28,6 +30,8 @@ export default function PasswordInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           autoComplete={autoComplete}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-error` : undefined}
           className="w-full border border-gray-300 rounded-lg pl-3 pr-10 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           required
         />
@@ -35,7 +39,7 @@ export default function PasswordInput({
           type="button"
           onClick={() => setShow((v) => !v)}
           aria-label={show ? "Ocultar senha" : "Mostrar senha"}
-          className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700"
+          className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700 focus-visible:outline-none focus-visible:text-blue-600"
         >
           {show ? (
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -57,6 +61,11 @@ export default function PasswordInput({
           )}
         </button>
       </div>
+      {error && (
+        <p id={`${id}-error`} role="alert" className="mt-1 text-xs text-red-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

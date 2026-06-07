@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { inputCls } from "@/lib/ui";
+import { inputCls, btnBlock, btnBlockSecondary } from "@/lib/ui";
 import { validateAccountFields, normalizeAccount, type FieldErrors } from "@/lib/account";
 import * as authApi from "@/lib/services/auth";
 import { AccountError } from "@/lib/services/auth";
@@ -132,9 +132,15 @@ export default function SignupForm() {
               onChange={(e) => setFullName(e.target.value)}
               className={inputCls}
               placeholder="Dra. Tatiana Brasil"
+              aria-invalid={!!fieldErrors.full_name}
+              aria-describedby={fieldErrors.full_name ? `${fullNameId}-error` : undefined}
               required
             />
-            {fieldErrors.full_name && <p className="mt-1 text-xs text-red-600">{fieldErrors.full_name}</p>}
+            {fieldErrors.full_name && (
+              <p id={`${fullNameId}-error`} role="alert" className="mt-1 text-xs text-red-600">
+                {fieldErrors.full_name}
+              </p>
+            )}
           </div>
 
           <div>
@@ -148,15 +154,23 @@ export default function SignupForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={inputCls}
+              aria-invalid={!!fieldErrors.email}
+              aria-describedby={fieldErrors.email ? `${emailId}-error` : undefined}
               required
             />
-            {fieldErrors.email && <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>}
+            {fieldErrors.email && (
+              <p id={`${emailId}-error`} role="alert" className="mt-1 text-xs text-red-600">
+                {fieldErrors.email}
+              </p>
+            )}
           </div>
 
-          <div>
-            <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" />
-            {fieldErrors.password && <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>}
-          </div>
+          <PasswordInput
+            value={password}
+            onChange={setPassword}
+            autoComplete="new-password"
+            error={fieldErrors.password}
+          />
 
           <CpfCrmvFields
             cpf={cpf}
@@ -168,29 +182,24 @@ export default function SignupForm() {
             errors={fieldErrors}
           />
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && (
+            <p role="alert" className="text-sm text-red-600">
+              {error}
+            </p>
+          )}
 
-          <button
-            type="submit"
-            disabled={loading || googleLoading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-          >
+          <button type="submit" disabled={loading || googleLoading} className={btnBlock}>
             {loading ? "Criando conta..." : "Criar conta"}
           </button>
         </form>
 
         <div className="flex items-center gap-3 my-4">
           <span className="h-px flex-1 bg-gray-200" />
-          <span className="text-xs text-gray-400">ou</span>
+          <span className="text-xs text-gray-500">ou</span>
           <span className="h-px flex-1 bg-gray-200" />
         </div>
 
-        <button
-          type="button"
-          onClick={handleGoogle}
-          disabled={loading || googleLoading}
-          className="w-full border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
-        >
+        <button type="button" onClick={handleGoogle} disabled={loading || googleLoading} className={btnBlockSecondary}>
           {googleLoading ? "Conectando..." : "Continuar com Google"}
         </button>
 

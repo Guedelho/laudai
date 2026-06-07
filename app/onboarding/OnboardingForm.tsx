@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
-import { inputCls } from "@/lib/ui";
+import { inputCls, btnBlock } from "@/lib/ui";
 import { validateAccountFields, normalizeAccount, type FieldErrors } from "@/lib/account";
 import * as authApi from "@/lib/services/auth";
 import { AccountError } from "@/lib/services/auth";
@@ -61,9 +61,15 @@ export default function OnboardingForm({ initialFullName }: { initialFullName: s
               onChange={(e) => setFullName(e.target.value)}
               className={inputCls}
               placeholder="Dra. Tatiana Brasil"
+              aria-invalid={!!fieldErrors.full_name}
+              aria-describedby={fieldErrors.full_name ? `${fullNameId}-error` : undefined}
               required
             />
-            {fieldErrors.full_name && <p className="mt-1 text-xs text-red-600">{fieldErrors.full_name}</p>}
+            {fieldErrors.full_name && (
+              <p id={`${fullNameId}-error`} role="alert" className="mt-1 text-xs text-red-600">
+                {fieldErrors.full_name}
+              </p>
+            )}
           </div>
 
           <CpfCrmvFields
@@ -76,13 +82,13 @@ export default function OnboardingForm({ initialFullName }: { initialFullName: s
             errors={fieldErrors}
           />
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && (
+            <p role="alert" className="text-sm text-red-600">
+              {error}
+            </p>
+          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-          >
+          <button type="submit" disabled={loading} className={btnBlock}>
             {loading ? "Concluindo..." : "Concluir cadastro"}
           </button>
         </form>

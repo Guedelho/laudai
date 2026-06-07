@@ -42,9 +42,15 @@ export default function CpfCrmvFields({
           onChange={(e) => setCpf(formatCpf(e.target.value))}
           className={inputCls}
           placeholder="000.000.000-00"
+          aria-invalid={!!errors.cpf}
+          aria-describedby={errors.cpf ? `${cpfId}-error` : undefined}
           required
         />
-        {errors.cpf && <p className="mt-1 text-xs text-red-600">{errors.cpf}</p>}
+        {errors.cpf && (
+          <p id={`${cpfId}-error`} role="alert" className="mt-1 text-xs text-red-600">
+            {errors.cpf}
+          </p>
+        )}
       </div>
 
       <div className="flex gap-3">
@@ -57,6 +63,8 @@ export default function CpfCrmvFields({
             value={crmvState}
             onChange={(e) => setCrmvState(e.target.value)}
             className={inputCls}
+            aria-invalid={!!errors.crmv_state}
+            aria-describedby={errors.crmv_state ? `${crmvStateId}-error` : undefined}
             required
           >
             <option value="">—</option>
@@ -66,7 +74,11 @@ export default function CpfCrmvFields({
               </option>
             ))}
           </select>
-          {errors.crmv_state && <p className="mt-1 text-xs text-red-600">{errors.crmv_state}</p>}
+          {errors.crmv_state && (
+            <p id={`${crmvStateId}-error`} role="alert" className="mt-1 text-xs text-red-600">
+              {errors.crmv_state}
+            </p>
+          )}
         </div>
         <div className="flex-1">
           <label htmlFor={crmvId} className="block text-sm font-medium text-gray-700 mb-1">
@@ -80,9 +92,15 @@ export default function CpfCrmvFields({
             onChange={(e) => setCrmv(e.target.value)}
             className={inputCls}
             placeholder="00000"
+            aria-invalid={!!errors.crmv}
+            aria-describedby={errors.crmv ? `${crmvId}-error` : undefined}
             required
           />
-          {errors.crmv && <p className="mt-1 text-xs text-red-600">{errors.crmv}</p>}
+          {errors.crmv && (
+            <p id={`${crmvId}-error`} role="alert" className="mt-1 text-xs text-red-600">
+              {errors.crmv}
+            </p>
+          )}
         </div>
       </div>
     </>
