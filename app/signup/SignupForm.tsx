@@ -3,15 +3,12 @@
 import { useId, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { validateCpf, formatCpf, normalizeCpf } from "@/lib/cpf";
-import { normalizeCrmv, isValidCrmv } from "@/lib/crmv";
-import { CRMV_STATE_OPTIONS } from "@/shared/constants";
 import { inputCls } from "@/lib/ui";
+import { validateAccountFields, normalizeAccount, type FieldErrors } from "@/lib/account";
 import * as authApi from "@/lib/services/auth";
 import { AccountError } from "@/lib/services/auth";
-import type { AccountFieldError } from "@/shared/interfaces";
-
-type FieldErrors = Partial<Record<NonNullable<AccountFieldError["field"]>, string>>;
+import CpfCrmvFields from "@/components/CpfCrmvFields";
+import PasswordInput from "@/components/PasswordInput";
 
 function translateSignupError(code: string | undefined, fallback: string): string {
   switch (code) {
@@ -32,7 +29,6 @@ export default function SignupForm() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [cpf, setCpf] = useState("");
   const [crmvState, setCrmvState] = useState("");
   const [crmv, setCrmv] = useState("");
@@ -45,10 +41,6 @@ export default function SignupForm() {
   const supabase = createClient();
   const fullNameId = useId();
   const emailId = useId();
-  const passwordId = useId();
-  const cpfId = useId();
-  const crmvStateId = useId();
-  const crmvId = useId();
 
   async function handleGoogle() {
     setGoogleLoading(true);
@@ -67,11 +59,7 @@ export default function SignupForm() {
     e.preventDefault();
     setError("");
 
-    const fe: FieldErrors = {};
-    if (!fullName.trim()) fe.full_name = "Informe seu nome completo.";
-    if (!validateCpf(cpf)) fe.cpf = "CPF inválido.";
-    if (!crmvState) fe.crmv_state = "Selecione o estado.";
-    if (!isValidCrmv(crmv)) fe.crmv = "Número de CRMV inválido.";
+    const fe = validateAccountFields({ full_name: fullName, cpf, crmv, crmv_state: crmvState });
     if (password.length < 8) fe.password = "Mínimo de 8 caracteres.";
     if (Object.keys(fe).length) {
       setFieldErrors(fe);
@@ -80,30 +68,15 @@ export default function SignupForm() {
     setFieldErrors({});
     setLoading(true);
 
-    const payload = {
-      full_name: fullName.trim(),
-      email: email.trim(),
-      password,
-      cpf: normalizeCpf(cpf),
-      crmv: normalizeCrmv(crmv),
-      crmv_state: crmvState,
-    };
+    const profile = normalizeAccount({ full_name: fullName, cpf, crmv, crmv_state: crmvState });
 
     try {
-      await authApi.validateSignup(payload);
+      await authApi.validateSignup({ ...profile, email: email.trim(), password });
 
       const { data, error } = await supabase.auth.signUp({
-        email: payload.email,
+        email: email.trim(),
         password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            full_name: payload.full_name,
-            cpf: payload.cpf,
-            crmv: payload.crmv,
-            crmv_state: payload.crmv_state,
-          },
-        },
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback`, data: profile },
       });
 
       if (error) {
@@ -154,6 +127,7 @@ export default function SignupForm() {
             <input
               id={fullNameId}
               type="text"
+              autoComplete="name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className={inputCls}
@@ -170,6 +144,7 @@ export default function SignupForm() {
             <input
               id={emailId}
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={inputCls}
@@ -179,83 +154,19 @@ export default function SignupForm() {
           </div>
 
           <div>
-            <label htmlFor={passwordId} className="block text-sm font-medium text-gray-700 mb-1">
-              Senha
-            </label>
-            <div className="relative">
-              <input
-                id={passwordId}
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={`${inputCls} pr-16`}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute inset-y-0 right-0 flex items-center px-3 text-xs text-gray-500 hover:text-gray-700"
-              >
-                {showPassword ? "Ocultar" : "Mostrar"}
-              </button>
-            </div>
+            <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" />
             {fieldErrors.password && <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>}
           </div>
 
-          <div>
-            <label htmlFor={cpfId} className="block text-sm font-medium text-gray-700 mb-1">
-              CPF
-            </label>
-            <input
-              id={cpfId}
-              type="text"
-              inputMode="numeric"
-              value={cpf}
-              onChange={(e) => setCpf(formatCpf(e.target.value))}
-              className={inputCls}
-              placeholder="000.000.000-00"
-              required
-            />
-            {fieldErrors.cpf && <p className="mt-1 text-xs text-red-600">{fieldErrors.cpf}</p>}
-          </div>
-
-          <div className="flex gap-3">
-            <div className="w-28">
-              <label htmlFor={crmvStateId} className="block text-sm font-medium text-gray-700 mb-1">
-                UF
-              </label>
-              <select
-                id={crmvStateId}
-                value={crmvState}
-                onChange={(e) => setCrmvState(e.target.value)}
-                className={inputCls}
-                required
-              >
-                <option value="">—</option>
-                {CRMV_STATE_OPTIONS.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.value}
-                  </option>
-                ))}
-              </select>
-              {fieldErrors.crmv_state && <p className="mt-1 text-xs text-red-600">{fieldErrors.crmv_state}</p>}
-            </div>
-            <div className="flex-1">
-              <label htmlFor={crmvId} className="block text-sm font-medium text-gray-700 mb-1">
-                CRMV
-              </label>
-              <input
-                id={crmvId}
-                type="text"
-                value={crmv}
-                onChange={(e) => setCrmv(e.target.value)}
-                className={inputCls}
-                placeholder="00000"
-                required
-              />
-              {fieldErrors.crmv && <p className="mt-1 text-xs text-red-600">{fieldErrors.crmv}</p>}
-            </div>
-          </div>
+          <CpfCrmvFields
+            cpf={cpf}
+            setCpf={setCpf}
+            crmvState={crmvState}
+            setCrmvState={setCrmvState}
+            crmv={crmv}
+            setCrmv={setCrmv}
+            errors={fieldErrors}
+          />
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
@@ -283,7 +194,19 @@ export default function SignupForm() {
           {googleLoading ? "Conectando..." : "Continuar com Google"}
         </button>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-4 text-center text-[11px] text-gray-500">
+          Ao criar conta, você concorda com os{" "}
+          <Link href="/legal/termos-de-uso" target="_blank" className="text-blue-600 hover:underline">
+            Termos de Uso
+          </Link>{" "}
+          e a{" "}
+          <Link href="/legal/politica-de-privacidade" target="_blank" className="text-blue-600 hover:underline">
+            Política de Privacidade
+          </Link>
+          .
+        </p>
+
+        <p className="mt-4 text-center text-sm text-gray-500">
           Já tem conta?{" "}
           <Link href="/login" className="text-blue-600 hover:underline">
             Entrar

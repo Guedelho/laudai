@@ -2,15 +2,11 @@
 
 import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
-import { validateCpf, formatCpf, normalizeCpf } from "@/lib/cpf";
-import { normalizeCrmv, isValidCrmv } from "@/lib/crmv";
-import { CRMV_STATE_OPTIONS } from "@/shared/constants";
 import { inputCls } from "@/lib/ui";
+import { validateAccountFields, normalizeAccount, type FieldErrors } from "@/lib/account";
 import * as authApi from "@/lib/services/auth";
 import { AccountError } from "@/lib/services/auth";
-import type { AccountFieldError } from "@/shared/interfaces";
-
-type FieldErrors = Partial<Record<NonNullable<AccountFieldError["field"]>, string>>;
+import CpfCrmvFields from "@/components/CpfCrmvFields";
 
 export default function OnboardingForm({ initialFullName }: { initialFullName: string }) {
   const [fullName, setFullName] = useState(initialFullName);
@@ -21,21 +17,13 @@ export default function OnboardingForm({ initialFullName }: { initialFullName: s
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
   const fullNameId = useId();
-  const cpfId = useId();
-  const crmvStateId = useId();
-  const crmvId = useId();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
-    const fe: FieldErrors = {};
-    if (!fullName.trim()) fe.full_name = "Informe seu nome completo.";
-    if (!validateCpf(cpf)) fe.cpf = "CPF inválido.";
-    if (!crmvState) fe.crmv_state = "Selecione o estado.";
-    if (!isValidCrmv(crmv)) fe.crmv = "Número de CRMV inválido.";
+    const fe = validateAccountFields({ full_name: fullName, cpf, crmv, crmv_state: crmvState });
     if (Object.keys(fe).length) {
       setFieldErrors(fe);
       return;
@@ -44,12 +32,7 @@ export default function OnboardingForm({ initialFullName }: { initialFullName: s
     setLoading(true);
 
     try {
-      await authApi.submitOnboarding({
-        full_name: fullName.trim(),
-        cpf: normalizeCpf(cpf),
-        crmv: normalizeCrmv(crmv),
-        crmv_state: crmvState,
-      });
+      await authApi.submitOnboarding(normalizeAccount({ full_name: fullName, cpf, crmv, crmv_state: crmvState }));
       router.replace("/dashboard");
       router.refresh();
     } catch (err) {
@@ -73,6 +56,7 @@ export default function OnboardingForm({ initialFullName }: { initialFullName: s
             <input
               id={fullNameId}
               type="text"
+              autoComplete="name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className={inputCls}
@@ -82,60 +66,15 @@ export default function OnboardingForm({ initialFullName }: { initialFullName: s
             {fieldErrors.full_name && <p className="mt-1 text-xs text-red-600">{fieldErrors.full_name}</p>}
           </div>
 
-          <div>
-            <label htmlFor={cpfId} className="block text-sm font-medium text-gray-700 mb-1">
-              CPF
-            </label>
-            <input
-              id={cpfId}
-              type="text"
-              inputMode="numeric"
-              value={cpf}
-              onChange={(e) => setCpf(formatCpf(e.target.value))}
-              className={inputCls}
-              placeholder="000.000.000-00"
-              required
-            />
-            {fieldErrors.cpf && <p className="mt-1 text-xs text-red-600">{fieldErrors.cpf}</p>}
-          </div>
-
-          <div className="flex gap-3">
-            <div className="w-28">
-              <label htmlFor={crmvStateId} className="block text-sm font-medium text-gray-700 mb-1">
-                UF
-              </label>
-              <select
-                id={crmvStateId}
-                value={crmvState}
-                onChange={(e) => setCrmvState(e.target.value)}
-                className={inputCls}
-                required
-              >
-                <option value="">—</option>
-                {CRMV_STATE_OPTIONS.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.value}
-                  </option>
-                ))}
-              </select>
-              {fieldErrors.crmv_state && <p className="mt-1 text-xs text-red-600">{fieldErrors.crmv_state}</p>}
-            </div>
-            <div className="flex-1">
-              <label htmlFor={crmvId} className="block text-sm font-medium text-gray-700 mb-1">
-                CRMV
-              </label>
-              <input
-                id={crmvId}
-                type="text"
-                value={crmv}
-                onChange={(e) => setCrmv(e.target.value)}
-                className={inputCls}
-                placeholder="00000"
-                required
-              />
-              {fieldErrors.crmv && <p className="mt-1 text-xs text-red-600">{fieldErrors.crmv}</p>}
-            </div>
-          </div>
+          <CpfCrmvFields
+            cpf={cpf}
+            setCpf={setCpf}
+            crmvState={crmvState}
+            setCrmvState={setCrmvState}
+            crmv={crmv}
+            setCrmv={setCrmv}
+            errors={fieldErrors}
+          />
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 

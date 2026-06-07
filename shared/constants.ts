@@ -10,7 +10,7 @@ export const SEX_OPTIONS = [
   { value: "F", label: "Fêmea" },
 ] as const;
 
-export const BR_STATES = [
+const BR_STATES = [
   { uf: "AC", name: "Acre" },
   { uf: "AL", name: "Alagoas" },
   { uf: "AP", name: "Amapá" },

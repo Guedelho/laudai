@@ -4,8 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkBotId } from "botid/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { TABLES } from "@/shared/constants";
-import { validateCpf, normalizeCpf } from "@/lib/cpf";
-import { normalizeCrmv, isValidCrmv, isValidCrmvState } from "@/lib/crmv";
+import { validateAccountFields, normalizeAccount, firstFieldError } from "@/lib/account";
 import { logError } from "@/lib/log";
 import type { SignupValidateRequest, AccountFieldError } from "@/shared/interfaces";
 
@@ -21,20 +20,15 @@ export async function POST(req: NextRequest) {
     if (isBot) return NextResponse.json({ error: "Acesso negado." }, { status: 403 });
 
     const body = (await req.json()) as SignupValidateRequest;
-    const full_name = (body.full_name ?? "").trim();
     const email = (body.email ?? "").trim();
     const password = body.password ?? "";
-    const cpf = normalizeCpf(body.cpf ?? "");
-    const crmv = normalizeCrmv(body.crmv ?? "");
-    const crmv_state = (body.crmv_state ?? "").trim().toUpperCase();
-
-    if (!full_name) return bad("full_name", "Informe seu nome completo.");
     if (!EMAIL_RE.test(email)) return bad("email", "Email inválido.");
     if (password.length < 8) return bad("password", "A senha deve ter ao menos 8 caracteres.");
-    if (!validateCpf(cpf)) return bad("cpf", "CPF inválido.");
-    if (!isValidCrmvState(crmv_state)) return bad("crmv_state", "Selecione o estado do CRMV.");
-    if (!isValidCrmv(crmv)) return bad("crmv", "Número de CRMV inválido.");
 
+    const fieldError = firstFieldError(validateAccountFields(body));
+    if (fieldError) return bad(fieldError.field, fieldError.error);
+
+    const { cpf, crmv, crmv_state } = normalizeAccount(body);
     const admin = createAdmin();
 
     const { data: cpfHit } = await admin.from(TABLES.profiles).select("id").eq("cpf", cpf).maybeSingle();

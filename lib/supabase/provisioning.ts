@@ -2,8 +2,7 @@ import "server-only";
 
 import type { createAdmin } from "@/lib/supabase/admin";
 import { getCurrentOrgId } from "@/lib/supabase/auth";
-import { normalizeCpf } from "@/lib/cpf";
-import { normalizeCrmv } from "@/lib/crmv";
+import { normalizeAccount } from "@/lib/account";
 import { logError } from "@/lib/log";
 import type { AccountProfileFields } from "@/shared/interfaces";
 
@@ -31,17 +30,8 @@ function buildSlug(fullName: string, userId: string, attempt: number): string {
   return `${base}-${attempt === 0 ? suffix : `${suffix}${attempt}`}`;
 }
 
-export function normalizeAccountFields(fields: AccountProfileFields) {
-  return {
-    full_name: fields.full_name.trim(),
-    cpf: normalizeCpf(fields.cpf),
-    crmv: normalizeCrmv(fields.crmv),
-    crmv_state: fields.crmv_state.trim().toUpperCase(),
-  };
-}
-
 export async function provisionAccount(admin: Admin, userId: string, fields: AccountProfileFields): Promise<string> {
-  const { full_name, cpf, crmv, crmv_state } = normalizeAccountFields(fields);
+  const { full_name, cpf, crmv, crmv_state } = normalizeAccount(fields);
 
   for (let attempt = 0; attempt < 3; attempt++) {
     const { data, error } = await admin.rpc("provision_account", {

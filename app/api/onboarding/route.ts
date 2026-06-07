@@ -7,8 +7,7 @@ import { getProfile } from "@/lib/supabase/profile";
 import { provisionAccount, AccountConflictError } from "@/lib/supabase/provisioning";
 import { logAudit, AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { logError } from "@/lib/log";
-import { validateCpf, normalizeCpf } from "@/lib/cpf";
-import { normalizeCrmv, isValidCrmv, isValidCrmvState } from "@/lib/crmv";
+import { validateAccountFields, firstFieldError } from "@/lib/account";
 import type { OnboardingRequest, AccountFieldError } from "@/shared/interfaces";
 
 function bad(field: AccountFieldError["field"], error: string, status = 400) {
@@ -21,21 +20,14 @@ export async function POST(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = (await req.json()) as OnboardingRequest;
-    const full_name = (body.full_name ?? "").trim();
-    const cpf = normalizeCpf(body.cpf ?? "");
-    const crmv = normalizeCrmv(body.crmv ?? "");
-    const crmv_state = (body.crmv_state ?? "").trim().toUpperCase();
-
-    if (!full_name) return bad("full_name", "Informe seu nome completo.");
-    if (!validateCpf(cpf)) return bad("cpf", "CPF inválido.");
-    if (!isValidCrmvState(crmv_state)) return bad("crmv_state", "Selecione o estado do CRMV.");
-    if (!isValidCrmv(crmv)) return bad("crmv", "Número de CRMV inválido.");
+    const fieldError = firstFieldError(validateAccountFields(body));
+    if (fieldError) return bad(fieldError.field, fieldError.error);
 
     const admin = createAdmin();
     if (await getProfile(admin, userId)) return NextResponse.json({ ok: true });
 
     try {
-      const orgId = await provisionAccount(admin, userId, { full_name, cpf, crmv, crmv_state });
+      const orgId = await provisionAccount(admin, userId, body);
       await logAudit(admin, {
         orgId,
         userId,
