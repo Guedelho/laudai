@@ -47,10 +47,13 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
    - In a second terminal, forward webhooks: `stripe listen --forward-to localhost:3000/webhook/stripe` — copy the printed `whsec_…` into `STRIPE_WEBHOOK_SECRET`
 
 5. **Run the dev server**
+
    ```bash
    npm run dev
    # Open http://localhost:3000
    ```
+
+6. **Checks**: `npm run typecheck`, `npm run lint`, `npm run knip`, `npm run test` (Vitest — unit tests for the auth/validation logic).
 
 ## Key routes
 
