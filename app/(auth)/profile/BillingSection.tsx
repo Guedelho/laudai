@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { btnSecondary } from "@/lib/ui";
 import type { BillingOverview, InvoiceOverview, PlanOverview } from "@/shared/interfaces";
 
 function money(amount: number, currency: string): string {
@@ -25,26 +26,27 @@ const INVOICE_STATUS: Record<string, { label: string; cls: string }> = {
 
 function ManageButton() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   async function openPortal() {
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/billing/portal", { method: "POST" });
       const body = await res.json();
       if (!res.ok || !body.url) throw new Error(body.error ?? "Erro ao abrir o portal.");
       window.location.href = body.url;
-    } catch {
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao abrir o portal.");
       setLoading(false);
     }
   }
   return (
-    <button
-      type="button"
-      onClick={openPortal}
-      disabled={loading}
-      className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-    >
-      {loading ? "..." : "Gerenciar"}
-    </button>
+    <div className="flex flex-col items-end gap-1">
+      <button type="button" onClick={openPortal} disabled={loading} className={btnSecondary}>
+        {loading ? "..." : "Gerenciar"}
+      </button>
+      {error && <span className="text-xs text-red-600">{error}</span>}
+    </div>
   );
 }
 

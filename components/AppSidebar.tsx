@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Laudos" },
@@ -59,6 +59,15 @@ export default function AppSidebar({ subscriptionChip, userEmail }: Props) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
   return (
     <>
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-gray-200 bg-white px-4 py-5 md:flex">
@@ -101,7 +110,12 @@ export default function AppSidebar({ subscriptionChip, userEmail }: Props) {
       {open && (
         <div className="fixed inset-0 z-40 md:hidden">
           <button type="button" aria-label="Fechar menu" onClick={close} className="absolute inset-0 bg-black/30" />
-          <div className="absolute inset-y-0 left-0 flex w-64 flex-col border-r border-gray-200 bg-white px-4 py-5">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu"
+            className="absolute inset-y-0 left-0 flex w-64 flex-col border-r border-gray-200 bg-white px-4 py-5"
+          >
             <div className="flex items-center justify-between">
               <span className="text-lg font-bold text-gray-900">Laudai</span>
               <button
