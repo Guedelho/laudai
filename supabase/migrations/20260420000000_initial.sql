@@ -329,32 +329,6 @@ create policy "org members read specialties"
   on member_specialties for select to authenticated
   using (is_org_member((select auth.uid()), org_id));
 
--- Atomically create a solo (individual plan) org + owner membership.
--- No entitlement is granted here — it arrives via the Stripe webhook once the
--- vet subscribes (trial is managed by Stripe, not the DB).
-create or replace function create_solo_org(p_user_id uuid, p_name text, p_slug text)
-returns uuid
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
-declare
-  v_org_id uuid;
-begin
-  insert into organizations (name, slug, plan, owner_user_id)
-  values (p_name, p_slug, 'individual', p_user_id)
-  returning id into v_org_id;
-
-  insert into organization_members (org_id, user_id, role)
-  values (v_org_id, p_user_id, 'owner');
-
-  return v_org_id;
-end;
-$$;
-
-revoke all on function create_solo_org(uuid, text, text) from public, anon, authenticated;
-grant execute on function create_solo_org(uuid, text, text) to service_role;
-
 -- Profile + solo org + owner membership in one tx; a cpf/crmv unique violation
 -- aborts it whole, leaving no orphan org.
 create or replace function provision_account(
@@ -916,8 +890,7 @@ select c.user_id, c.org_id, c.created_at as ts, 'chat:' || c.role as kind,
         from jsonb_array_elements(c.parts) with ordinality as t(p, ord)
         where p ->> 'type' = 'text') as detail,
        c.id as ref
-from public.chat_messages c
-order by ts desc;
+from public.chat_messages c;
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Permissions
@@ -931,11 +904,14 @@ grant select on all tables in schema public to authenticated;
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Storage buckets
--- Create via Supabase dashboard or API:
---   report-images (private, 5 MB, image/jpeg + image/png + image/webp)
---   report-pdfs   (private, 50 MB, application/pdf)
---   profile-logos (private, 5 MB, image/jpeg + image/png + image/webp)
---
--- Storage RLS: SELECT only for authenticated users, scoped to own folder.
--- All writes go through API routes using the service role.
 -- ═══════════════════════════════════════════════════════════════════════════
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values
+  ('report-images', 'report-images', false, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
+  ('report-pdfs', 'report-pdfs', false, 52428800, array['application/pdf']),
+  ('profile-logos', 'profile-logos', false, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
