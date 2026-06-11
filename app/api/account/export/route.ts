@@ -24,19 +24,24 @@ export const GET = withApiHandler(async ({ userId, admin }) => {
     admin.from(TABLES.audit_log).select("*").eq("user_id", userId),
   ]);
 
-  const reportIdToImages = new Map<
-    string,
-    Array<{ id: string; storage_path: string; file_name: string; signed_url: string | null }>
-  >();
-  for (const img of imagesRes.data ?? []) {
-    const list = reportIdToImages.get(img.report_id) ?? [];
-    list.push({
+  const signedImages = await Promise.all(
+    (imagesRes.data ?? []).map(async (img) => ({
+      report_id: img.report_id,
       id: img.id,
       storage_path: img.storage_path,
       file_name: img.file_name,
       signed_url: await signed(admin, STORAGE_BUCKETS.reportImages, img.storage_path),
-    });
-    reportIdToImages.set(img.report_id, list);
+    })),
+  );
+
+  const reportIdToImages = new Map<
+    string,
+    Array<{ id: string; storage_path: string; file_name: string; signed_url: string | null }>
+  >();
+  for (const { report_id, ...img } of signedImages) {
+    const list = reportIdToImages.get(report_id) ?? [];
+    list.push(img);
+    reportIdToImages.set(report_id, list);
   }
 
   const reports = await Promise.all(

@@ -15,6 +15,15 @@ export const PATCH = withApiHandler<{ id: string }>(async ({ userId, orgId, admi
 
   const editedContent = JSON.stringify(generatedContent);
 
+  const { data: ownedReport } = await admin
+    .from(TABLES.reports)
+    .select("id")
+    .eq("id", id)
+    .eq("org_id", orgId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!ownedReport) return NextResponse.json({ error: "Laudo não encontrado." }, { status: 404 });
+
   const { data: latestVersion } = await admin
     .from(TABLES.report_versions)
     .select("version")

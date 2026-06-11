@@ -22,6 +22,17 @@ export async function syncSubscription(admin: Admin, sub: Stripe.Subscription): 
     return;
   }
 
+  const { data: org } = await admin
+    .from(TABLES.organizations)
+    .select("stripe_customer_id")
+    .eq("id", orgId)
+    .maybeSingle();
+  const subCustomer = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+  if (org?.stripe_customer_id && subCustomer && org.stripe_customer_id !== subCustomer) {
+    logError("syncSubscription: customer/org mismatch", null, { orgId, subscriptionId: sub.id });
+    return;
+  }
+
   await admin
     .from(TABLES.organizations)
     .update({ stripe_subscription_id: sub.id, stripe_subscription_status: sub.status })
@@ -95,7 +106,7 @@ export async function getBillingOverview(admin: Admin, orgId: string): Promise<B
     .from(TABLES.organizations)
     .select("stripe_customer_id, stripe_subscription_id")
     .eq("id", orgId)
-    .single();
+    .maybeSingle();
 
   if (!org?.stripe_customer_id) return null;
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { createAdmin } from "@/lib/supabase/admin";
 import { STORAGE_BUCKETS, TABLES } from "@/shared/constants";
 import { logError, logInfo } from "@/lib/log";
@@ -7,33 +8,50 @@ type Admin = ReturnType<typeof createAdmin>;
 
 const USER_BUCKETS = [STORAGE_BUCKETS.reportImages, STORAGE_BUCKETS.reportPdfs, STORAGE_BUCKETS.profileLogos] as const;
 const RETENTION_DAYS = 30;
+const PAGE = 1000;
 
-async function clearUserBucket(admin: Admin, bucket: string, userId: string): Promise<void> {
+function bearerOk(header: string | null): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || !header) return false;
+  const a = Buffer.from(header);
+  const b = Buffer.from(`Bearer ${secret}`);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+async function clearUserBucket(admin: Admin, bucket: string, userId: string): Promise<boolean> {
   const paths: string[] = [];
+  let ok = true;
 
   async function walk(prefix: string): Promise<void> {
-    const { data, error } = await admin.storage.from(bucket).list(prefix, { limit: 1000 });
-    if (error || !data) return;
-    for (const entry of data) {
-      const fullPath = prefix ? `${prefix}/${entry.name}` : entry.name;
-      if (entry.id === null) {
-        await walk(fullPath);
-      } else {
-        paths.push(fullPath);
+    for (let offset = 0; ; offset += PAGE) {
+      const { data, error } = await admin.storage.from(bucket).list(prefix, { limit: PAGE, offset });
+      if (error) {
+        ok = false;
+        return;
       }
+      if (!data || data.length === 0) return;
+      for (const entry of data) {
+        const fullPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+        if (entry.id === null) await walk(fullPath);
+        else paths.push(fullPath);
+      }
+      if (data.length < PAGE) return;
     }
   }
 
   await walk(userId);
-  if (paths.length === 0) return;
+  if (paths.length === 0) return ok;
 
   const { error } = await admin.storage.from(bucket).remove(paths);
-  if (error) logError("Storage cleanup failed", error, { bucket, userId });
+  if (error) {
+    logError("Storage cleanup failed", error, { bucket, userId });
+    return false;
+  }
+  return ok;
 }
 
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!bearerOk(req.headers.get("authorization"))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -53,9 +71,14 @@ export async function GET(req: NextRequest) {
 
   const ids = (dueProfiles ?? []).map((p) => p.id);
   let purged = 0;
+  let storageFailures = 0;
 
   for (const userId of ids) {
-    await Promise.all(USER_BUCKETS.map((b) => clearUserBucket(admin, b, userId)));
+    const cleared = await Promise.all(USER_BUCKETS.map((b) => clearUserBucket(admin, b, userId)));
+    if (cleared.some((ok) => !ok)) {
+      storageFailures += 1;
+      logError("LGPD sweep: storage purge incomplete", null, { userId });
+    }
     const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
     if (deleteError) {
       logError("Auth deleteUser failed in sweep", deleteError, { userId });
@@ -67,5 +90,5 @@ export async function GET(req: NextRequest) {
     purged += 1;
   }
 
-  return NextResponse.json({ scanned: ids.length, purged });
+  return NextResponse.json({ scanned: ids.length, purged, storageFailures });
 }
