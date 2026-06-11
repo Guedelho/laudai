@@ -126,7 +126,7 @@ export async function getBillingOverview(admin: Admin, orgId: string): Promise<B
         id: inv.id ?? "",
         created: new Date(inv.created * 1000).toISOString(),
         status: inv.status ?? "open",
-        amount: inv.amount_paid || inv.amount_due,
+        amount: inv.status === "paid" ? inv.amount_paid : inv.amount_due,
         currency: inv.currency,
         hostedInvoiceUrl: inv.hosted_invoice_url ?? null,
       })),

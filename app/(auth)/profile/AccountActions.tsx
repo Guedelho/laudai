@@ -8,6 +8,16 @@ export default function AccountActions() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [exportError, setExportError] = useState("");
+
+  async function handleExport() {
+    setExportError("");
+    try {
+      await profileApi.downloadAccountExport();
+    } catch {
+      setExportError("Erro ao baixar seus dados. Tente novamente.");
+    }
+  }
 
   async function handleDeleteAccount() {
     setDeleting(true);
@@ -28,11 +38,12 @@ export default function AccountActions() {
         <div className="flex flex-col gap-2">
           <button
             type="button"
-            onClick={() => profileApi.downloadAccountExport()}
+            onClick={handleExport}
             className="text-sm text-blue-600 hover:underline w-fit text-left"
           >
             Baixar meus dados (JSON)
           </button>
+          {exportError && <p className="text-xs text-red-600">{exportError}</p>}
           {!deleteConfirm ? (
             <button
               type="button"

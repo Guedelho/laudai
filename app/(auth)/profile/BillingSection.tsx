@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { btnSecondary } from "@/lib/ui";
+import { openBillingPortal } from "@/lib/services/profile";
 import type { BillingOverview, InvoiceOverview, PlanOverview } from "@/shared/interfaces";
 
 function money(amount: number, currency: string): string {
@@ -31,10 +32,7 @@ function ManageButton() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/billing/portal", { method: "POST" });
-      const body = await res.json();
-      if (!res.ok || !body.url) throw new Error(body.error ?? "Erro ao abrir o portal.");
-      window.location.href = body.url;
+      window.location.href = await openBillingPortal();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao abrir o portal.");
       setLoading(false);

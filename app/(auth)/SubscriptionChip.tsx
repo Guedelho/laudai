@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { openBillingPortal } from "@/lib/services/profile";
 
 interface Props {
   status: "trialing" | "active" | "past_due";
@@ -10,24 +11,20 @@ interface Props {
 
 export default function SubscriptionChip({ status, periodEnd, canManage }: Props) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function openPortal() {
     setLoading(true);
+    setError("");
     try {
-      const res = await fetch("/api/billing/portal", { method: "POST" });
-      const body = await res.json();
-      if (!res.ok || !body.url) throw new Error(body.error ?? "Erro ao abrir o portal.");
-      window.location.href = body.url;
-    } catch {
+      window.location.href = await openBillingPortal();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao abrir o portal.");
       setLoading(false);
     }
   }
 
-  // A trialing status whose period end has passed means the trial has lapsed and
-  // Stripe has converted it — our mirror is just behind. Show it as the active plan
-  // rather than a stuck "Teste termina hoje" countdown.
-  const trialLapsed = status === "trialing" && periodEnd !== null && new Date(periodEnd).getTime() <= Date.now();
-  const effectiveStatus = trialLapsed ? "active" : status;
+  const effectiveStatus = isTrialLapsed(status, periodEnd) ? "active" : status;
 
   const label = labelFor(effectiveStatus, periodEnd);
   const tone = toneFor(effectiveStatus);
@@ -42,16 +39,25 @@ export default function SubscriptionChip({ status, periodEnd, canManage }: Props
   }
 
   return (
-    <button
-      type="button"
-      onClick={openPortal}
-      disabled={loading}
-      title="Gerenciar assinatura"
-      className={`${className} hover:opacity-90 disabled:opacity-50`}
-    >
-      {loading ? "..." : label}
-    </button>
+    <div className="flex flex-col gap-1">
+      <button
+        type="button"
+        onClick={openPortal}
+        disabled={loading}
+        title="Gerenciar assinatura"
+        className={`${className} hover:opacity-90 disabled:opacity-50`}
+      >
+        {loading ? "..." : label}
+      </button>
+      {error && <span className="text-xs text-red-600">{error}</span>}
+    </div>
   );
+}
+
+// A trialing status whose period end has passed means Stripe has converted it and our
+// mirror is just behind — show it as the active plan, not a stuck countdown.
+function isTrialLapsed(status: Props["status"], periodEnd: string | null): boolean {
+  return status === "trialing" && periodEnd !== null && new Date(periodEnd).getTime() <= Date.now();
 }
 
 function labelFor(status: Props["status"], periodEnd: string | null): string {

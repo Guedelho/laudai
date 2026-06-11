@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as profileApi from "@/lib/services/profile";
+import { btnPrimary } from "@/lib/ui";
 import { validateCpf, formatCpf } from "@/lib/cpf";
 
 const SIGNATURE_FONTS = [
@@ -276,11 +277,7 @@ export default function ProfileForm({
         </div>
 
         <div className="flex items-center gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-          >
+          <button type="submit" disabled={saving} className={btnPrimary}>
             {saving ? "Salvando..." : "Salvar"}
           </button>
           {saved && <span className="text-sm text-green-600">Salvo com sucesso!</span>}

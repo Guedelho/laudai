@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type FileUIPart } from "ai";
 import Link from "next/link";
+import { focusRing } from "@/lib/ui";
 import ImageLightbox from "@/components/ImageLightbox";
 import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE, TABLES, REPORT_STATUSES, type ReportStatus } from "@/shared/constants";
 import { uploadReportImages } from "@/lib/services/reports";
@@ -143,7 +144,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
   }
 
   return (
-    <main className="mx-auto flex h-[calc(100dvh-57px)] w-full max-w-3xl flex-col px-6 md:h-[100dvh]">
+    <main className="mx-auto flex h-[calc(100dvh-61px)] w-full max-w-3xl flex-col px-6 md:h-[100dvh]">
       <div className="shrink-0 pt-6 pb-3">
         <h1 className="text-lg font-semibold text-gray-900">Assistente IA</h1>
       </div>
@@ -265,7 +266,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
             <button
               type="submit"
               disabled={!canSend}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className={`rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`}
             >
               Enviar
             </button>
@@ -523,7 +524,7 @@ function ImageStep({ reportId, onDone }: { reportId: string; onDone: (files: Fil
         type="button"
         onClick={handleSubmit}
         disabled={uploading || files.length === 0}
-        className="w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className={`w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`}
       >
         {uploading ? "Enviando imagens..." : "Enviar imagens"}
       </button>

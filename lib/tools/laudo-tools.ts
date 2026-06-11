@@ -144,8 +144,11 @@ export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) 
           .is("deleted_at", null)
           .order("created_at", { ascending: false })
           .limit(limit ?? 10);
-        if (query?.trim()) {
-          const term = query.trim();
+        const term = query
+          ?.trim()
+          .replace(/[%_,()*\\]/g, " ")
+          .trim();
+        if (term) {
           q = q.or(`patient_name.ilike.%${term}%,client_name.ilike.%${term}%`);
         }
         const { data } = await q;

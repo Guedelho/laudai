@@ -1,5 +1,10 @@
 import { UpdateProfileRequest } from "@/shared/interfaces";
-import { fetchOk, jsonBody, formBody } from "@/lib/fetch";
+import { fetchJson, fetchOk, jsonBody, formBody } from "@/lib/fetch";
+
+export async function openBillingPortal(): Promise<string> {
+  const { url } = await fetchJson<{ url: string }>("/api/billing/portal", { method: "POST" });
+  return url;
+}
 
 export async function updateProfile(body: UpdateProfileRequest, signal?: AbortSignal): Promise<void> {
   await fetchOk("/api/profile", { method: "PUT", ...jsonBody(body), signal });

@@ -9,7 +9,7 @@ export const textareaCls =
 // ─── Buttons ──────────────────────────────────────────────────────────────
 // `focus-visible` keeps the ring out of mouse interactions but shows it for
 // keyboard navigation — meets WCAG 2.4.7 without ugly click halos.
-const focusRing =
+export const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500";
 
 // Filled blue, used for the dominant action on a page or in a row.

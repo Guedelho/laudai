@@ -24,9 +24,10 @@ export default async function ProfilePage() {
 
   return (
     <main className="flex flex-col items-center gap-6 px-4 py-10">
+      <h1 className="w-full max-w-lg text-xl font-semibold text-gray-900">Configurações</h1>
       {owner && <OrgLogo hasLogo={!!org?.logo_url} />}
       <div className="bg-white border border-gray-200 rounded-xl p-8 w-full max-w-lg">
-        <h1 className="text-xl font-semibold text-gray-900 mb-6">Configurações</h1>
+        <h2 className="text-base font-semibold text-gray-900 mb-6">Perfil</h2>
         <ProfileForm
           initialFullName={profile?.full_name ?? ""}
           initialCrmv={profile?.crmv ?? ""}
