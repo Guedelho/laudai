@@ -51,7 +51,12 @@ function splitAtReport(messages: LaudoAgentUIMessage[]): {
 } {
   for (let i = 0; i < messages.length; i++) {
     for (const p of messages[i].parts) {
-      if (p.type === "tool-createReportDraft" && p.state === "output-available" && "reportId" in p.output) {
+      if (
+        p.type === "tool-createReportDraft" &&
+        p.state === "output-available" &&
+        "reportId" in p.output &&
+        typeof p.output.reportId === "string"
+      ) {
         return { before: messages.slice(0, i + 1), after: messages.slice(i + 1), reportId: p.output.reportId };
       }
     }

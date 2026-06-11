@@ -28,6 +28,13 @@ export const AUDIT_ENTITIES = {
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 export type AuditEntity = (typeof AUDIT_ENTITIES)[keyof typeof AUDIT_ENTITIES];
 
+export type AuditFn = (args: {
+  action: AuditAction;
+  entityType: AuditEntity;
+  entityId: string;
+  changes?: Record<string, unknown> | null;
+}) => Promise<void>;
+
 interface LogAuditArgs {
   orgId: string;
   userId: string;

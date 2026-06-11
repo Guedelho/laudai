@@ -1,13 +1,10 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { after } from "next/server";
-import { revalidatePath } from "next/cache";
 import { createAdmin } from "@/lib/supabase/admin";
-import { runGeneration } from "@/lib/report/worker";
-import { canWriteReport, hasReportTypeAccess } from "@/lib/supabase/entitlements";
-import { findOrCreateClient, findOrCreateVet, findOrCreatePet, resolveOwnedFks } from "@/lib/supabase/upserts";
+import { createReport } from "@/lib/report/create";
+import { findOrCreateClient, findOrCreateVet, resolveOwnedFks } from "@/lib/supabase/upserts";
 import { REPORT_TYPES, REPORT_STATUSES, TABLES } from "@/shared/constants";
-import { AUDIT_ACTIONS, AUDIT_ENTITIES, type AuditAction, type AuditEntity } from "@/lib/audit";
+import { AUDIT_ACTIONS, AUDIT_ENTITIES, type AuditFn } from "@/lib/audit";
 import { brazilToday, parseReportContent } from "@/lib/utils";
 
 type Admin = ReturnType<typeof createAdmin>;
@@ -16,12 +13,7 @@ export interface LaudoToolCtx {
   userId: string;
   orgId: string;
   admin: Admin;
-  audit: (args: {
-    action: AuditAction;
-    entityType: AuditEntity;
-    entityId: string;
-    changes?: Record<string, unknown> | null;
-  }) => Promise<void>;
+  audit: AuditFn;
 }
 
 const SPECIALTY = REPORT_TYPES.ultrasound_abdominal;
@@ -234,90 +226,13 @@ export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) 
         vetId: z.string().optional(),
       }),
       execute: async (input) => {
-        const examDate = input.examDate?.trim() || brazilToday();
-        const required: [string, string][] = [
-          [input.patientName, "Nome do paciente"],
-          [input.ownerName, "Nome do tutor"],
-          [input.breed, "Raça"],
-          [input.age, "Idade"],
-          [input.clientName, "Nome do cliente"],
-          [input.responsibleVet, "Médico responsável"],
-        ];
-        for (const [value, label] of required) {
-          if (!value?.trim()) return { error: `${label} é obrigatório(a).` };
-        }
-        if (input.rawInput.length > 2_000) {
-          return { error: "Achados do exame muito longos. Máximo 2.000 caracteres." };
-        }
-        if (!(await hasReportTypeAccess(admin, orgId, SPECIALTY))) {
-          return { error: "Sua organização não tem acesso a este tipo de laudo." };
-        }
-        if (!(await canWriteReport(admin, orgId, userId, SPECIALTY))) {
-          return { error: "Você não tem permissão para gerar este tipo de laudo." };
-        }
-
-        const ownedFks = await resolveOwnedFks(admin, orgId, {
-          petId: input.petId,
-          clientId: input.clientId,
-          vetId: input.vetId,
-        });
-
-        let resolvedPetId: string | null = ownedFks.petId;
-        if (!resolvedPetId) {
-          const pet = await findOrCreatePet(admin, userId, orgId, input.patientName.trim(), input.ownerName.trim(), {
-            species: input.species,
-            breed: input.breed,
-            age: input.age,
-            sex: input.sex,
-            neutered: input.neutered,
-          });
-          resolvedPetId = pet?.id ?? null;
-        }
-
-        const { data: report, error } = await admin
-          .from(TABLES.reports)
-          .insert({
-            user_id: userId,
-            org_id: orgId,
-            status: REPORT_STATUSES.pending,
-            specialty: SPECIALTY,
-            patient_name: input.patientName,
-            species: input.species,
-            breed: input.breed,
-            age: input.age,
-            owner_name: input.ownerName,
-            raw_input: input.rawInput,
-            sex: input.sex,
-            neutered: input.neutered,
-            client_name: input.clientName,
-            responsible_vet: input.responsibleVet,
-            exam_date: examDate,
-            pet_id: resolvedPetId,
-            client_id: ownedFks.clientId,
-            vet_id: ownedFks.vetId,
-          })
-          .select("id")
-          .single();
-
-        if (error) return { error: "Erro ao salvar laudo." };
-
-        revalidatePath("/dashboard");
-        await audit({ action: AUDIT_ACTIONS.create, entityType: AUDIT_ENTITIES.report, entityId: report.id });
-
-        after(() =>
-          runGeneration(admin, report.id, userId, {
-            rawInput: input.rawInput,
-            patientName: input.patientName,
-            species: input.species,
-            breed: input.breed,
-            age: input.age,
-            sex: input.sex,
-            neutered: input.neutered,
-            ownerName: input.ownerName,
-          }),
+        const result = await createReport(
+          admin,
+          { userId, orgId, audit },
+          { ...input, specialty: SPECIALTY, examDate: input.examDate?.trim() || brazilToday() },
         );
-
-        return { reportId: report.id };
+        if ("error" in result) return { error: result.error };
+        return { reportId: result.reportId };
       },
     }),
   };

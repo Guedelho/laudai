@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkBotId } from "botid/server";
 import { getUserId, getCurrentOrgId } from "@/lib/supabase/auth";
 import { createAdmin } from "@/lib/supabase/admin";
-import { logAudit, type AuditAction, type AuditEntity } from "@/lib/audit";
+import { logAudit, type AuditFn } from "@/lib/audit";
 import { logError } from "@/lib/log";
 import { checkRateLimit, type RateLimitConfig } from "@/lib/rate-limit";
 
@@ -95,12 +95,7 @@ interface HandlerCtx<P> {
   req: NextRequest;
   params: P;
   admin: Admin;
-  audit: (args: {
-    action: AuditAction;
-    entityType: AuditEntity;
-    entityId: string;
-    changes?: Record<string, unknown> | null;
-  }) => Promise<void>;
+  audit: AuditFn;
 }
 
 interface HandlerOpts extends BaseOpts {
