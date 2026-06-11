@@ -95,6 +95,8 @@ await audit({ action: AUDIT_ACTIONS.delete, entityType: AUDIT_ENTITIES.pet, enti
 
 RLS: org members read; insert is gated to `user_id = auth.uid()` (no impersonation). No UPDATE/DELETE policies — entries are immutable for authenticated users.
 
+**Ops visibility:** `internal.user_activity` (view in the `internal` schema — NOT exposed via the API) is a unified per-user timeline merging `audit_log` actions + `chat_messages` conversations. Query it from Supabase Studio / service role only (`select * from internal.user_activity where user_id = '…' order by ts`). Never expose `internal` to client roles.
+
 ## Report version history
 
 `report_versions` is append-only. PATCH `/api/reports/[id]` looks up the current max version, inserts a snapshot of the new `edited_content` as `version + 1`, then updates `reports.edited_content` + `updated_by` in place. The "latest" view is always `reports.edited_content` — `report_versions` is only read on "Ver histórico" / compliance export. Versioning started May 2026; earlier edits were not reconstructed.

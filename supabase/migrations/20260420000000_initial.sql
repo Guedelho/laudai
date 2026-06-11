@@ -906,6 +906,23 @@ create table if not exists public.chat_messages (
 create index if not exists chat_messages_user_seq_idx on public.chat_messages (user_id, seq);
 alter table public.chat_messages enable row level security;
 
+-- Ops-only visibility: a unified per-user timeline of actions (audit_log) + chat
+-- (chat_messages). In the `internal` schema so it is NOT exposed via the API —
+-- query it from Supabase Studio / service role only, never from client roles.
+create schema if not exists internal;
+create or replace view internal.user_activity as
+select a.user_id, a.org_id, a.created_at as ts, 'action' as kind,
+       a.action || ' ' || a.entity_type as detail, a.entity_id::text as ref
+from public.audit_log a
+union all
+select c.user_id, c.org_id, c.created_at as ts, 'chat:' || c.role as kind,
+       (select string_agg(p ->> 'text', ' ' order by ord)
+        from jsonb_array_elements(c.parts) with ordinality as t(p, ord)
+        where p ->> 'type' = 'text') as detail,
+       c.id as ref
+from public.chat_messages c
+order by ts desc;
+
 revoke all on all tables in schema public from anon;
 revoke all on all tables in schema public from authenticated;
 grant select on all tables in schema public to authenticated;
