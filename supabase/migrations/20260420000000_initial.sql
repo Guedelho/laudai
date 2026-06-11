@@ -906,9 +906,6 @@ create table if not exists public.chat_messages (
 create index if not exists chat_messages_user_seq_idx on public.chat_messages (user_id, seq);
 alter table public.chat_messages enable row level security;
 
--- Ops-only visibility: a unified per-user timeline of actions (audit_log) + chat
--- (chat_messages). In the `internal` schema so it is NOT exposed via the API —
--- query it from Supabase Studio / service role only, never from client roles.
 create schema if not exists internal;
 create or replace view internal.user_activity as
 select a.user_id, a.org_id, a.created_at as ts, 'action' as kind,
