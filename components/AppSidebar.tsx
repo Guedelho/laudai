@@ -62,11 +62,13 @@ export default function AppSidebar({ subscriptionChip, userEmail }: Props) {
   return (
     <>
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-gray-200 bg-white px-4 py-5 md:flex">
-        <Link href="/dashboard" className="px-1 text-lg font-bold text-gray-900">
-          Laudai
-        </Link>
+        <div className="border-b border-gray-200 px-1 pb-4">
+          <Link href="/dashboard" className="text-lg font-bold text-gray-900">
+            Laudai
+          </Link>
+        </div>
 
-        <div className="mt-6">
+        <div className="mt-4">
           <NavList pathname={pathname} />
         </div>
 
