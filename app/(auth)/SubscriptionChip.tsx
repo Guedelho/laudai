@@ -54,8 +54,6 @@ export default function SubscriptionChip({ status, periodEnd, canManage }: Props
   );
 }
 
-// A trialing status whose period end has passed means Stripe has converted it and our
-// mirror is just behind — show it as the active plan, not a stuck countdown.
 function isTrialLapsed(status: Props["status"], periodEnd: string | null): boolean {
   return status === "trialing" && periodEnd !== null && new Date(periodEnd).getTime() <= Date.now();
 }
