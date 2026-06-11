@@ -1,21 +1,35 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import * as profileApi from "@/lib/services/profile";
 import { logout } from "@/app/actions/auth";
+
+function LogoutButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" disabled={pending} className="text-sm text-gray-500 hover:text-gray-600 disabled:opacity-50">
+      {pending ? "Saindo..." : "Sair da conta"}
+    </button>
+  );
+}
 
 export default function AccountActions() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [exportError, setExportError] = useState("");
+  const [downloading, setDownloading] = useState(false);
 
   async function handleExport() {
     setExportError("");
+    setDownloading(true);
     try {
       await profileApi.downloadAccountExport();
     } catch {
       setExportError("Erro ao baixar seus dados. Tente novamente.");
+    } finally {
+      setDownloading(false);
     }
   }
 
@@ -39,9 +53,10 @@ export default function AccountActions() {
           <button
             type="button"
             onClick={handleExport}
-            className="text-sm text-blue-600 hover:underline w-fit text-left"
+            disabled={downloading}
+            className="text-sm text-blue-600 hover:underline w-fit text-left disabled:opacity-50"
           >
-            Baixar meus dados (JSON)
+            {downloading ? "Baixando..." : "Baixar meus dados (JSON)"}
           </button>
           {exportError && <p className="text-xs text-red-600">{exportError}</p>}
           {!deleteConfirm ? (
@@ -82,9 +97,7 @@ export default function AccountActions() {
 
       <div className="pt-4 border-t border-gray-200">
         <form action={logout}>
-          <button type="submit" className="text-sm text-gray-500 hover:text-gray-600">
-            Sair da conta
-          </button>
+          <LogoutButton />
         </form>
       </div>
     </div>

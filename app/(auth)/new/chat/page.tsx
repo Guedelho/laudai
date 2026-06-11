@@ -21,7 +21,6 @@ export default async function InteractiveLaudoPage({ searchParams }: { searchPar
     <InteractiveLaudoChat
       greeting={laudoGreeting(profile?.full_name ?? "")}
       orgId={orgId}
-      persist={!laudoMode}
       initialMessages={history as unknown as LaudoAgentUIMessage[]}
     />
   );

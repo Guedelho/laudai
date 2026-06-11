@@ -54,17 +54,15 @@ function splitAtReport(messages: LaudoAgentUIMessage[]): {
 export default function InteractiveLaudoChat({
   greeting,
   orgId,
-  persist = false,
   initialMessages = [],
 }: {
   greeting: string;
   orgId: string;
-  persist?: boolean;
   initialMessages?: LaudoAgentUIMessage[];
 }) {
   const { messages, sendMessage, status } = useChat<LaudoAgentUIMessage>({
     messages: initialMessages,
-    transport: new DefaultChatTransport({ api: persist ? "/api/chat?persist=1" : "/api/chat" }),
+    transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
   const [input, setInput] = useState("");
   const [attached, setAttached] = useState<File[]>([]);

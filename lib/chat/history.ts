@@ -31,7 +31,7 @@ export async function loadChatMessages(admin: Admin, userId: string): Promise<St
     .from(TABLES.chat_messages)
     .select("id, role, parts")
     .eq("user_id", userId)
-    .order("position");
+    .order("seq");
   if (error) {
     logError("loadChatMessages failed", error, { userId });
     return [];
@@ -48,14 +48,7 @@ export async function saveChatMessages(
   try {
     const stored = toTextOnly(messages);
     if (!stored.length) return;
-    const rows = stored.map((m, i) => ({
-      id: m.id,
-      user_id: userId,
-      org_id: orgId,
-      role: m.role,
-      parts: m.parts,
-      position: i,
-    }));
+    const rows = stored.map((m) => ({ id: m.id, user_id: userId, org_id: orgId, role: m.role, parts: m.parts }));
     const { error } = await admin.from(TABLES.chat_messages).upsert(rows, { onConflict: "id" });
     if (error) logError("saveChatMessages upsert failed", error, { userId });
   } catch (err) {
