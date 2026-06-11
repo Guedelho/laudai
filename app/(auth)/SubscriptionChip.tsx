@@ -56,13 +56,13 @@ export default function SubscriptionChip({ status, periodEnd, canManage }: Props
 
 function labelFor(status: Props["status"], periodEnd: string | null): string {
   if (status === "past_due") return "Pagamento pendente";
-  if (!periodEnd) return status === "trialing" ? "Teste ativo" : "Plano ativo";
+  if (!periodEnd) return status === "trialing" ? "Período de teste" : "Plano ativo";
 
   const daysLeft = Math.ceil((new Date(periodEnd).getTime() - Date.now()) / 86_400_000);
 
   if (status === "trialing") {
-    if (daysLeft === 1) return "Teste: 1 dia";
-    return `Teste: ${daysLeft} dias`;
+    if (daysLeft === 1) return "Período de teste: 1 dia";
+    return `Período de teste: ${daysLeft} dias`;
   }
 
   return "Plano ativo";

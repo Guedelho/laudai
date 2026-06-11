@@ -8,7 +8,6 @@ const NAV_LINKS = [
   { href: "/dashboard", label: "Laudos" },
   { href: "/pets", label: "Pacientes" },
   { href: "/clients", label: "Clientes" },
-  { href: "/new/chat", label: "Assistente" },
 ];
 
 interface Props {
@@ -16,9 +15,32 @@ interface Props {
   userEmail?: string | null;
 }
 
+function AssistantLink({ active, onNavigate }: { active: boolean; onNavigate?: () => void }) {
+  return (
+    <Link
+      href="/new/chat"
+      onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
+      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+        active ? "bg-gradient-to-r from-blue-600 to-violet-600 text-white" : "text-violet-700 hover:bg-violet-50"
+      }`}
+    >
+      <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"
+        />
+      </svg>
+      IA Assistente
+    </Link>
+  );
+}
+
 function NavList({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
   return (
     <nav className="flex flex-col gap-1">
+      <AssistantLink active={pathname.startsWith("/new/chat")} onNavigate={onNavigate} />
       {NAV_LINKS.map((l) => {
         const active = pathname.startsWith(l.href);
         return (
@@ -47,7 +69,7 @@ function UserChip({ email }: { email?: string | null }) {
       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
         {initial}
       </span>
-      <span className="truncate text-xs text-gray-600" title={email}>
+      <span className="min-w-0 flex-1 truncate text-xs text-gray-600" title={email}>
         {email}
       </span>
     </div>
@@ -60,14 +82,11 @@ function SettingsLink({ active, onNavigate }: { active: boolean; onNavigate?: ()
       href="/profile"
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
-      title="Configurações"
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm font-medium transition-colors ${
-        active
-          ? "border-blue-200 bg-blue-50 text-blue-700"
-          : "border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
+        active ? "bg-blue-50 font-medium text-blue-700" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
       }`}
     >
-      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+      <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -107,14 +126,10 @@ export default function AppSidebar({ subscriptionChip, userEmail }: Props) {
           <NavList pathname={pathname} />
         </div>
 
-        <div className="mt-auto flex flex-col gap-3 pt-6">
-          {subscriptionChip && <div className="px-1">{subscriptionChip}</div>}
-          <div className="flex items-center gap-2">
-            <div className="min-w-0 flex-1">
-              <UserChip email={userEmail} />
-            </div>
-            <SettingsLink active={pathname.startsWith("/profile")} />
-          </div>
+        <div className="mt-auto flex flex-col gap-1 pt-6">
+          {subscriptionChip && <div className="mb-2 px-1">{subscriptionChip}</div>}
+          <SettingsLink active={pathname.startsWith("/profile")} />
+          <UserChip email={userEmail} />
         </div>
       </aside>
 
@@ -165,11 +180,9 @@ export default function AppSidebar({ subscriptionChip, userEmail }: Props) {
               <NavList pathname={pathname} onNavigate={close} />
             </div>
 
-            <div className="mt-auto flex items-center gap-2 pt-6">
-              <div className="min-w-0 flex-1">
-                <UserChip email={userEmail} />
-              </div>
+            <div className="mt-auto flex flex-col gap-1 pt-6">
               <SettingsLink active={pathname.startsWith("/profile")} onNavigate={close} />
+              <UserChip email={userEmail} />
             </div>
           </div>
         </div>
