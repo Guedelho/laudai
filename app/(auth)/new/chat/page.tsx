@@ -22,6 +22,7 @@ export default async function InteractiveLaudoPage({ searchParams }: { searchPar
       greeting={laudoGreeting(profile?.full_name ?? "")}
       orgId={orgId}
       initialMessages={history as unknown as LaudoAgentUIMessage[]}
+      autoStartLaudo={laudoMode}
     />
   );
 }

@@ -51,19 +51,30 @@ function splitAtReport(messages: LaudoAgentUIMessage[]): {
   return { before: messages, after: [], reportId: null };
 }
 
+const START_LAUDO_MESSAGE = "Quero gerar um laudo de ultrassom abdominal.";
+
 export default function InteractiveLaudoChat({
   greeting,
   orgId,
   initialMessages = [],
+  autoStartLaudo = false,
 }: {
   greeting: string;
   orgId: string;
   initialMessages?: LaudoAgentUIMessage[];
+  autoStartLaudo?: boolean;
 }) {
   const { messages, sendMessage, status } = useChat<LaudoAgentUIMessage>({
     messages: initialMessages,
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
+  const autoStartedRef = useRef(false);
+
+  useEffect(() => {
+    if (!autoStartLaudo || autoStartedRef.current || messages.length > 0) return;
+    autoStartedRef.current = true;
+    sendMessage({ text: START_LAUDO_MESSAGE });
+  }, [autoStartLaudo, messages.length, sendMessage]);
   const [input, setInput] = useState("");
   const [attached, setAttached] = useState<File[]>([]);
   const [recording, setRecording] = useState(false);
