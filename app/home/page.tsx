@@ -62,7 +62,7 @@ function Header() {
     <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <a href="#topo" className={`inline-flex rounded-lg ${focusRing}`}>
-          <img src="/logo.svg" alt="Laudai" width={168} height={56} className="h-8 w-auto sm:h-9" />
+          <img src="/logo.svg" alt="Laudai" width={168} height={56} className="h-9 w-auto sm:h-10" />
         </a>
         <nav aria-label="Principal" className="hidden items-center gap-7 text-sm font-medium text-gray-600 md:flex">
           <a href="#recursos" className="hover:text-gray-900">
@@ -489,7 +489,7 @@ function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-white">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 sm:flex-row sm:px-6">
-        <img src="/logo.svg" alt="Laudai" width={168} height={56} className="h-7 w-auto" />
+        <img src="/logo.svg" alt="Laudai" width={168} height={56} className="h-8 w-auto" />
         <nav
           aria-label="Rodapé"
           className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-gray-600"
