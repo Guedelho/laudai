@@ -51,9 +51,20 @@ function splitAtReport(messages: LaudoAgentUIMessage[]): {
   return { before: messages, after: [], reportId: null };
 }
 
-export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: string; orgId: string }) {
+export default function InteractiveLaudoChat({
+  greeting,
+  orgId,
+  persist = false,
+  initialMessages = [],
+}: {
+  greeting: string;
+  orgId: string;
+  persist?: boolean;
+  initialMessages?: LaudoAgentUIMessage[];
+}) {
   const { messages, sendMessage, status } = useChat<LaudoAgentUIMessage>({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    messages: initialMessages,
+    transport: new DefaultChatTransport({ api: persist ? "/api/chat?persist=1" : "/api/chat" }),
   });
   const [input, setInput] = useState("");
   const [attached, setAttached] = useState<File[]>([]);
@@ -150,9 +161,11 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-4">
-        <div className="max-w-[85%] self-start rounded-2xl bg-gray-100 px-4 py-2 text-sm whitespace-pre-wrap text-gray-900">
-          {greeting}
-        </div>
+        {initialMessages.length === 0 && (
+          <div className="max-w-[85%] self-start rounded-2xl bg-gray-100 px-4 py-2 text-sm whitespace-pre-wrap text-gray-900">
+            {greeting}
+          </div>
+        )}
         {before.map((message) => (
           <Message key={message.id} message={message} />
         ))}

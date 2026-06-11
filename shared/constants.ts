@@ -92,6 +92,7 @@ export const TABLES = {
   consents: "consents",
   audit_log: "audit_log",
   rate_limits: "rate_limits",
+  chat_messages: "chat_messages",
 } as const;
 
 export const REPORT_TYPES = {

@@ -894,6 +894,18 @@ select cron.schedule(
 -- All writes go through API routes using the service role.
 -- ═══════════════════════════════════════════════════════════════════════════
 
+create table if not exists public.chat_messages (
+  id text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  org_id uuid not null references public.organizations(id) on delete cascade,
+  role text not null,
+  parts jsonb not null,
+  position integer not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists chat_messages_user_position_idx on public.chat_messages (user_id, position);
+alter table public.chat_messages enable row level security;
+
 revoke all on all tables in schema public from anon;
 revoke all on all tables in schema public from authenticated;
 grant select on all tables in schema public to authenticated;
