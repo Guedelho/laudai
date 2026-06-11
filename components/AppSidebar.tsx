@@ -59,16 +59,15 @@ function SettingsLink({ active, onNavigate }: { active: boolean; onNavigate?: ()
     <Link
       href="/profile"
       onClick={onNavigate}
-      aria-label="Configurações"
       aria-current={active ? "page" : undefined}
       title="Configurações"
-      className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors ${
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm font-medium transition-colors ${
         active
           ? "border-blue-200 bg-blue-50 text-blue-700"
-          : "border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+          : "border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
       }`}
     >
-      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -76,6 +75,7 @@ function SettingsLink({ active, onNavigate }: { active: boolean; onNavigate?: ()
         />
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
       </svg>
+      Configurações
     </Link>
   );
 }
