@@ -151,7 +151,7 @@ app/
   login/ signup/ onboarding/        # Auth pages (login, registration, profile-setup fallback)
   forgot-password/ reset-password/  # Password reset flow
   auth/callback/                    # Email-confirmation + recovery handler
-components/                         # AppSidebar, Typeahead, ImageLightbox, ...
+components/                         # AppSidebar, Typeahead (keyboard-accessible combobox), ImageLightbox, ...
 lib/
   services/                         # Client-side typed fetch wrappers
   client/                           # Browser-only helpers (pdf-tab, audio-wav, dictation, use-is-client)

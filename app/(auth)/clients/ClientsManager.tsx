@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Client, ClientVet } from "@/shared/models";
 import * as api from "@/lib/services/clients";
-import { inputCls } from "@/lib/ui";
+import { inputCls, btnPrimary, btnSecondary } from "@/lib/ui";
 import ConfirmDelete from "@/components/ConfirmDelete";
 
 export default function ClientsManager({ initialClients }: { initialClients: Client[] }) {
@@ -99,10 +99,7 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-gray-900">Clientes</h1>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
-        >
+        <button type="button" onClick={() => setShowForm((v) => !v)} className={btnPrimary}>
           {showForm ? "Cancelar" : "Novo cliente"}
         </button>
       </div>
@@ -121,11 +118,7 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
             </div>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
-            disabled={saving}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-          >
+          <button type="submit" disabled={saving} className={btnPrimary}>
             {saving ? "Salvando..." : "Salvar cliente"}
           </button>
         </form>
@@ -155,11 +148,7 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
                       required
                     />
                   </div>
-                  <button
-                    type="submit"
-                    disabled={editSaving}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 shrink-0"
-                  >
+                  <button type="submit" disabled={editSaving} className={`${btnPrimary} shrink-0`}>
                     {editSaving ? "Salvando..." : "Salvar nome"}
                   </button>
                 </form>
@@ -191,7 +180,7 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
                     <button
                       type="submit"
                       disabled={addingVet || !newVetName.trim()}
-                      className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50 shrink-0"
+                      className={`${btnSecondary} shrink-0`}
                     >
                       {addingVet ? "Adicionando..." : "Adicionar"}
                     </button>
@@ -200,7 +189,11 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
 
                 {editError && <p className="text-sm text-red-600">{editError}</p>}
 
-                <button onClick={() => setEditingId(null)} className="text-sm text-gray-500 hover:text-gray-700">
+                <button
+                  type="button"
+                  onClick={() => setEditingId(null)}
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
                   Fechar
                 </button>
               </div>
@@ -213,7 +206,11 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
                   )}
                 </div>
                 <div className="flex gap-3 shrink-0 mt-0.5">
-                  <button onClick={() => startEdit(client)} className="text-xs text-blue-600 hover:text-blue-700">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(client)}
+                    className="text-xs text-blue-600 hover:text-blue-700"
+                  >
                     Editar
                   </button>
                   <ConfirmDelete noun="Cliente" onConfirm={() => handleDelete(client.id)} />

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pet } from "@/shared/models";
 import { sexLabel } from "@/lib/utils";
 import * as api from "@/lib/services/pets";
+import { btnPrimary } from "@/lib/ui";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import PetFormFields, { PetFormValues } from "./PetFormFields";
 
@@ -118,10 +119,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-gray-900">Pacientes</h1>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
-        >
+        <button type="button" onClick={() => setShowForm((v) => !v)} className={btnPrimary}>
           {showForm ? "Cancelar" : "Novo paciente"}
         </button>
       </div>
@@ -131,11 +129,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
           <p className="text-sm font-semibold text-gray-700">Cadastrar paciente</p>
           <PetFormFields values={newForm} onChange={updateNew} breedSuggestions={breedSuggestions} />
           {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
-            disabled={saving}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-          >
+          <button type="submit" disabled={saving} className={btnPrimary}>
             {saving ? "Salvando..." : "Salvar paciente"}
           </button>
         </form>
@@ -159,11 +153,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                 <PetFormFields values={editForm} onChange={updateEdit} breedSuggestions={breedSuggestions} />
                 {editError && <p className="text-sm text-red-600">{editError}</p>}
                 <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    disabled={editSaving}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-                  >
+                  <button type="submit" disabled={editSaving} className={btnPrimary}>
                     {editSaving ? "Salvando..." : "Salvar"}
                   </button>
                   <button
@@ -186,7 +176,11 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                   <p className="text-xs text-gray-500 mt-1">Responsável: {pet.owner_name}</p>
                 </div>
                 <div className="flex gap-3 shrink-0 mt-0.5">
-                  <button onClick={() => startEdit(pet)} className="text-xs text-blue-600 hover:text-blue-700">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(pet)}
+                    className="text-xs text-blue-600 hover:text-blue-700"
+                  >
                     Editar
                   </button>
                   <ConfirmDelete noun="Paciente" onConfirm={() => handleDelete(pet.id)} />

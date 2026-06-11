@@ -147,6 +147,9 @@ CSRF protection is handled by Supabase's `SameSite=Lax` cookies plus modern brow
 - Auth via cookies (`@supabase/ssr`) — no manual auth headers on fetch calls.
 - API calls: typed functions in `lib/services/` (pets, clients, reports, profile) — never inline `fetch()` in components.
 - JSON requests: add `"Content-Type": "application/json"`. FormData requests need no extra headers.
+- Buttons: use the shared classes in `lib/ui.ts` (`btnPrimary`, `btnSecondary`, `btnDanger`, `btnBlock`) — they carry the keyboard `focus-visible` ring. Don't hand-roll `bg-blue-600 …` button classes. Always set `type="button"` on non-submit buttons inside/near a form.
+- `Typeahead`/`EntityTypeahead` (`components/`) implement the ARIA combobox keyboard pattern (Arrow up/down, Enter to select, Escape to close; `role="listbox"`/`option` + `aria-activedescendant`). All keyboard logic lives in `Typeahead`; `EntityTypeahead` only adds label↔entity resolution.
+- Don't swallow async failures in components. Surface them to the user (inline error or warning) — e.g. `NewReportForm` shows a warning + link to the report when post-create image upload fails instead of redirecting silently.
 
 ## Data model
 

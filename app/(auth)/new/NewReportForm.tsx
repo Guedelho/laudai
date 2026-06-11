@@ -44,6 +44,8 @@ export default function NewReportPage() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState(false);
+  const [imageWarningReportId, setImageWarningReportId] = useState<string | null>(null);
 
   // Images (selected before submit)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -67,9 +69,13 @@ export default function NewReportPage() {
 
   useEffect(() => {
     async function loadData() {
-      const [p, c] = await Promise.all([listPets(), listClients()]);
-      setPets(p);
-      setClients(c);
+      try {
+        const [p, c] = await Promise.all([listPets(), listClients()]);
+        setPets(p);
+        setClients(c);
+      } catch {
+        setLoadError(true);
+      }
     }
     loadData();
   }, []);
@@ -217,9 +223,13 @@ export default function NewReportPage() {
         setUploadingImages(true);
         try {
           await uploadReportImages(reportId, selectedFiles);
-        } catch (err) {
-          console.error("Image upload failed:", err);
+        } catch {
+          setUploadingImages(false);
+          setSubmitting(false);
+          setImageWarningReportId(reportId);
+          return;
         }
+        setUploadingImages(false);
       }
 
       resetForm();
@@ -264,6 +274,32 @@ export default function NewReportPage() {
           Modo conversa →
         </Link>
       </div>
+
+      {loadError && (
+        <p
+          role="alert"
+          className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+        >
+          Não foi possível carregar seus pacientes e clientes. As sugestões podem estar indisponíveis.
+        </p>
+      )}
+
+      {imageWarningReportId && (
+        <div
+          role="alert"
+          className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900"
+        >
+          <p className="font-medium">Laudo criado, mas as imagens não foram enviadas.</p>
+          <p className="mt-1">
+            Abra o laudo para adicionar as imagens do exame:{" "}
+            <Link href={`/report/${imageWarningReportId}`} className="font-medium text-blue-600 hover:underline">
+              ver laudo
+            </Link>
+            .
+          </p>
+        </div>
+      )}
+
       <form onSubmit={handleGenerate} className="space-y-6">
         {/* Client / Vet */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
