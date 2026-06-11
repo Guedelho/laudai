@@ -3,6 +3,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { withApiHandler } from "@/lib/api-handler";
 import { getStripe, PLAN_PRICE_IDS, type PlanInterval } from "@/lib/stripe/server";
+import { ensureStripeCustomer } from "@/lib/stripe/subscription";
 import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
 
@@ -26,22 +27,7 @@ export const POST = withApiHandler(async ({ admin, userId, orgId, req }) => {
     return NextResponse.json({ error: "Assinatura já está ativa." }, { status: 409 });
   }
 
-  let customerId = org.stripe_customer_id;
-  if (!customerId) {
-    const [{ data: profile }, { data: authUser }] = await Promise.all([
-      admin.from(TABLES.profiles).select("full_name").eq("id", userId).maybeSingle(),
-      admin.auth.admin.getUserById(userId),
-    ]);
-
-    const customer = await getStripe().customers.create({
-      email: authUser?.user?.email ?? undefined,
-      name: profile?.full_name ?? org.name,
-      metadata: { org_id: orgId, user_id: userId },
-    });
-
-    customerId = customer.id;
-    await admin.from(TABLES.organizations).update({ stripe_customer_id: customerId }).eq("id", orgId);
-  }
+  const customerId = await ensureStripeCustomer(admin, orgId, userId, org);
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL!;
   const session = await getStripe().checkout.sessions.create({
@@ -49,7 +35,6 @@ export const POST = withApiHandler(async ({ admin, userId, orgId, req }) => {
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
     subscription_data: {
-      trial_period_days: 7,
       metadata: { org_id: orgId },
     },
     success_url: `${baseUrl}/dashboard?checkout=success`,

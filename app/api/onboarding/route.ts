@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { withAuthHandler, clientIp } from "@/lib/api-handler";
 import { getProfile } from "@/lib/supabase/profile";
 import { provisionAccount, recordSignupConsents, AccountConflictError } from "@/lib/supabase/provisioning";
+import { startTrialSubscription } from "@/lib/stripe/subscription";
 import { logAudit, AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { validateAccountFields, firstFieldError } from "@/lib/account";
 import type { OnboardingRequest, AccountFieldError } from "@/shared/interfaces";
@@ -36,6 +37,7 @@ export const POST = withAuthHandler(async ({ userId, req, admin }) => {
       entityId: orgId,
     });
     await recordSignupConsents(admin, userId, clientIp(req));
+    await startTrialSubscription(admin, orgId, userId);
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof AccountConflictError) {

@@ -33,8 +33,10 @@ export default function SubscribeGate() {
 
   return (
     <div className="max-w-md mx-auto bg-white border border-gray-200 rounded-xl p-8">
-      <h2 className="text-lg font-semibold text-gray-900 mb-2 text-center">Assine para começar</h2>
-      <p className="text-sm text-gray-600 mb-6 text-center">7 dias grátis em qualquer plano. Cancele quando quiser.</p>
+      <h2 className="text-lg font-semibold text-gray-900 mb-2 text-center">Assine para continuar</h2>
+      <p className="text-sm text-gray-600 mb-6 text-center">
+        Escolha um plano para seguir usando o Laudai. Cancele quando quiser.
+      </p>
 
       <div className="grid grid-cols-2 gap-3 mb-4">
         {PLANS.map((p) => (

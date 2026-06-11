@@ -5,6 +5,7 @@ import { createAdmin } from "@/lib/supabase/admin";
 import { clientIp } from "@/lib/api-handler";
 import { getProfile } from "@/lib/supabase/profile";
 import { provisionAccount, recordSignupConsents, AccountConflictError } from "@/lib/supabase/provisioning";
+import { startTrialSubscription } from "@/lib/stripe/subscription";
 import { validateAccountFields } from "@/lib/account";
 import { logError } from "@/lib/log";
 
@@ -54,8 +55,9 @@ export async function GET(req: NextRequest) {
   // metadata is client-set, so re-validate before persisting (not just presence)
   if (Object.keys(validateAccountFields(fields)).length === 0) {
     try {
-      await provisionAccount(admin, user.id, fields);
+      const orgId = await provisionAccount(admin, user.id, fields);
       await recordSignupConsents(admin, user.id, clientIp(req));
+      await startTrialSubscription(admin, orgId, user.id);
       return NextResponse.redirect(`${origin}${next}`);
     } catch (err) {
       if (!(err instanceof AccountConflictError)) logError("provision on callback failed", err, { userId: user.id });

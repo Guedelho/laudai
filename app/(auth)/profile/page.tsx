@@ -1,9 +1,11 @@
 import { createAdmin } from "@/lib/supabase/admin";
 import { getServerUser, getCurrentOrgId } from "@/lib/supabase/auth";
 import { isOrgOwner } from "@/lib/supabase/org";
+import { getBillingOverview } from "@/lib/stripe/subscription";
 import { TABLES } from "@/shared/constants";
 import ProfileForm from "./ProfileForm";
 import OrgLogo from "./OrgLogo";
+import BillingSection from "./BillingSection";
 
 export default async function ProfilePage() {
   const user = await getServerUser();
@@ -17,8 +19,10 @@ export default async function ProfilePage() {
     isOrgOwner(admin, user.id, orgId),
   ]);
 
+  const billing = owner ? await getBillingOverview(admin, orgId).catch(() => null) : null;
+
   return (
-    <main className="flex flex-col items-center px-4 py-10">
+    <main className="flex flex-col items-center gap-6 px-4 py-10">
       {owner && <OrgLogo hasLogo={!!org?.logo_url} />}
       <div className="bg-white border border-gray-200 rounded-xl p-8 w-full max-w-lg">
         <h1 className="text-xl font-semibold text-gray-900 mb-6">Meu Perfil</h1>
@@ -33,6 +37,7 @@ export default async function ProfilePage() {
           hasSignatureImage={!!profile?.signature_image_url}
         />
       </div>
+      {billing && <BillingSection plan={billing.plan} invoices={billing.invoices} />}
     </main>
   );
 }

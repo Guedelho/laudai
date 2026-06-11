@@ -30,6 +30,8 @@ export default function SignupForm() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmError, setConfirmError] = useState("");
   const [cpf, setCpf] = useState("");
   const [crmvState, setCrmvState] = useState("");
   const [crmv, setCrmv] = useState("");
@@ -75,11 +77,14 @@ export default function SignupForm() {
 
     const fe = validateAccountFields({ full_name: fullName, cpf, crmv, crmv_state: crmvState });
     if (password.length < 8) fe.password = "Mínimo de 8 caracteres.";
-    if (Object.keys(fe).length) {
+    const confirmErr = password !== confirmPassword ? "As senhas não coincidem." : "";
+    if (Object.keys(fe).length || confirmErr) {
       setFieldErrors(fe);
+      setConfirmError(confirmErr);
       return;
     }
     setFieldErrors({});
+    setConfirmError("");
     setLoading(true);
 
     const profile = normalizeAccount({ full_name: fullName, cpf, crmv, crmv_state: crmvState });
@@ -165,7 +170,7 @@ export default function SignupForm() {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             className={inputCls}
-            placeholder="Dra. Tatiana Brasil"
+            placeholder="Tatiana Brasil"
             aria-invalid={!!fieldErrors.full_name}
             aria-describedby={fieldErrors.full_name ? `${fullNameId}-error` : undefined}
             required
@@ -188,6 +193,7 @@ export default function SignupForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={inputCls}
+            placeholder="nome@clinica.com.br"
             aria-invalid={!!fieldErrors.email}
             aria-describedby={fieldErrors.email ? `${emailId}-error` : undefined}
             required
@@ -204,6 +210,14 @@ export default function SignupForm() {
           onChange={setPassword}
           autoComplete="new-password"
           error={fieldErrors.password}
+        />
+
+        <PasswordInput
+          value={confirmPassword}
+          onChange={setConfirmPassword}
+          label="Confirmar senha"
+          autoComplete="new-password"
+          error={confirmError}
         />
 
         <CpfCrmvFields
@@ -225,6 +239,8 @@ export default function SignupForm() {
         <button type="submit" disabled={loading} className={btnBlock}>
           {loading ? "Criando conta..." : "Criar conta"}
         </button>
+
+        <p className="text-center text-xs text-gray-500">Enviaremos um link de confirmação para o seu email.</p>
       </form>
 
       <p className="mt-4 text-center text-[11px] text-gray-500">

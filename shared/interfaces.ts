@@ -119,6 +119,31 @@ export interface ListReportsResponse extends ApiResponse {
   reports?: ReportSummary[];
 }
 
+// ─── Billing overview (profile Plan + Invoices cards) ────────────────────────
+
+export interface PlanOverview {
+  status: string;
+  interval: "month" | "year" | null;
+  amount: number | null;
+  currency: string;
+  currentPeriodEnd: string | null;
+  trialing: boolean;
+}
+
+export interface InvoiceOverview {
+  id: string;
+  created: string;
+  status: string;
+  amount: number;
+  currency: string;
+  hostedInvoiceUrl: string | null;
+}
+
+export interface BillingOverview {
+  plan: PlanOverview | null;
+  invoices: InvoiceOverview[];
+}
+
 // ─── Generation ──────────────────────────────────────────────────────────────
 
 export interface GenerateResponse extends ApiResponse {

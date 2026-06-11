@@ -3,8 +3,8 @@ import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe/server";
+import { syncSubscription } from "@/lib/stripe/subscription";
 import { createAdmin } from "@/lib/supabase/admin";
-import { TABLES, SUBSCRIPTION_REPORT_TYPES, ENTITLED_SUBSCRIPTION_STATUSES } from "@/shared/constants";
 import { logError, logInfo } from "@/lib/log";
 
 export async function POST(req: NextRequest) {
@@ -54,53 +54,6 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ received: true });
-}
-
-async function syncSubscription(admin: ReturnType<typeof createAdmin>, sub: Stripe.Subscription): Promise<void> {
-  const orgId = sub.metadata.org_id;
-  if (!orgId) {
-    logError("Stripe webhook: subscription has no org_id metadata", null, { subscriptionId: sub.id });
-    return;
-  }
-
-  await admin
-    .from(TABLES.organizations)
-    .update({
-      stripe_subscription_id: sub.id,
-      stripe_subscription_status: sub.status,
-    })
-    .eq("id", orgId);
-
-  if (ENTITLED_SUBSCRIPTION_STATUSES.has(sub.status)) {
-    // Period end carries the trial end date during the trial, and the next
-    // renewal date after the first invoice — both map to "access until X".
-    const periodEnd = subscriptionPeriodEnd(sub);
-    if (periodEnd === null) {
-      // Missing period end is a Stripe-side anomaly, not a transient error —
-      // log and ack so Stripe stops retrying instead of looping forever.
-      logError("Stripe webhook: subscription has no item period end", null, { subscriptionId: sub.id });
-      return;
-    }
-    const expiresAt = new Date(periodEnd * 1000).toISOString();
-    const { error } = await admin.from(TABLES.organization_report_types).upsert(
-      SUBSCRIPTION_REPORT_TYPES.map((report_type_id) => ({ org_id: orgId, report_type_id, expires_at: expiresAt })),
-      { onConflict: "org_id,report_type_id" },
-    );
-    if (error) logError("Stripe webhook: upsert entitlement failed", error, { orgId, subscriptionId: sub.id });
-  } else {
-    const { error } = await admin
-      .from(TABLES.organization_report_types)
-      .delete()
-      .eq("org_id", orgId)
-      .in("report_type_id", [...SUBSCRIPTION_REPORT_TYPES]);
-    if (error) logError("Stripe webhook: delete entitlement failed", error, { orgId, subscriptionId: sub.id });
-  }
-}
-
-// The dahlia API moved current_period_end from Subscription to SubscriptionItem.
-function subscriptionPeriodEnd(sub: Stripe.Subscription): number | null {
-  const ends = sub.items.data.map((i) => i.current_period_end).filter((n): n is number => typeof n === "number");
-  return ends.length === 0 ? null : Math.max(...ends);
 }
 
 function invoiceSubscriptionId(invoice: Stripe.Invoice): string | null {

@@ -8,7 +8,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 - **Tailwind CSS 4**
 - **Supabase** — auth, Postgres, storage
 - **Google Gemini AI** — `gemini-3-flash-preview` (single-call report generation)
-- **Stripe** — subscriptions (monthly/yearly), hosted Checkout + Customer Portal, webhook-driven entitlements
+- **Stripe** — subscriptions (monthly/yearly), automatic 7-day trial at signup (no card), hosted Checkout + Customer Portal, webhook-driven entitlements
 - **pdfmake** — server-side PDF generation (cached in storage)
 - **Vercel BotID** — invisible bot protection on generation + upload routes
 - **Prettier** — code formatting with pre-commit hook
@@ -63,7 +63,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 | `/new/chat`                      | Conversational agent — collects patient/client/exam data, previews laudo in-chat |
 | `/dashboard`                     | Live list of reports, in-progress and completed                                  |
 | `/report/[id]`                   | View / edit / download a completed report                                        |
-| `/profile`                       | Vet profile (name, CRMV, logo, signature, account)                               |
+| `/profile`                       | Vet profile (name, CRMV, logo, signature) + plan & invoices (owner)              |
 | `/pets`                          | Manage patients                                                                  |
 | `/clients`                       | Manage clients and responsible vets                                              |
 | `/legal/politica-de-privacidade` | Privacy policy (LGPD)                                                            |
@@ -77,7 +77,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 
 ## Multi-tenancy
 
-Every user belongs to at least one organization. Solo users get an org-of-1 automatically (individual plan, owner role) — the concept is invisible until they invite a teammate. Entitlements are granted by Stripe webhook after the vet subscribes.
+Every user belongs to at least one organization. Solo users get an org-of-1 automatically (individual plan, owner role) — the concept is invisible until they invite a teammate. A 7-day trial starts automatically at signup (no card required); entitlements are granted by the Stripe webhook.
 
 - **Plans**: `individual`, `team` (seed rows; FK from `organizations.plan`)
 - **Roles**: `owner`, `member` — one owner per org. Team management (member CRUD + invitations) is owner-only at the RLS level.
@@ -87,10 +87,10 @@ Every user belongs to at least one organization. Solo users get an org-of-1 auto
 
 Each report type (`report_types` catalog) is gated by two tables:
 
-- `organization_report_types(org_id, report_type_id, expires_at)` — what the org owns. `expires_at` mirrors the Stripe subscription's current period end and is written by `/api/webhooks/stripe`; the row is deleted when the subscription leaves entitled status (`trialing`/`active`).
+- `organization_report_types(org_id, report_type_id, expires_at)` — what the org owns. `expires_at` mirrors the Stripe subscription's current period end and is written by `/webhook/stripe`; the row is deleted when the subscription leaves entitled status (`trialing`/`active`).
 - `member_specialties(org_id, user_id, report_type_id)` — which members can write which types. Owners are implicit (god-mode within the org's entitlements); other members need a grant.
 
-`/api/generate` checks both. New signups have no entitlement until the Stripe Checkout flow completes (the 7-day trial is managed by Stripe, not the DB).
+`/api/generate` checks both. The 7-day trial starts automatically when the account is provisioned: `startTrialSubscription` creates a trialing Stripe subscription with no payment method, and the webhook grants the entitlement — no plan picker, no card. After the trial ends without a card, the subscription cancels, the entitlement drops, and the dashboard shows the subscribe gate (hosted Checkout, which converts straight to paid).
 
 ## How laudo generation works
 
@@ -135,7 +135,7 @@ app/
     new/                            # Form-based report creation
       chat/                         # Conversational agent (ToolLoopAgent + in-chat preview)
     report/[id]/                    # View / edit / print report
-    profile/                        # Profile editor + privacy controls (export, delete)
+    profile/                        # Profile editor + plan/invoices (owner) + privacy controls (export, delete)
     pets/ clients/                  # Pet & client management
   api/
     generate/                       # POST — enqueue laudo
@@ -151,7 +151,7 @@ app/
   login/ signup/ onboarding/        # Auth pages (login, registration, profile-setup fallback)
   forgot-password/ reset-password/  # Password reset flow
   auth/callback/                    # Email-confirmation + recovery handler
-components/                         # AppHeader, Typeahead, ImageLightbox, ...
+components/                         # AppSidebar, Typeahead, ImageLightbox, ...
 lib/
   services/                         # Client-side typed fetch wrappers
   client/                           # Browser-only helpers (pdf-tab, audio-wav, dictation, use-is-client)
