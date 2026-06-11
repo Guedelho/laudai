@@ -129,6 +129,41 @@ export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) 
       },
     }),
 
+    listReports: tool({
+      description:
+        "Lista os laudos já gerados pela organização (mais recentes primeiro). Use quando o usuário perguntar sobre laudos existentes, anteriores ou o histórico.",
+      inputSchema: z.object({
+        query: z.string().optional().describe("Trecho do nome do paciente ou do cliente para filtrar"),
+        limit: z.number().int().min(1).max(20).optional().describe("Quantos laudos retornar (padrão 10)"),
+      }),
+      execute: async ({ query, limit }) => {
+        let q = admin
+          .from(TABLES.reports)
+          .select("id, patient_name, client_name, responsible_vet, specialty, status, exam_date, created_at")
+          .eq("org_id", orgId)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(limit ?? 10);
+        if (query?.trim()) {
+          const term = query.trim();
+          q = q.or(`patient_name.ilike.%${term}%,client_name.ilike.%${term}%`);
+        }
+        const { data } = await q;
+        return {
+          reports: (data ?? []).map((r) => ({
+            id: r.id,
+            patient: r.patient_name,
+            client: r.client_name,
+            vet: r.responsible_vet,
+            type: r.specialty,
+            status: r.status,
+            examDate: r.exam_date,
+            createdAt: r.created_at,
+          })),
+        };
+      },
+    }),
+
     createReportDraft: tool({
       description:
         "Cria o laudo e inicia a geração. Chame apenas quando tiver cliente, médico responsável, todos os dados do paciente e os achados do exame. Retorna o reportId para o upload das imagens.",
