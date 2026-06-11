@@ -21,5 +21,5 @@ export function useDirectory() {
       .catch(() => {});
   }, []);
 
-  return { pets, setPets, clients, setClients, breedSuggestions: uniqueBreeds(pets) };
+  return { pets, clients, breedSuggestions: uniqueBreeds(pets) };
 }

@@ -40,7 +40,7 @@ export default async function ProfilePage() {
         />
       </div>
       {billing && <BillingSection plan={billing.plan} invoices={billing.invoices} />}
-      <AccountActions />
+      <AccountActions deletionScheduledAt={profile?.deletion_scheduled_at ?? null} />
     </main>
   );
 }

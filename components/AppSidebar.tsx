@@ -117,8 +117,8 @@ export default function AppSidebar({ subscriptionChip, userEmail }: Props) {
     <>
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-gray-200 bg-white px-4 py-5 md:flex">
         <div className="border-b border-gray-200 px-1 pb-4">
-          <Link href="/dashboard" className="text-lg font-bold text-gray-900">
-            Laudai
+          <Link href="/dashboard" className="inline-flex">
+            <img src="/logo.svg" alt="Laudai" width={168} height={56} className="h-8 w-auto" />
           </Link>
         </div>
 
@@ -134,8 +134,8 @@ export default function AppSidebar({ subscriptionChip, userEmail }: Props) {
       </aside>
 
       <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 md:hidden">
-        <Link href="/dashboard" className="text-lg font-bold text-gray-900">
-          Laudai
+        <Link href="/dashboard" className="inline-flex">
+          <img src="/logo.svg" alt="Laudai" width={168} height={56} className="h-8 w-auto" />
         </Link>
         <div className="flex items-center gap-2">
           {subscriptionChip}
@@ -163,7 +163,7 @@ export default function AppSidebar({ subscriptionChip, userEmail }: Props) {
             className="absolute inset-y-0 left-0 flex w-64 flex-col border-r border-gray-200 bg-white px-4 py-5"
           >
             <div className="flex items-center justify-between">
-              <span className="text-lg font-bold text-gray-900">Laudai</span>
+              <img src="/logo.svg" alt="Laudai" width={168} height={56} className="h-8 w-auto" />
               <button
                 type="button"
                 onClick={close}

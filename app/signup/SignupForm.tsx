@@ -243,7 +243,7 @@ export default function SignupForm() {
         <p className="text-center text-xs text-gray-500">Enviaremos um link de confirmação para o seu email.</p>
       </form>
 
-      <p className="mt-4 text-center text-[11px] text-gray-500">
+      <p className="mt-4 text-center text-xs text-gray-500">
         Ao criar conta, você concorda com os{" "}
         <Link href="/legal/termos-de-uso" target="_blank" className="text-blue-600 hover:underline">
           Termos de Uso

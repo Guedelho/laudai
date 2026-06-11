@@ -58,7 +58,13 @@ interface ActionsProps {
 export function ReportEditorActions({ saving, printing, onSalvar, onImprimir }: ActionsProps) {
   return (
     <>
-      <button onClick={onSalvar} disabled={saving || printing} aria-label="Salvar laudo" className={btnSecondary}>
+      <button
+        type="button"
+        onClick={onSalvar}
+        disabled={saving || printing}
+        aria-label="Salvar laudo"
+        className={btnSecondary}
+      >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
           <path
             strokeLinecap="round"
@@ -68,7 +74,13 @@ export function ReportEditorActions({ saving, printing, onSalvar, onImprimir }: 
         </svg>
         {saving ? "Salvando..." : "Salvar"}
       </button>
-      <button onClick={onImprimir} disabled={printing || saving} aria-label="Baixar PDF" className={btnPrimary}>
+      <button
+        type="button"
+        onClick={onImprimir}
+        disabled={printing || saving}
+        aria-label="Baixar PDF"
+        className={btnPrimary}
+      >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
           <path
             strokeLinecap="round"
@@ -210,7 +222,7 @@ export function ReportEditorPatientFields({
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Médico Responsável</label>
+          <label className="block text-xs text-gray-500 mb-1">Médico responsável</label>
           <EntityTypeahead<ClientVet>
             value={fields.responsibleVet}
             onChange={(v) => setFields({ ...fields, responsibleVet: v })}

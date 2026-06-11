@@ -314,10 +314,10 @@ export default function NewReportPage() {
         {/* Client / Vet */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-gray-700">Cliente e Responsável</p>
-            <a href="/clients" className="text-xs text-blue-600 hover:underline">
+            <p className="text-sm font-semibold text-gray-700">Cliente e responsável</p>
+            <Link href="/clients" className="text-xs text-blue-600 hover:underline">
               Gerenciar clientes
-            </a>
+            </Link>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -338,7 +338,7 @@ export default function NewReportPage() {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Médico Responsável</label>
+              <label className="block text-xs text-gray-500 mb-1">Médico responsável</label>
               <EntityTypeahead
                 value={newVetName}
                 onChange={setNewVetName}
@@ -357,9 +357,9 @@ export default function NewReportPage() {
         <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-gray-700">Paciente</p>
-            <a href="/pets" className="text-xs text-blue-600 hover:underline">
+            <Link href="/pets" className="text-xs text-blue-600 hover:underline">
               Gerenciar pacientes
-            </a>
+            </Link>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -456,7 +456,7 @@ export default function NewReportPage() {
 
         {/* Findings */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-          <p className="text-sm font-semibold text-gray-700">Achados do Exame</p>
+          <p className="text-sm font-semibold text-gray-700">Achados do exame</p>
           <div className="flex gap-2">
             <button
               type="button"
@@ -479,7 +479,7 @@ export default function NewReportPage() {
           <textarea
             value={rawInput}
             onChange={(e) => setRawInput(e.target.value)}
-            placeholder="Informe apenas as alterações encontradas... Deixe em branco para gerar laudo normal."
+            placeholder="Descreva as alterações encontradas no exame..."
             rows={6}
             maxLength={2000}
             className={`${inputCls} resize-none`}
@@ -570,11 +570,11 @@ export default function NewReportPage() {
               <span>{uploadingImages ? "Enviando imagens..." : "Enviando..."}</span>
             </>
           ) : (
-            "Gerar Laudo"
+            "Gerar laudo"
           )}
         </button>
 
-        <p className="text-[11px] text-gray-500 text-center">
+        <p className="text-xs text-gray-500 text-center">
           Dados do tutor e achados do exame são enviados ao Google (Gemini) para geração do laudo. Veja a{" "}
           <Link href="/legal/politica-de-privacidade" target="_blank" className="text-blue-600 hover:underline">
             Política de Privacidade

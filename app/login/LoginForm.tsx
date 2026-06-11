@@ -50,7 +50,9 @@ export default function LoginPage() {
 
   return (
     <AuthCard>
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Laudai</h1>
+      <h1 className="mb-2">
+        <img src="/logo.svg" alt="Laudai" width={168} height={56} className="h-9 w-auto" />
+      </h1>
       <p className="text-sm text-gray-500 mb-6">Laudos veterinários com IA</p>
 
       <form onSubmit={handleLogin} className="space-y-4">

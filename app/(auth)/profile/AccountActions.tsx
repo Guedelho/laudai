@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
+import { useRouter } from "next/navigation";
 import * as profileApi from "@/lib/services/profile";
 import { logout } from "@/app/actions/auth";
+
+const DELETION_GRACE_DAYS = 30;
 
 function LogoutButton() {
   const { pending } = useFormStatus();
@@ -14,12 +17,53 @@ function LogoutButton() {
   );
 }
 
-export default function AccountActions() {
+function purgeDateLabel(scheduledAt: string): string {
+  const purgeAt = new Date(new Date(scheduledAt).getTime() + DELETION_GRACE_DAYS * 86_400_000);
+  return purgeAt.toLocaleDateString("pt-BR");
+}
+
+function DeletionScheduledBanner({ scheduledAt, onCancelled }: { scheduledAt: string; onCancelled: () => void }) {
+  const [cancelling, setCancelling] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleCancel() {
+    setCancelling(true);
+    setError("");
+    try {
+      await profileApi.cancelAccountDeletion();
+      onCancelled();
+    } catch {
+      setError("Erro ao cancelar a exclusão. Tente novamente.");
+      setCancelling(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-red-200 bg-red-50 p-3 space-y-2">
+      <p className="text-xs text-red-900">
+        A exclusão da sua conta está agendada: seus dados serão apagados permanentemente em{" "}
+        {purgeDateLabel(scheduledAt)}.
+      </p>
+      <button
+        type="button"
+        onClick={handleCancel}
+        disabled={cancelling}
+        className="text-xs bg-white border border-red-300 text-red-700 px-3 py-1.5 rounded hover:bg-red-100 disabled:opacity-50"
+      >
+        {cancelling ? "Cancelando..." : "Cancelar exclusão"}
+      </button>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
+export default function AccountActions({ deletionScheduledAt }: { deletionScheduledAt: string | null }) {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [exportError, setExportError] = useState("");
   const [downloading, setDownloading] = useState(false);
+  const router = useRouter();
 
   async function handleExport() {
     setExportError("");
@@ -38,9 +82,11 @@ export default function AccountActions() {
     setDeleteError("");
     try {
       await profileApi.deleteAccount();
-      window.location.href = "/login";
+      setDeleteConfirm(false);
+      router.refresh();
     } catch {
       setDeleteError("Erro ao excluir conta. Tente novamente.");
+    } finally {
       setDeleting(false);
     }
   }
@@ -48,7 +94,7 @@ export default function AccountActions() {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 w-full max-w-lg space-y-6">
       <div className="space-y-4">
-        <h2 className="text-sm font-semibold text-gray-900">Privacidade</h2>
+        <h2 className="text-base font-semibold text-gray-900">Privacidade</h2>
         <div className="flex flex-col gap-2">
           <button
             type="button"
@@ -59,7 +105,9 @@ export default function AccountActions() {
             {downloading ? "Baixando..." : "Baixar meus dados (JSON)"}
           </button>
           {exportError && <p className="text-xs text-red-600">{exportError}</p>}
-          {!deleteConfirm ? (
+          {deletionScheduledAt ? (
+            <DeletionScheduledBanner scheduledAt={deletionScheduledAt} onCancelled={() => router.refresh()} />
+          ) : !deleteConfirm ? (
             <button
               type="button"
               onClick={() => setDeleteConfirm(true)}
@@ -70,7 +118,8 @@ export default function AccountActions() {
           ) : (
             <div className="rounded-lg border border-red-200 bg-red-50 p-3 space-y-2">
               <p className="text-xs text-red-900">
-                Excluir a conta apaga permanentemente seu perfil, laudos, imagens e PDFs. Esta ação é irreversível.
+                Seu perfil, laudos, imagens e PDFs serão apagados permanentemente em {DELETION_GRACE_DAYS} dias. Até lá,
+                você pode cancelar a exclusão nesta página.
               </p>
               <div className="flex gap-2">
                 <button

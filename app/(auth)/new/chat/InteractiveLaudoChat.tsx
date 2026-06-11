@@ -658,7 +658,7 @@ function ReportEditorInChat({ report, previewFiles }: { report: Report; previewF
 
       {fileUrls.length > 0 && (
         <div className="rounded-xl bg-white px-3 py-2.5">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Imagens do exame</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Imagens do exame</p>
           <div className="grid grid-cols-3 gap-2">
             {fileUrls.map((url, i) => (
               <div key={url} className="cursor-pointer" onClick={() => setLightboxIndex(i)}>

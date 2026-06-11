@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
   title: "Laudai",
-  description: "Gerador de laudos veterinários",
+  description: "Laudos veterinários com IA",
 };
 
 export default function RootLayout({
@@ -19,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${geistSans.variable} h-full antialiased`} style={{ colorScheme: "light" }}>
+    <html lang="pt-BR" className="h-full antialiased" style={{ colorScheme: "light" }}>
       <body className="min-h-full flex flex-col">
         {children}
         <SpeedInsights />

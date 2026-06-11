@@ -38,8 +38,8 @@ export default function OrgLogo({ hasLogo }: { hasLogo: boolean }) {
   const src = version ? `/api/org/logo?v=${version}` : null;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-8 w-full max-w-lg mb-6">
-      <h2 className="text-lg font-bold text-gray-900 mb-1">Organização</h2>
+    <div className="bg-white border border-gray-200 rounded-xl p-8 w-full max-w-lg">
+      <h2 className="text-base font-semibold text-gray-900 mb-1">Organização</h2>
       <p className="text-sm text-gray-500 mb-4">O logo aparece em todos os laudos da sua organização.</p>
 
       <label className="block text-sm font-medium text-gray-700 mb-2">Logo do laudo</label>

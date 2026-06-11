@@ -1,17 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Sacramento, Pinyon_Script, Alex_Brush, Homemade_Apple } from "next/font/google";
 import * as profileApi from "@/lib/services/profile";
-import { btnPrimary } from "@/lib/ui";
+import { btnPrimary, inputCls } from "@/lib/ui";
 import { validateCpf, formatCpf } from "@/lib/cpf";
 
+const sacramento = Sacramento({ weight: "400", subsets: ["latin"] });
+const pinyonScript = Pinyon_Script({ weight: "400", subsets: ["latin"] });
+const alexBrush = Alex_Brush({ weight: "400", subsets: ["latin"] });
+const homemadeApple = Homemade_Apple({ weight: "400", subsets: ["latin"] });
+
 const SIGNATURE_FONTS = [
-  { key: "sacramento", label: "Sacramento", css: "'Sacramento', cursive" },
-  { key: "pinyon-script", label: "Pinyon Script", css: "'Pinyon Script', cursive" },
-  { key: "alex-brush", label: "Alex Brush", css: "'Alex Brush', cursive" },
-  { key: "homemade-apple", label: "Homemade Apple", css: "'Homemade Apple', cursive" },
+  { key: "sacramento", label: "Sacramento", className: sacramento.className },
+  { key: "pinyon-script", label: "Pinyon Script", className: pinyonScript.className },
+  { key: "alex-brush", label: "Alex Brush", className: alexBrush.className },
+  { key: "homemade-apple", label: "Homemade Apple", className: homemadeApple.className },
 ];
 
 export default function ProfileForm({
@@ -48,17 +54,6 @@ export default function ProfileForm({
   const [sigError, setSigError] = useState("");
   const fontAbortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    const id = "google-signature-fonts";
-    if (!document.getElementById(id)) {
-      const link = document.createElement("link");
-      link.id = id;
-      link.rel = "stylesheet";
-      link.href =
-        "https://fonts.googleapis.com/css2?family=Sacramento&family=Pinyon+Script&family=Alex+Brush&family=Homemade+Apple&display=swap";
-      document.head.appendChild(link);
-    }
-  }, []);
   const sigInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -158,7 +153,7 @@ export default function ProfileForm({
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={inputCls}
             placeholder="Tatiana Brasil"
             required
           />
@@ -188,7 +183,7 @@ export default function ProfileForm({
                 type="text"
                 value={cpf}
                 onChange={handleCpfChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputCls}
                 placeholder="000.000.000-00"
               />
               {cpfError && <p className="mt-1 text-xs text-red-600">{cpfError}</p>}
@@ -208,8 +203,8 @@ export default function ProfileForm({
               type="text"
               value={signature}
               onChange={(e) => setSignature(e.target.value)}
-              placeholder={fullName || "Seu Nome"}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder={fullName || "Seu nome"}
+              className={inputCls}
             />
           </div>
 
@@ -227,7 +222,9 @@ export default function ProfileForm({
                 }`}
               >
                 <p className="text-xs text-gray-500 mb-1">{f.label}</p>
-                <div style={{ fontFamily: f.css, fontSize: 26, lineHeight: 1.8 }}>{signature || fullName}</div>
+                <div className={f.className} style={{ fontSize: 26, lineHeight: 1.8 }}>
+                  {signature || fullName}
+                </div>
               </button>
             ))}
 
@@ -284,7 +281,7 @@ export default function ProfileForm({
           {saveError && <span className="text-sm text-red-600">{saveError}</span>}
         </div>
 
-        <p className="text-[11px] text-gray-500">
+        <p className="text-xs text-gray-500">
           CPF e CRMV são exigidos para emissão do laudo. Consulte nossa{" "}
           <Link href="/legal/politica-de-privacidade" target="_blank" className="text-blue-600 hover:underline">
             Política de Privacidade

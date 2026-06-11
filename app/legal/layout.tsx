@@ -6,8 +6,8 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-gray-50">
       <header className="border-b border-gray-200 bg-white">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/legal" className="text-lg font-semibold text-gray-900">
-            Laudai
+          <Link href="/legal" className="inline-flex">
+            <img src="/logo.svg" alt="Laudai" width={168} height={56} className="h-8 w-auto" />
           </Link>
           <Link href="/login" className="text-sm text-blue-600 hover:underline">
             Voltar ao login

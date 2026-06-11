@@ -31,9 +31,9 @@ export default function DashboardPage() {
   return (
     <main className="max-w-3xl mx-auto px-6 py-8">
       <div className="mb-6 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-gray-900">Laudos Recentes</h1>
+        <h1 className="text-xl font-semibold text-gray-900">Laudos recentes</h1>
         <Link href="/new" className={btnPrimary}>
-          Novo Laudo
+          Novo laudo
         </Link>
       </div>
       <Suspense fallback={<Loading />}>

@@ -17,7 +17,6 @@ export default function DeleteReportButton({ reportId }: { reportId: string }) {
       await deleteReport(reportId);
       router.push("/dashboard");
     } catch {
-      console.error("Delete report error");
       setDeleting(false);
       setConfirming(false);
       setDeleteError("Erro ao excluir laudo. Tente novamente.");
@@ -29,6 +28,7 @@ export default function DeleteReportButton({ reportId }: { reportId: string }) {
       <div className="flex items-center gap-2 print:hidden">
         <span className="text-sm text-gray-600">Excluir laudo?</span>
         <button
+          type="button"
           onClick={handleDelete}
           disabled={deleting}
           className="text-sm text-red-600 font-medium hover:text-red-800 disabled:opacity-50"
@@ -36,6 +36,7 @@ export default function DeleteReportButton({ reportId }: { reportId: string }) {
           {deleting ? "Excluindo..." : "Confirmar"}
         </button>
         <button
+          type="button"
           onClick={() => {
             setConfirming(false);
             setDeleteError("");

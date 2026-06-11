@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Pet } from "@/shared/models";
-import { sexLabel } from "@/lib/utils";
+import { sexLabel, uniqueBreeds } from "@/lib/utils";
 import * as api from "@/lib/services/pets";
 import { btnPrimary } from "@/lib/ui";
 import ConfirmDelete from "@/components/ConfirmDelete";
@@ -42,7 +42,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
-  const breedSuggestions = [...new Set(pets.map((p) => p.breed).filter(Boolean) as string[])].sort();
+  const breedSuggestions = uniqueBreeds(pets);
 
   function updateNew<K extends keyof PetFormValues>(field: K, value: PetFormValues[K]) {
     setNewForm((f) => ({ ...f, [field]: value }));

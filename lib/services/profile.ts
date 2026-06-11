@@ -34,6 +34,10 @@ export async function deleteAccount(): Promise<void> {
   await fetchOk("/api/account", { method: "DELETE" });
 }
 
+export async function cancelAccountDeletion(): Promise<void> {
+  await fetchOk("/api/account", { method: "POST" });
+}
+
 export async function downloadAccountExport(): Promise<void> {
   const res = await fetch("/api/account/export");
   if (!res.ok) throw new Error("Falha ao exportar dados.");

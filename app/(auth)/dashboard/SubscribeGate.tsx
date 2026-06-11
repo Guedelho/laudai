@@ -52,7 +52,7 @@ export default function SubscribeGate() {
             </span>
             <span className="text-lg font-semibold">{p.price}</span>
             <span className="text-xs text-gray-500">{p.period}</span>
-            {p.tagline && <span className="text-[11px] text-green-700 font-medium">{p.tagline}</span>}
+            {p.tagline && <span className="text-xs text-green-700 font-medium">{p.tagline}</span>}
             {loadingPlan === p.id && <span className="text-xs text-blue-600 mt-1">Carregando…</span>}
           </button>
         ))}

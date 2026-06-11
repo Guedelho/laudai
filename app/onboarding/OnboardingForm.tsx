@@ -62,7 +62,7 @@ export default function OnboardingForm({ initialFullName }: { initialFullName: s
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             className={inputCls}
-            placeholder="Dra. Tatiana Brasil"
+            placeholder="Tatiana Brasil"
             aria-invalid={!!fieldErrors.full_name}
             aria-describedby={fieldErrors.full_name ? `${fullNameId}-error` : undefined}
             required
@@ -95,7 +95,7 @@ export default function OnboardingForm({ initialFullName }: { initialFullName: s
         </button>
       </form>
 
-      <p className="mt-4 text-center text-[11px] text-gray-500">
+      <p className="mt-4 text-center text-xs text-gray-500">
         Ao concluir, você concorda com os{" "}
         <Link href="/legal/termos-de-uso" target="_blank" className="text-blue-600 hover:underline">
           Termos de Uso
