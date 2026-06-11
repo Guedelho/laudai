@@ -7,18 +7,17 @@ const LOGIN_URL = `${APP_URL}/login`;
 const TERMS_URL = `${APP_URL}/legal/termos-de-uso`;
 const PRIVACY_URL = `${APP_URL}/legal/politica-de-privacidade`;
 
-const WHATSAPP_DISPLAY = "+55 61 99268-8663";
 const WHATSAPP_URL = "https://wa.me/5561992688663?text=Ol%C3%A1%21%20Tenho%20uma%20d%C3%BAvida%20sobre%20o%20Laudai.";
 
 const DESCRIPTION =
-  "Laudos de ultrassom veterinário com IA, no padrão que especialistas esperam: descreva os achados e gere o laudo estruturado em segundos. Revise, assine e exporte em PDF. 7 dias grátis, sem cartão.";
+  "O Laudai é uma IA criada por especialistas para gerar laudos veterinários estruturados em segundos. Você revisa, assina e exporta em PDF. 7 dias grátis, sem cartão.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://laudai.vet"),
-  title: "Laudai — Laudos veterinários com IA, feitos para especialistas",
+  title: "Laudai: a IA de laudos veterinários criada por especialistas",
   description: DESCRIPTION,
   openGraph: {
-    title: "Laudai — Laudos veterinários com IA, feitos para especialistas",
+    title: "Laudai: a IA de laudos veterinários criada por especialistas",
     description: DESCRIPTION,
     url: "/",
     siteName: "Laudai",
@@ -27,7 +26,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Laudai — Laudos veterinários com IA, feitos para especialistas",
+    title: "Laudai: a IA de laudos veterinários criada por especialistas",
     description: DESCRIPTION,
   },
 };
@@ -63,7 +62,7 @@ function Header() {
     <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <a href="#topo" className={`inline-flex rounded-lg ${focusRing}`}>
-          <img src="/logo.svg" alt="Laudai" width={168} height={56} className="h-7 w-auto sm:h-8" />
+          <img src="/logo.svg" alt="Laudai" width={168} height={56} className="h-8 w-auto sm:h-9" />
         </a>
         <nav aria-label="Principal" className="hidden items-center gap-7 text-sm font-medium text-gray-600 md:flex">
           <a href="#recursos" className="hover:text-gray-900">
@@ -109,19 +108,18 @@ function Hero() {
         <div className="animate-[fadeInUp_0.6s_ease-out_both] motion-reduce:animate-none">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50/70 px-3 py-1 text-xs font-semibold text-violet-700">
             <Sparkle className="h-3.5 w-3.5" />
-            Inteligência artificial para médicos veterinários
+            Criado por especialistas em diagnóstico por imagem
           </span>
           <h1
             id="hero-title"
             className="mt-5 text-4xl leading-[1.1] font-bold tracking-tight text-balance text-gray-900 sm:text-5xl lg:text-6xl"
           >
-            Laudos veterinários com{" "}
-            <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">IA</span>,
-            feitos para especialistas.
+            A <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">IA</span>{" "}
+            para laudos veterinários, criada por especialistas.
           </h1>
           <p className="mt-5 max-w-xl text-base text-pretty text-gray-600 sm:text-lg lg:text-xl">
-            Descreva os achados do exame e a IA gera o laudo estruturado em segundos — no padrão que um especialista
-            espera. Você revisa, assina e exporta em PDF.
+            O Laudai não é uma IA genérica: foi criado por especialistas para gerar laudos estruturados em segundos.
+            Você revisa, assina e exporta em PDF.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <a href={SIGNUP_URL} className={`${ctaPrimary} w-full sm:w-auto`}>
@@ -131,7 +129,7 @@ function Hero() {
               Entrar
             </a>
           </div>
-          <p className="mt-3 text-sm text-gray-500">7 dias grátis · sem cartão de crédito</p>
+          <p className="mt-3 text-sm text-gray-500">7 dias grátis, sem cartão de crédito.</p>
         </div>
         <div className="animate-[fadeInUp_0.7s_ease-out_both] motion-reduce:animate-none">
           <LaudoMock />
@@ -187,7 +185,7 @@ function LaudoMock() {
         <div className="rounded-xl border border-gray-100 bg-white p-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-500">Laudo estruturado</span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-blue-600 to-violet-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+            <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-blue-600 to-violet-600 px-2 py-0.5 text-xs font-semibold text-white">
               <Sparkle className="h-3 w-3" />
               Gerado por IA
             </span>
@@ -206,7 +204,7 @@ function LaudoMock() {
 function MockSection({ title, lines }: { title: string; lines: string[] }) {
   return (
     <div>
-      <p className="text-[11px] font-semibold tracking-wide text-blue-700 uppercase">{title}</p>
+      <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">{title}</p>
       <div className="mt-1.5 space-y-1.5" aria-hidden>
         {lines.map((w, i) => (
           <div key={i} className={`h-2 rounded-full bg-gray-100 ${w}`} />
@@ -224,7 +222,7 @@ function HowItWorks() {
     },
     {
       title: "A IA gera o laudo",
-      body: "Estrutura tudo em seções padronizadas e lê as medidas das imagens — sem inventar valores.",
+      body: "Estrutura tudo em seções padronizadas e lê as medidas das imagens, sem inventar valores.",
     },
     {
       title: "Revise, assine e exporte",
@@ -242,7 +240,7 @@ function HowItWorks() {
           Como funciona
         </h2>
         <p className={`text-center ${sectionIntro}`}>
-          Do achado ao laudo assinado em três passos — a IA faz o trabalho pesado, você mantém o controle.
+          Do achado ao laudo assinado em três passos. A IA faz o trabalho pesado e você mantém o controle.
         </p>
         <ol className="mt-10 grid gap-6 sm:mt-12 md:grid-cols-3">
           {steps.map((s, i) => (
@@ -281,12 +279,12 @@ function Features() {
     },
     {
       title: "Leitura das imagens",
-      body: "A IA lê órgãos e medidas direto das imagens do ultrassom — e nunca inventa valores.",
+      body: "A IA lê órgãos e medidas direto das imagens do ultrassom e nunca inventa valores.",
       d: "m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Z",
     },
     {
       title: "Ditado por voz",
-      body: "Transcrição em tempo real no navegador — fale os achados sem largar a sonda.",
+      body: "Transcrição em tempo real no navegador para falar os achados sem largar a sonda.",
       d: "M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z",
     },
     {
@@ -301,7 +299,7 @@ function Features() {
     },
     {
       title: "Histórico e versões",
-      body: "Cada edição do laudo fica registrada — segurança e rastreabilidade total.",
+      body: "Cada edição do laudo fica registrada, com segurança e rastreabilidade total.",
       d: "M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
     },
   ];
@@ -342,27 +340,45 @@ function Features() {
 
 function ForSpecialists() {
   const points = [
-    { label: "Feito para especialistas", sub: "Estrutura e terminologia de quem é da área" },
-    { label: "Conforme a LGPD", sub: "Consentimento e exclusão de dados" },
-    { label: "Dados no Brasil", sub: "Infraestrutura na região sa-east-1" },
-    { label: "Pronto para o CRMV", sub: "Assinatura e registro no laudo" },
+    {
+      label: "Padrão de especialista",
+      sub: "Estrutura e terminologia de quem é da área.",
+      d: "M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z",
+    },
+    {
+      label: "Conforme a LGPD",
+      sub: "Consentimento e exclusão de dados.",
+      d: "M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z",
+    },
+    {
+      label: "Pronto para o CRMV",
+      sub: "Assinatura e registro no laudo.",
+      d: "M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10",
+    },
   ];
   return (
     <section aria-labelledby="especialistas-title" className="border-y border-gray-200 bg-gray-50">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-2xl text-center">
           <h2 id="especialistas-title" className={sectionTitle}>
-            Feito por e para especialistas
+            Criado por especialistas
           </h2>
           <p className={sectionIntro}>
-            O Laudai segue a estrutura, a terminologia e o nível de detalhe que um médico veterinário especialista em
-            diagnóstico por imagem espera de um laudo. A IA monta o rascunho; o especialista mantém a palavra final.
+            O Laudai foi criado por médicos veterinários especialistas em diagnóstico por imagem. A estrutura, a
+            terminologia e o nível de detalhe seguem o que a área exige. A IA monta o rascunho e você mantém a palavra
+            final.
           </p>
         </div>
-        <ul className="mx-auto mt-10 grid max-w-4xl gap-6 sm:mt-12 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="mx-auto mt-10 grid max-w-4xl gap-6 sm:mt-12 sm:grid-cols-3">
           {points.map((p) => (
-            <li key={p.label} className="text-center">
-              <p className="text-sm font-semibold text-gray-900">{p.label}</p>
+            <li key={p.label} className="rounded-2xl border border-gray-200 bg-white p-6">
+              <span
+                aria-hidden
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600"
+              >
+                <FeatureIcon d={p.d} />
+              </span>
+              <h3 className="mt-4 text-base font-semibold text-gray-900">{p.label}</h3>
               <p className="mt-1 text-sm text-gray-600">{p.sub}</p>
             </li>
           ))}
@@ -394,7 +410,7 @@ function Pricing() {
           <span className="text-4xl font-bold tracking-tight text-gray-900">R$ 99,90</span>
           <span className="text-gray-600">/mês</span>
         </div>
-        <p className="mt-1 text-sm text-gray-600">ou R$ 990,90/ano — economize 2 meses</p>
+        <p className="mt-1 text-sm text-gray-600">ou R$ 990,90 por ano (economize 2 meses).</p>
         <ul className="mt-6 space-y-3">
           {included.map((it) => (
             <li key={it} className="flex items-start gap-2.5 text-sm text-gray-700">
@@ -432,7 +448,7 @@ function Contact() {
           Ainda com dúvidas?
         </h2>
         <p className={sectionIntro}>
-          Fale com a nossa equipe no WhatsApp — respondemos rápido e ajudamos você a começar.
+          Fale com a nossa equipe no WhatsApp. Respondemos rápido e ajudamos você a começar.
         </p>
         <a
           href={WHATSAPP_URL}
@@ -443,7 +459,6 @@ function Contact() {
           <WhatsappIcon className="h-5 w-5" />
           Falar no WhatsApp
         </a>
-        <p className="mt-3 text-sm text-gray-600">{WHATSAPP_DISPLAY}</p>
       </div>
     </section>
   );
@@ -474,7 +489,7 @@ function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-white">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 sm:flex-row sm:px-6">
-        <img src="/logo.svg" alt="Laudai" width={168} height={56} className="h-6 w-auto" />
+        <img src="/logo.svg" alt="Laudai" width={168} height={56} className="h-7 w-auto" />
         <nav
           aria-label="Rodapé"
           className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-gray-600"
