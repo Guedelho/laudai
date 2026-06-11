@@ -11,6 +11,9 @@ import { logError } from "@/lib/log";
 export const PATCH = withApiHandler<{ id: string }>(async ({ userId, orgId, admin, audit, params, req }) => {
   const id = params.id;
   const { generatedContent, patientFields, petId, clientId, vetId }: UpdateReportRequest = await req.json();
+  if (!generatedContent || !Array.isArray(generatedContent.sections) || !patientFields) {
+    return NextResponse.json({ error: "Conteúdo do laudo inválido." }, { status: 400 });
+  }
   const owned = await resolveOwnedFks(admin, orgId, { petId, clientId, vetId });
 
   const editedContent = JSON.stringify(generatedContent);

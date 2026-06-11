@@ -48,7 +48,7 @@ export const POST = withApiHandler(
       [rawInput, "Achados do exame"],
     ];
     for (const [value, label] of required) {
-      if (!value.trim()) return NextResponse.json({ error: `${label} é obrigatório(a).` }, { status: 400 });
+      if (!value?.trim()) return NextResponse.json({ error: `${label} é obrigatório(a).` }, { status: 400 });
     }
     if (rawInput.length > 2_000)
       return NextResponse.json({ error: "Achados do exame muito longos. Máximo 2.000 caracteres." }, { status: 400 });
