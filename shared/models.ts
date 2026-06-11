@@ -87,6 +87,14 @@ export interface ReportSummary {
   error_message: string | null;
 }
 
+export interface ChatHistoryMessage {
+  id: string;
+  role: "user" | "assistant";
+  parts: { type: "text"; text: string }[];
+  seq: number;
+  created_at: string;
+}
+
 export interface Report {
   id: string;
   user_id: string;

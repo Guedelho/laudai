@@ -1,17 +1,25 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { Fragment, useState, useRef, useEffect, useLayoutEffect, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type FileUIPart } from "ai";
 import Link from "next/link";
 import { focusRing } from "@/lib/ui";
 import ImageLightbox from "@/components/ImageLightbox";
-import { MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE, TABLES, REPORT_STATUSES, type ReportStatus } from "@/shared/constants";
+import {
+  MAX_REPORT_IMAGES,
+  MAX_IMAGE_FILE_SIZE,
+  CHAT_HISTORY_PAGE_SIZE,
+  TABLES,
+  REPORT_STATUSES,
+  type ReportStatus,
+} from "@/shared/constants";
 import { uploadReportImages } from "@/lib/services/reports";
+import { fetchChatHistory } from "@/lib/services/chat";
 import { recordingToWav } from "@/lib/client/audio-wav";
 import { Streamdown } from "streamdown";
 import type { LaudoAgentUIMessage } from "@/lib/agents/laudo-agent";
-import { type Report } from "@/shared/models";
+import { type Report, type ChatHistoryMessage } from "@/shared/models";
 import { createClient } from "@/lib/supabase/client";
 import { useReportEditor } from "@/lib/hooks/use-report-editor";
 import { useDirectory } from "@/lib/hooks/use-directory";
@@ -51,18 +59,22 @@ function splitAtReport(messages: LaudoAgentUIMessage[]): {
   return { before: messages, after: [], reportId: null };
 }
 
-const START_LAUDO_MESSAGE = "Quero gerar um laudo de ultrassom abdominal.";
+const SESSION_DIVIDER_GAP_MS = 60 * 60 * 1000;
 
 export default function InteractiveLaudoChat({
   greeting,
   orgId,
   initialMessages = [],
-  autoStartLaudo = false,
+  historyCursor = null,
+  hasHistory = false,
+  autoStartMessage = null,
 }: {
   greeting: string;
   orgId: string;
   initialMessages?: LaudoAgentUIMessage[];
-  autoStartLaudo?: boolean;
+  historyCursor?: number | null;
+  hasHistory?: boolean;
+  autoStartMessage?: string | null;
 }) {
   const { messages, sendMessage, status } = useChat<LaudoAgentUIMessage>({
     messages: initialMessages,
@@ -71,10 +83,11 @@ export default function InteractiveLaudoChat({
   const autoStartedRef = useRef(false);
 
   useEffect(() => {
-    if (!autoStartLaudo || autoStartedRef.current || messages.length > 0) return;
+    if (!autoStartMessage || autoStartedRef.current || messages.length > 0) return;
     autoStartedRef.current = true;
-    sendMessage({ text: START_LAUDO_MESSAGE });
-  }, [autoStartLaudo, messages.length, sendMessage]);
+    sendMessage({ text: autoStartMessage });
+    window.history.replaceState(null, "", "/new/chat");
+  }, [autoStartMessage, messages.length, sendMessage]);
   const [input, setInput] = useState("");
   const [attached, setAttached] = useState<File[]>([]);
   const [recording, setRecording] = useState(false);
@@ -83,13 +96,48 @@ export default function InteractiveLaudoChat({
   const [imagesUploaded, setImagesUploaded] = useState(false);
   const [previewFiles, setPreviewFiles] = useState<File[]>([]);
   const [forcePanel, setForcePanel] = useState(false);
+  const [history, setHistory] = useState<ChatHistoryMessage[]>([]);
+  const [cursor, setCursor] = useState(historyCursor);
+  const [hasMore, setHasMore] = useState(hasHistory);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyError, setHistoryError] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const prevScrollHeightRef = useRef(0);
+  const adjustScrollRef = useRef(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => () => clearInterval(timerRef.current ?? undefined), []);
+
+  useLayoutEffect(() => {
+    if (!adjustScrollRef.current) return;
+    adjustScrollRef.current = false;
+    const el = scrollRef.current;
+    if (el) el.scrollTop += el.scrollHeight - prevScrollHeightRef.current;
+  }, [history]);
+
+  async function loadOlder() {
+    if (loadingHistory) return;
+    setLoadingHistory(true);
+    setHistoryError("");
+    try {
+      const older = await fetchChatHistory(cursor);
+      if (older.length < CHAT_HISTORY_PAGE_SIZE) setHasMore(false);
+      if (older.length) {
+        prevScrollHeightRef.current = scrollRef.current?.scrollHeight ?? 0;
+        adjustScrollRef.current = true;
+        setCursor(older[0].seq);
+        setHistory((prev) => [...older, ...prev]);
+      }
+    } catch (err) {
+      setHistoryError(err instanceof Error ? err.message : "Erro ao carregar o histórico.");
+    } finally {
+      setLoadingHistory(false);
+    }
+  }
 
   const { before, after, reportId } = splitAtReport(messages);
   const chatImages = collectChatImages(before);
@@ -169,7 +217,25 @@ export default function InteractiveLaudoChat({
         <h1 className="text-lg font-semibold text-gray-900">Assistente IA</h1>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-4">
+      <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-4">
+        {hasMore && (
+          <button
+            type="button"
+            onClick={loadOlder}
+            disabled={loadingHistory}
+            className={`self-center rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-500 hover:border-blue-400 hover:text-blue-600 disabled:opacity-50 ${focusRing}`}
+          >
+            {loadingHistory ? "Carregando..." : "Ver conversas anteriores"}
+          </button>
+        )}
+        {historyError && <p className="self-center text-xs text-red-600">{historyError}</p>}
+        {history.map((m, i) => (
+          <Fragment key={m.id}>
+            {isSessionStart(history[i - 1], m, hasMore) && <SessionDivider date={m.created_at} />}
+            <Message message={m as unknown as LaudoAgentUIMessage} />
+          </Fragment>
+        ))}
+        {history.length > 0 && <SessionDivider label="Conversa atual" />}
         {initialMessages.length === 0 && (
           <div className="max-w-[85%] self-start rounded-2xl bg-gray-100 px-4 py-2 text-sm whitespace-pre-wrap text-gray-900">
             {greeting}
@@ -296,6 +362,29 @@ export default function InteractiveLaudoChat({
         </div>
       )}
     </main>
+  );
+}
+
+function isSessionStart(prev: ChatHistoryMessage | undefined, current: ChatHistoryMessage, hasMore: boolean): boolean {
+  if (!prev) return !hasMore;
+  return new Date(current.created_at).getTime() - new Date(prev.created_at).getTime() > SESSION_DIVIDER_GAP_MS;
+}
+
+function SessionDivider({ date, label }: { date?: string; label?: string }) {
+  const text =
+    label ??
+    new Date(date!).toLocaleString("pt-BR", {
+      day: "numeric",
+      month: "long",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  return (
+    <div className="flex items-center gap-3 py-1">
+      <span className="h-px flex-1 bg-gray-200" />
+      <span className="text-xs text-gray-400">{text}</span>
+      <span className="h-px flex-1 bg-gray-200" />
+    </div>
   );
 }
 

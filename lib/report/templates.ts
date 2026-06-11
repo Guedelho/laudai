@@ -1,4 +1,3 @@
-import { type ParsedReport } from "@/shared/models";
 import { type ReportType } from "@/shared/constants";
 
 export const SPECIALTIES: Record<ReportType, { label: string; reportTitle: string; abbr: string }> = {
@@ -172,63 +171,6 @@ const FRASES_SALVADORAS = `FRASES SALVADORAS (use quando aplicável):
 - Para alterações em vesícula biliar (exceto gás e mucocele): "Caso o clínico considere necessário, sugiro colecistocentese com cultura da bile para melhor elucidação das alterações supracitadas."`;
 
 const FULL_NOMENCLATURE = `REFERÊNCIA DE ACHADOS POR ÓRGÃO:\n\n${Object.values(NOMENCLATURE).join("\n\n")}\n\n${FRASES_SALVADORAS}`;
-
-export interface ReportChatCtx {
-  patientName: string;
-  species: string;
-  breed: string;
-  age: string;
-  sex: string;
-  neutered: boolean;
-  ownerName: string;
-  clientName: string;
-  responsibleVet: string;
-  examDate: string;
-  content: ParsedReport;
-}
-
-export function buildLaudoChatSystem(r: ReportChatCtx): string {
-  const sexLabel = r.sex === "M" ? "Macho" : "Fêmea";
-  const neuteredLabel = r.neutered
-    ? r.sex === "M"
-      ? "castrado"
-      : "castrada"
-    : r.sex === "M"
-      ? "não castrado"
-      : "não castrada";
-  const displayDate = new Date(r.examDate + "T12:00:00").toLocaleDateString("pt-BR");
-
-  const sections = r.content.sections.map((s) => `**${s.label}:** ${s.content}`).join("\n");
-  const impression = r.content.impression?.length
-    ? `\n**IMPRESSÃO DIAGNÓSTICA:**\n${r.content.impression.map((i) => `• ${i}`).join("\n")}`
-    : "";
-  const recommendations = r.content.recommendations?.length
-    ? `\n**RECOMENDAÇÕES:**\n${r.content.recommendations.map((i) => `• ${i}`).join("\n")}`
-    : "";
-  const observations = r.content.observations?.length ? `\n**OBS:** ${r.content.observations.join(" ")}` : "";
-  const conclusion = r.content.conclusion ? `\n**CONCLUSÃO:** ${r.content.conclusion}` : "";
-
-  return `Você é um assistente especialista em medicina veterinária, com foco em ultrassonografia abdominal. Um médico veterinário está revisando o laudo abaixo e pode ter dúvidas sobre os achados.
-
-**Paciente:** ${r.patientName} — ${r.species}, ${r.breed}, ${r.age}, ${sexLabel}, ${neuteredLabel}
-**Tutor:** ${r.ownerName}
-**Cliente/Clínica:** ${r.clientName}
-**Médico responsável:** ${r.responsibleVet}
-**Data do exame:** ${displayDate}
-
---- LAUDO ---
-${sections}${conclusion}${impression}${recommendations}${observations}
---- FIM DO LAUDO ---
-
-Responda em português (pt-BR), de forma objetiva e clínica. Você pode:
-- Explicar termos médicos e achados do laudo
-- Comentar sobre valores de referência e o que é normal vs. alterado para a espécie/raça/idade
-- Sugerir diagnósticos diferenciais compatíveis com os achados
-- Indicar quando exames complementares seriam pertinentes
-- Esclarecer qualquer dúvida relacionada ao exame ou ao conteúdo gerado
-
-Não reescreva o laudo completo. Responda apenas o que for perguntado, de forma direta e concisa.`;
-}
 
 export function buildSingleCallPrompt(defaults: string, especie: string): string {
   return `Você é um médico veterinário especialista em ultrassonografia abdominal de pequenos animais (cães e gatos), com amplo domínio da semiologia sonográfica, achados normais e patológicos por órgão, e das apresentações típicas das principais afecções abdominais na rotina clínica.

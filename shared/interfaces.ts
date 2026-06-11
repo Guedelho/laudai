@@ -7,6 +7,7 @@ import type {
   ClientVet,
   ReportImage,
   ReportSummary,
+  ChatHistoryMessage,
 } from "./models";
 import type { ReportType } from "@/shared/constants";
 // ─── Request types ───────────────────────────────────────────────────────────
@@ -117,6 +118,10 @@ export interface ImagesResponse extends ApiResponse {
 
 export interface ListReportsResponse extends ApiResponse {
   reports?: ReportSummary[];
+}
+
+export interface ChatHistoryResponse extends ApiResponse {
+  messages?: ChatHistoryMessage[];
 }
 
 // ─── Billing overview (profile Plan + Invoices cards) ────────────────────────

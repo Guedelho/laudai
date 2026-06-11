@@ -8,7 +8,7 @@ import { canWriteReport, hasReportTypeAccess } from "@/lib/supabase/entitlements
 import { findOrCreateClient, findOrCreateVet, findOrCreatePet, resolveOwnedFks } from "@/lib/supabase/upserts";
 import { REPORT_TYPES, REPORT_STATUSES, TABLES } from "@/shared/constants";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES, type AuditAction, type AuditEntity } from "@/lib/audit";
-import { brazilToday } from "@/lib/utils";
+import { brazilToday, parseReportContent } from "@/lib/utils";
 
 type Admin = ReturnType<typeof createAdmin>;
 
@@ -163,6 +163,49 @@ export function createLaudoTools({ userId, orgId, admin, audit }: LaudoToolCtx) 
             examDate: r.exam_date,
             createdAt: r.created_at,
           })),
+        };
+      },
+    }),
+
+    getReport: tool({
+      description:
+        "Busca o conteúdo completo de um laudo da organização pelo id. Use quando o usuário quiser discutir, revisar ou tirar dúvidas sobre um laudo específico. Obtenha o id via listReports ou da mensagem do usuário.",
+      inputSchema: z.object({
+        reportId: z.string().describe("ID do laudo"),
+      }),
+      execute: async ({ reportId }) => {
+        const { data } = await admin
+          .from(TABLES.reports)
+          .select(
+            "id, patient_name, species, breed, age, sex, neutered, owner_name, client_name, responsible_vet, exam_date, status, edited_content",
+          )
+          .eq("org_id", orgId)
+          .eq("id", reportId.trim())
+          .is("deleted_at", null)
+          .maybeSingle();
+        if (!data) return { error: "Laudo não encontrado." };
+        if (data.status !== REPORT_STATUSES.completed || !data.edited_content) {
+          return { error: `Laudo ainda não está concluído (status: ${data.status}).` };
+        }
+        let content;
+        try {
+          content = parseReportContent(data.edited_content);
+        } catch {
+          return { error: "Conteúdo do laudo inválido." };
+        }
+        return {
+          id: data.id,
+          patient: data.patient_name,
+          species: data.species,
+          breed: data.breed,
+          age: data.age,
+          sex: data.sex,
+          neutered: data.neutered,
+          owner: data.owner_name,
+          client: data.client_name,
+          vet: data.responsible_vet,
+          examDate: data.exam_date,
+          content,
         };
       },
     }),

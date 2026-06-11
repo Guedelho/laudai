@@ -12,7 +12,6 @@ import { useReportEditor } from "@/lib/hooks/use-report-editor";
 import { ReportEditorActions, ReportEditorContent, ReportEditorPatientFields } from "./ReportEditor";
 import { ReportViewerActions, ReportViewerContent, ReportViewerInfo } from "./ReportViewer";
 import DeleteReportButton from "./DeleteReportButton";
-import ReportChatPanel from "./ReportChatPanel";
 
 export default function ReportDetail({
   report,
@@ -24,7 +23,6 @@ export default function ReportDetail({
   isEditing: boolean;
 }) {
   const [editing, setEditing] = useState(isEditing);
-  const [chatOpen, setChatOpen] = useState(false);
   const editor = useReportEditor(report, () => setEditing(false));
   const { pets, clients, breedSuggestions } = useDirectory();
 
@@ -49,9 +47,8 @@ export default function ReportDetail({
         <div className="flex flex-wrap items-center justify-between gap-2 mb-8 animate-[fadeIn_0.4s_ease-out]">
           <div>{!editing && <DeleteReportButton reportId={report.id} />}</div>
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setChatOpen(true)}
+            <Link
+              href={`/new/chat?report=${report.id}`}
               aria-label="Discutir laudo com assistente"
               title="Discutir laudo com assistente"
               className={btnSecondary}
@@ -64,7 +61,7 @@ export default function ReportDetail({
                 />
               </svg>
               <span className="hidden sm:inline">Discutir</span>
-            </button>
+            </Link>
             {editing ? (
               <ReportEditorActions
                 saving={editor.saving}
@@ -130,8 +127,6 @@ export default function ReportDetail({
           <ImageManager initialImages={images} reportId={report.id} editable={editing} />
         </div>
       </main>
-
-      {report.edited_content && <ReportChatPanel report={report} open={chatOpen} onClose={() => setChatOpen(false)} />}
     </>
   );
 }
