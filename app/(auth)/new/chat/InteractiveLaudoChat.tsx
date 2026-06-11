@@ -145,7 +145,7 @@ export default function InteractiveLaudoChat({ greeting, orgId }: { greeting: st
   return (
     <main className="mx-auto flex h-[calc(100dvh-57px)] w-full max-w-3xl flex-col px-6 md:h-[100dvh]">
       <div className="shrink-0 pt-6 pb-3">
-        <h1 className="text-lg font-semibold text-gray-900">IA Assistente</h1>
+        <h1 className="text-lg font-semibold text-gray-900">Assistente IA</h1>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-4">
