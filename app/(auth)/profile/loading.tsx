@@ -1,23 +1,28 @@
 export default function ProfileLoading() {
   return (
-    <main className="flex items-start justify-center px-4 py-10 animate-pulse">
-      <div className="bg-white border border-gray-200 rounded-xl p-8 w-full max-w-lg space-y-6">
-        <div className="h-6 w-32 bg-gray-200 rounded" />
-        {/* Logo placeholder */}
+    <main className="flex animate-pulse flex-col items-center gap-6 px-4 py-10">
+      <div className="w-full max-w-lg">
+        <div className="h-7 w-44 rounded bg-gray-200" />
+      </div>
+      <div className="w-full max-w-lg space-y-3 rounded-xl border border-gray-200 bg-white p-8">
+        <div className="h-5 w-32 rounded bg-gray-200" />
+        <div className="h-4 w-64 rounded bg-gray-100" />
         <div className="h-48 w-full rounded border border-dashed border-gray-200 bg-gray-50" />
-        {/* Form fields */}
+      </div>
+      <div className="w-full max-w-lg space-y-6 rounded-xl border border-gray-200 bg-white p-8">
+        <div className="h-5 w-20 rounded bg-gray-200" />
         {[...Array(4)].map((_, i) => (
           <div key={i} className="space-y-2">
-            <div className="h-4 w-24 bg-gray-100 rounded" />
-            <div className="h-10 w-full bg-gray-100 rounded-lg" />
+            <div className="h-4 w-24 rounded bg-gray-100" />
+            <div className="h-9 w-full rounded-lg bg-gray-100" />
           </div>
         ))}
-        {/* Signature section */}
-        <div className="space-y-2">
-          <div className="h-4 w-36 bg-gray-100 rounded" />
-          <div className="h-20 w-full bg-gray-50 rounded-lg border border-gray-200" />
-        </div>
-        <div className="h-10 w-20 bg-gray-200 rounded-lg" />
+        <div className="h-9 w-24 rounded-lg bg-gray-200" />
+      </div>
+      <div className="w-full max-w-lg space-y-3 rounded-xl border border-gray-200 bg-white p-6">
+        <div className="h-5 w-28 rounded bg-gray-200" />
+        <div className="h-4 w-48 rounded bg-gray-100" />
+        <div className="h-4 w-36 rounded bg-gray-100" />
       </div>
     </main>
   );
