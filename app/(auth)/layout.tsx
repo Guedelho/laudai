@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { createAdmin } from "@/lib/supabase/admin";
 import { getServerUser, getCurrentOrgId } from "@/lib/supabase/auth";
 import { getProfile } from "@/lib/supabase/profile";
@@ -65,6 +66,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <SidebarWithChip />
       </Suspense>
       <div className="md:pl-64">
+        <div className="flex justify-end border-b border-gray-200 bg-white px-6 py-3 md:sticky md:top-0 md:z-20">
+          <Link
+            href="/new"
+            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+          >
+            Novo Laudo
+          </Link>
+        </div>
         <Suspense fallback={null}>
           <AuthGate>{children}</AuthGate>
         </Suspense>

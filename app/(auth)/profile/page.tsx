@@ -6,6 +6,7 @@ import { TABLES } from "@/shared/constants";
 import ProfileForm from "./ProfileForm";
 import OrgLogo from "./OrgLogo";
 import BillingSection from "./BillingSection";
+import AccountActions from "./AccountActions";
 
 export default async function ProfilePage() {
   const user = await getServerUser();
@@ -38,6 +39,7 @@ export default async function ProfilePage() {
         />
       </div>
       {billing && <BillingSection plan={billing.plan} invoices={billing.invoices} />}
+      <AccountActions />
     </main>
   );
 }

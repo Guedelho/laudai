@@ -54,9 +54,6 @@ function UserChip({ email }: { email?: string | null }) {
   );
 }
 
-const newReportBtn =
-  "inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700";
-
 export default function AppSidebar({ subscriptionChip, userEmail }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -67,10 +64,6 @@ export default function AppSidebar({ subscriptionChip, userEmail }: Props) {
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-gray-200 bg-white px-4 py-5 md:flex">
         <Link href="/dashboard" className="px-1 text-lg font-bold text-gray-900">
           Laudai
-        </Link>
-
-        <Link href="/new" className={`${newReportBtn} mt-6`}>
-          Novo Laudo
         </Link>
 
         <div className="mt-6">
@@ -120,10 +113,6 @@ export default function AppSidebar({ subscriptionChip, userEmail }: Props) {
                 </svg>
               </button>
             </div>
-
-            <Link href="/new" onClick={close} className={`${newReportBtn} mt-6`}>
-              Novo Laudo
-            </Link>
 
             <div className="mt-6">
               <NavList pathname={pathname} onNavigate={close} />
