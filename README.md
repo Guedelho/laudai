@@ -57,23 +57,23 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 
 ## Key routes
 
-| Route                            | Purpose                                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/new`                           | Form-based report creation (direct field entry + voice dictation)                                                                          |
-| `/new/chat`                      | Assistente IA — unified chat (clinical Q&A, laudo lookup/discussion, conversational laudo generation) with paged history                   |
-| `/dashboard`                     | Live list of reports, in-progress and completed                                                                                            |
-| `/report/[id]`                   | View / edit / download a completed report                                                                                                  |
-| `/profile`                       | Vet profile (name, CRMV, logo, signature) + plan & invoices (owner)                                                                        |
-| `/pets`                          | Manage patients                                                                                                                            |
-| `/clients`                       | Manage clients and responsible vets                                                                                                        |
-| `/legal/politica-de-privacidade` | Privacy policy (LGPD)                                                                                                                      |
-| `/legal/termos-de-uso`           | Terms of use                                                                                                                               |
-| `/login`                         | Public login page (email/password)                                                                                                         |
-| `/signup`                        | Public registration (email/password; requires CPF + CRMV)                                                                                  |
-| `/onboarding`                    | Profile-completion fallback (CPF + CRMV) — authenticated, org-less                                                                         |
-| `/forgot-password`               | Public — request a password-reset email                                                                                                    |
-| `/reset-password`                | Set a new password (reached via the recovery email link)                                                                                   |
-| `/home`                          | Public marketing landing page (hero · como funciona · recursos · preço · CTA) — proxy rewrites `laudai.vet/` here (app stays on subdomain) |
+| Route                            | Purpose                                                                                                                                                                          |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/new`                           | Form-based report creation (direct field entry + voice dictation)                                                                                                                |
+| `/new/chat`                      | Assistente IA — unified chat (clinical Q&A, laudo lookup/discussion, conversational laudo generation) with paged history                                                         |
+| `/dashboard`                     | Live list of reports, in-progress and completed                                                                                                                                  |
+| `/report/[id]`                   | View / edit / download a completed report                                                                                                                                        |
+| `/profile`                       | Vet profile (name, CRMV, logo, signature) + plan & invoices (owner)                                                                                                              |
+| `/pets`                          | Manage patients                                                                                                                                                                  |
+| `/clients`                       | Manage clients and responsible vets                                                                                                                                              |
+| `/legal/politica-de-privacidade` | Privacy policy (LGPD)                                                                                                                                                            |
+| `/legal/termos-de-uso`           | Terms of use                                                                                                                                                                     |
+| `/login`                         | Public login page (email/password)                                                                                                                                               |
+| `/signup`                        | Public registration (email/password; requires CPF + CRMV)                                                                                                                        |
+| `/onboarding`                    | Profile-completion fallback (CPF + CRMV) — authenticated, org-less                                                                                                               |
+| `/forgot-password`               | Public — request a password-reset email                                                                                                                                          |
+| `/reset-password`                | Set a new password (reached via the recovery email link)                                                                                                                         |
+| `/home`                          | Public marketing landing page (hero · especialistas · como funciona · recursos · segurança · preço · contato · CTA) — proxy rewrites `laudai.vet/` here (app stays on subdomain) |
 
 ## Multi-tenancy
 
