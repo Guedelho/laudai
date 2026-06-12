@@ -9,8 +9,11 @@ const NOT_FOUND = NextResponse.json({ error: "Paciente não encontrado." }, { st
 
 export const PATCH = withApiHandler<{ id: string }>(async ({ userId, admin, audit, params, req }) => {
   const { name, species, breed, age, ownerName, sex, neutered }: PetRequest = await req.json();
-  if (!name?.trim() || !species?.trim() || !ownerName?.trim()) {
-    return NextResponse.json({ error: "Campos obrigatórios: nome, espécie, tutor" }, { status: 400 });
+  if (!name?.trim() || !species?.trim() || !ownerName?.trim() || !sex?.trim() || typeof neutered !== "boolean") {
+    return NextResponse.json(
+      { error: "Campos obrigatórios: nome, espécie, tutor, sexo, castrado(a)" },
+      { status: 400 },
+    );
   }
 
   const before = await loadOwned(admin, TABLES.pets, params.id, userId);

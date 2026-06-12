@@ -240,11 +240,7 @@ function ReportRow({ report, retrying, onRetry }: { report: ReportSummary; retry
       <p className="text-sm text-gray-500">
         {SPECIALTIES[report.specialty].label} · {report.client_name}
       </p>
-      <p className="text-xs text-gray-500 mt-1">
-        {report.exam_date
-          ? `Exame: ${formatExamDate(report.exam_date)}`
-          : `Criado: ${new Date(report.created_at).toLocaleDateString("pt-BR")}`}
-      </p>
+      <p className="text-xs text-gray-500 mt-1">Exame: {formatExamDate(report.exam_date)}</p>
     </>
   );
 

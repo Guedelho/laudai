@@ -62,6 +62,7 @@ export const MAX_REPORT_IMAGES = 50;
 export const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 export const DASHBOARD_PAGE_SIZE = 5;
 export const CHAT_HISTORY_PAGE_SIZE = 30;
+export const CHAT_SESSION_GAP_MS = 60 * 60 * 1000;
 
 // ─── LGPD ────────────────────────────────────────────────────────────────────
 // Bumping a version invalidates prior consent and forces re-acceptance.

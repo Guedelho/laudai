@@ -1,8 +1,17 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
-import { useIsClient } from "@/lib/client/use-is-client";
+
+const subscribe = () => () => {};
+
+function useIsClient(): boolean {
+  return useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
+}
 
 export function useDictation(setText: (value: string) => void) {
   const anchorRef = useRef("");

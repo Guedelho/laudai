@@ -483,6 +483,69 @@ function Pricing() {
   );
 }
 
+const FAQS = [
+  {
+    q: "Preciso de cartão de crédito para testar?",
+    a: "Não. O teste de 7 dias começa no cadastro, sem cartão. Ao fim do período, você só assina se quiser continuar.",
+  },
+  {
+    q: "Posso cancelar quando quiser?",
+    a: "Sim. O cancelamento é feito na própria plataforma, em poucos cliques, e o acesso vale até o fim do período já pago.",
+  },
+  {
+    q: "O laudo sai pronto para assinar?",
+    a: "Sim. O PDF sai com o logo da clínica, a assinatura e o CRMV do responsável. Você revisa e edita tudo antes de exportar.",
+  },
+  {
+    q: "Como meus dados são tratados?",
+    a: "Conforme a LGPD: consentimento registrado, armazenamento privado e direito de exclusão dos seus dados a qualquer momento.",
+  },
+  {
+    q: "Preciso instalar alguma coisa?",
+    a: "Não. O Laudai roda no navegador, no computador ou no tablet. O ditado por voz funciona melhor no Chrome e no Edge.",
+  },
+];
+
+function Faq() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQS.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  };
+  return (
+    <section
+      id="faq"
+      aria-labelledby="faq-title"
+      className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6 sm:py-20"
+    >
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <h2 id="faq-title" className={`text-center ${sectionTitle}`}>
+        Dúvidas frequentes
+      </h2>
+      <div className="mx-auto mt-10 max-w-3xl space-y-3 sm:mt-12">
+        {FAQS.map((f) => (
+          <details key={f.q} className="group rounded-2xl border border-gray-200 bg-white p-5">
+            <summary
+              className={`flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg text-base font-semibold text-gray-900 [&::-webkit-details-marker]:hidden ${focusRing}`}
+            >
+              {f.q}
+              <Icon
+                d="m19.5 8.25-7.5 7.5-7.5-7.5"
+                className="h-4 w-4 shrink-0 text-gray-400 transition-transform group-open:rotate-180"
+              />
+            </summary>
+            <p className="mt-3 text-sm leading-relaxed text-pretty text-gray-600 sm:text-base">{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function Contact() {
   return (
     <section
@@ -544,6 +607,9 @@ function Footer() {
           <a href="#recursos" className="hover:text-gray-900">
             Recursos
           </a>
+          <a href="#faq" className="hover:text-gray-900">
+            Dúvidas frequentes
+          </a>
           <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="hover:text-gray-900">
             WhatsApp
           </a>
@@ -580,6 +646,7 @@ export default function HomePage() {
         <Features />
         <Security />
         <Pricing />
+        <Faq />
         <Contact />
         <FinalCta />
       </main>

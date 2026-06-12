@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Sacramento, Pinyon_Script, Alex_Brush, Homemade_Apple } from "next/font/google";
 import * as profileApi from "@/lib/services/profile";
 import { btnPrimary, inputCls } from "@/lib/ui";
-import { validateCpf, formatCpf } from "@/lib/cpf";
+import { formatCpf } from "@/lib/cpf";
 
 const sacramento = Sacramento({ weight: "400", subsets: ["latin"] });
 const pinyonScript = Pinyon_Script({ weight: "400", subsets: ["latin"] });
@@ -40,13 +40,12 @@ export default function ProfileForm({
   hasSignatureImage: boolean;
 }) {
   const [fullName, setFullName] = useState(initialFullName);
-  const [cpf, setCpf] = useState(formatCpf(initialCpf));
+  const cpf = formatCpf(initialCpf);
   const crmv = initialCrmv;
   const crmvState = initialCrmvState;
   const [sigVersion, setSigVersion] = useState(() => (hasSignatureImage ? Date.now() : 0));
   const [signatureFont, setSignatureFont] = useState(initialSignatureFont);
   const [signature, setSignature] = useState(initialSignature);
-  const [cpfError, setCpfError] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -94,7 +93,7 @@ export default function ProfileForm({
     fontAbortRef.current = controller;
     try {
       await profileApi.updateProfile(
-        { full_name: fullName, cpf, signature_font: next, signature, signature_image_url: null },
+        { full_name: fullName, signature_font: next, signature, signature_image_url: null },
         controller.signal,
       );
     } catch {
@@ -102,32 +101,13 @@ export default function ProfileForm({
     }
   }
 
-  function handleCpfChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setCpf(formatCpf(e.target.value));
-    if (cpfError) setCpfError("");
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setSaved(false);
-    if (!cpf.replace(/\D/g, "")) {
-      setCpfError("CPF é obrigatório.");
-      setSaving(false);
-      return;
-    }
-    if (!validateCpf(cpf)) {
-      setCpfError("CPF inválido.");
-      setSaving(false);
-      return;
-    }
-    setCpfError("");
     try {
       await profileApi.updateProfile({
         full_name: fullName,
-        crmv,
-        cpf,
-        crmv_state: crmvState,
         signature_font: signatureFont,
         signature,
       });
@@ -175,20 +155,7 @@ export default function ProfileForm({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
-          {initialCpf ? (
-            <p className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 bg-gray-50">{cpf}</p>
-          ) : (
-            <>
-              <input
-                type="text"
-                value={cpf}
-                onChange={handleCpfChange}
-                className={inputCls}
-                placeholder="000.000.000-00"
-              />
-              {cpfError && <p className="mt-1 text-xs text-red-600">{cpfError}</p>}
-            </>
-          )}
+          <p className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 bg-gray-50">{cpf}</p>
         </div>
 
         <div>

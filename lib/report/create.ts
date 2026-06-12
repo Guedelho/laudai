@@ -35,6 +35,8 @@ export async function createReport(
   const required: [string | undefined, string][] = [
     [input.patientName, "Nome do paciente"],
     [input.ownerName, "Nome do tutor"],
+    [input.species, "Espécie"],
+    [input.sex, "Sexo"],
     [input.breed, "Raça"],
     [input.age, "Idade"],
     [input.clientName, "Nome do cliente"],
@@ -44,6 +46,9 @@ export async function createReport(
   ];
   for (const [value, label] of required) {
     if (!value?.trim()) return { error: `${label} é obrigatório(a).`, status: 400 };
+  }
+  if (typeof input.neutered !== "boolean") {
+    return { error: "Castrado(a) é obrigatório(a).", status: 400 };
   }
   if (input.rawInput.length > MAX_RAW_INPUT_LENGTH) {
     return { error: "Achados do exame muito longos. Máximo 2.000 caracteres.", status: 400 };

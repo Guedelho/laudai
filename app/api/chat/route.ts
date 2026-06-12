@@ -16,6 +16,7 @@ export const POST = withApiHandler(
       agent,
       uiMessages: messages,
       originalMessages: messages,
+      generateMessageId: () => crypto.randomUUID(),
       onFinish: ({ messages: all }: { messages: unknown[] }) =>
         saveChatMessages(admin, userId, orgId, all as Parameters<typeof saveChatMessages>[3]),
     });

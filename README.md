@@ -57,23 +57,23 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 
 ## Key routes
 
-| Route                            | Purpose                                                                                                                                                                          |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/new`                           | Form-based report creation (direct field entry + voice dictation)                                                                                                                |
-| `/new/chat`                      | Assistente IA — unified chat (clinical Q&A, laudo lookup/discussion, conversational laudo generation) with paged history                                                         |
-| `/dashboard`                     | Live list of reports, in-progress and completed                                                                                                                                  |
-| `/report/[id]`                   | View / edit / download a completed report                                                                                                                                        |
-| `/profile`                       | Vet profile (name, CRMV, logo, signature) + plan & invoices (owner)                                                                                                              |
-| `/pets`                          | Manage patients                                                                                                                                                                  |
-| `/clients`                       | Manage clients and responsible vets                                                                                                                                              |
-| `/legal/politica-de-privacidade` | Privacy policy (LGPD)                                                                                                                                                            |
-| `/legal/termos-de-uso`           | Terms of use                                                                                                                                                                     |
-| `/login`                         | Public login page (email/password)                                                                                                                                               |
-| `/signup`                        | Public registration (email/password; requires CPF + CRMV)                                                                                                                        |
-| `/onboarding`                    | Profile-completion fallback (CPF + CRMV) — authenticated, org-less                                                                                                               |
-| `/forgot-password`               | Public — request a password-reset email                                                                                                                                          |
-| `/reset-password`                | Set a new password (reached via the recovery email link)                                                                                                                         |
-| `/home`                          | Public marketing landing page (hero · especialistas · como funciona · recursos · segurança · preço · contato · CTA) — proxy rewrites `laudai.vet/` here (app stays on subdomain) |
+| Route                            | Purpose                                                                                                                                                                                |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/new`                           | Form-based report creation (direct field entry + voice dictation)                                                                                                                      |
+| `/new/chat`                      | Assistente — unified chat (clinical Q&A, laudo lookup/discussion, conversational laudo generation) with paged history                                                                  |
+| `/dashboard`                     | Live list of reports, in-progress and completed                                                                                                                                        |
+| `/report/[id]`                   | View / edit / download a completed report                                                                                                                                              |
+| `/profile`                       | Vet profile (name, CRMV, logo, signature) + plan & invoices (owner)                                                                                                                    |
+| `/pets`                          | Manage patients                                                                                                                                                                        |
+| `/clients`                       | Manage clients and responsible vets                                                                                                                                                    |
+| `/legal/politica-de-privacidade` | Privacy policy (LGPD)                                                                                                                                                                  |
+| `/legal/termos-de-uso`           | Terms of use                                                                                                                                                                           |
+| `/login`                         | Public login page (email/password)                                                                                                                                                     |
+| `/signup`                        | Public registration (email/password; requires CPF + CRMV)                                                                                                                              |
+| `/onboarding`                    | Profile-completion fallback (CPF + CRMV) — authenticated, org-less                                                                                                                     |
+| `/forgot-password`               | Public — request a password-reset email                                                                                                                                                |
+| `/reset-password`                | Set a new password (reached via the recovery email link)                                                                                                                               |
+| `/home`                          | Public marketing landing page (hero · especialistas · como funciona · recursos · segurança · preço · faq · contato · CTA) — proxy rewrites `laudai.vet/` here (app stays on subdomain) |
 
 ## Multi-tenancy
 
@@ -98,13 +98,14 @@ Generation is asynchronous regardless of which creation flow is used:
 
 **Form flow (`/new`)** — `POST /api/generate` inserts a `reports` row with `status='pending'`, schedules the Gemini call via Next.js `after()`, and returns `{ reportId }`. The user is redirected to `/dashboard` immediately and can start another laudo while the worker runs.
 
-**Chat flow (`/new/chat`, "Assistente IA")** — A `ToolLoopAgent` (AI SDK) drives a conversational Gemini session at `POST /api/chat`. It works as a general veterinary assistant — the vet can ask clinical questions or for an opinion on an image, and the `listReports` / `getReport` tools let it answer about and discuss laudos already generated; it only starts the laudo-generation flow when the vet asks for a laudo. All chat entries share this single surface and every conversation is saved to the per-vet `chat_messages` timeline (text only). Each visit starts a fresh model context: the trailing burst of messages is resumed only when the last one is under an hour old, and everything older is display-only history loaded on demand via "Ver conversas anteriores" (`GET /api/chat/messages`, keyset-paginated with session dividers) — old messages are never re-sent to the model. The form's "Gerar por conversa" entry (`?laudo=1`) auto-sends the laudo request as the first message, and the report page's "Discutir" link (`?report=<id>`) auto-sends a discuss request so the agent pulls the laudo content via `getReport`. When generating a laudo, in the findings phase the agent asks the vet to attach the exam images in the chat and reads **organ names + measurements** from them — transcribing only legible values and never inventing; it asks the vet for any measurement it cannot read and for the abnormal findings (measurements come from the images, anomalies from the vet). It combines both into the findings text and calls the `createReportDraft` tool, which inserts the report row and fires `runGeneration` via `after()` — then returns `{ reportId }` to the UI. The chat-attached images are auto-persisted to the report (`AutoAttachImages`); a manual upload panel only appears as a fallback when no images were attached in chat. Generation runs in parallel, and the laudo renders as an embedded, fully editable widget in the chat via `ReportPreviewInChat` (subscribes to the org Realtime broadcast through the shared `useOrgReportsChannel` hook; shows immediately if already done, otherwise on the next broadcast). The vet edits every field — sections, impressão diagnóstica, recomendações, observações, conclusão, and patient data — directly in that widget; the chat agent does not mutate the laudo, it answers clinical questions and may offer a diagnostic opinion on an image when asked. The vet confirms with "Gerar PDF" when satisfied (no redirect required).
+**Chat flow (`/new/chat`, "Assistente")** — A `ToolLoopAgent` (AI SDK) drives a conversational Gemini session at `POST /api/chat`. It works as a general veterinary assistant — the vet can ask clinical questions or for an opinion on an image, and the `listReports` / `getReport` tools let it answer about and discuss laudos already generated; it only starts the laudo-generation flow when the vet asks for a laudo. All chat entries share this single surface and every conversation is saved to the per-vet `chat_messages` timeline (text only; the route passes `generateMessageId` so assistant replies carry a server-assigned id and persist immediately — only not-yet-saved rows are inserted each turn). Each visit starts a fresh model context: the trailing burst of messages is resumed only when the last one is under an hour old, and everything older is display-only history loaded on demand via "Ver conversas anteriores" (`GET /api/chat/messages`, keyset-paginated with session dividers) — old messages are never re-sent to the model. The form's "Gerar por conversa" entry (`?laudo=1`) auto-sends the laudo request as the first message, and the report page's "Discutir" link (`?report=<id>`) auto-sends a discuss request so the agent pulls the laudo content via `getReport`. When generating a laudo, in the findings phase the agent asks the vet to attach the exam images in the chat and reads **organ names + measurements** from them — transcribing only legible values and never inventing; it asks the vet for any measurement it cannot read and for the abnormal findings (measurements come from the images, anomalies from the vet). It combines both into the findings text and calls the `createReportDraft` tool, which inserts the report row and fires `runGeneration` via `after()` — then returns `{ reportId }` to the UI. The chat-attached images are auto-persisted to the report (`AutoAttachImages`); a manual upload panel only appears as a fallback when no images were attached in chat. Generation runs in parallel, and the laudo renders as an embedded, fully editable widget in the chat via `ReportPreviewInChat` (subscribes to the org Realtime broadcast through the shared `useOrgReportsChannel` hook; shows immediately if already done, otherwise on the next broadcast). The vet edits every field — sections, impressão diagnóstica, recomendações, observações, conclusão, and patient data — directly in that widget; the chat agent does not mutate the laudo, it answers clinical questions and may offer a diagnostic opinion on an image when asked. The vet confirms with "Gerar PDF" when satisfied (no redirect required).
 
 Both flows converge on the same creation helper (`createReport` in `lib/report/create.ts` — validation, entitlement checks, insert, generation kickoff), the same worker (`lib/report/worker.ts`), and the same `reports_broadcast` Postgres trigger that drives the dashboard's live list.
 
 **Reliability layers:**
 
 - The worker wraps the Gemini call in `Promise.race` with a 5-min timeout — failures surface within seconds.
+- Stuck rows (worker died mid-flight) are flipped to `failed` by `sweepStuckReports` (`lib/report/sweep.ts`): org-scoped on every dashboard load (via `after()`) and globally by the daily `/api/internal/sweep-stuck-reports` cron.
 - Generated PDFs are cached in storage with a 24h TTL; reads after that regenerate from the (possibly edited) report.
 - Every report edit writes a snapshot to `report_versions` (append-only audit of laudo content).
 - Every CRUD across pets, clients, reports, images, profile lands in `audit_log` (who did what when).
@@ -122,7 +123,7 @@ Both flows converge on the same creation helper (`createReport` in `lib/report/c
 1. Push the repo to GitHub
 2. Import the project at [vercel.com/new](https://vercel.com/new)
 3. Under **Project Settings → Environment Variables**, add the values from `.env.example`, plus a random `CRON_SECRET` (long random string used as a Bearer token on the cron routes)
-4. Deploy — `vercel.json` registers the 30-day deletion sweep cron; `serverExternalPackages: ["pdfmake"]` is already set in `next.config.ts`
+4. Deploy — `vercel.json` registers the 30-day deletion sweep and stuck-report sweep crons; `serverExternalPackages: ["pdfmake"]` is already set in `next.config.ts`
 
 Git auto-deploy is enabled per branch: pushes to `main` deploy to production (`app.laudai.vet`; `laudai.vet/` serves the landing page), and pushes to `staging` deploy to `laudai-staging.vercel.app` (separate Supabase project + Stripe test mode).
 
@@ -133,7 +134,7 @@ app/
   (auth)/                           # Auth-required route group
     dashboard/                      # Live reports list (Supabase Realtime)
     new/                            # Form-based report creation
-      chat/                         # Assistente IA — general chat + laudo generation (ToolLoopAgent + in-chat preview)
+      chat/                         # Assistente — general chat + laudo generation (ToolLoopAgent + in-chat preview)
     report/[id]/                    # View / edit / print report
     profile/                        # Profile editor + plan/invoices (owner) + privacy controls (export, delete)
     pets/ clients/                  # Pet & client management
@@ -147,6 +148,7 @@ app/
     consents/                       # POST — record terms/privacy acceptance
     account/                        # DELETE (schedule) / POST (cancel) / GET export
     internal/sweep-deleted-accounts/ # Cron: 30-day account purge (daily 03:00 UTC)
+    internal/sweep-stuck-reports/   # Cron: flip stuck pending/generating reports to failed (daily 03:30 UTC)
   legal/                            # Public privacy policy + terms
   login/ signup/ onboarding/        # Auth pages (login, registration, profile-setup fallback)
   forgot-password/ reset-password/  # Password reset flow
@@ -183,5 +185,5 @@ supabase/
   migrations/                       # Single consolidated initial.sql (source of truth)
 proxy.ts                            # Auth gate (Next.js 16 middleware)
 instrumentation-client.ts           # BotID protected routes
-vercel.json                         # Cron: sweep-deleted-accounts (daily 03:00 UTC)
+vercel.json                         # Crons: sweep-deleted-accounts (03:00 UTC) + sweep-stuck-reports (03:30 UTC)
 ```

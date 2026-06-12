@@ -60,12 +60,9 @@ export interface UpdateReportRequest {
 
 export interface UpdateProfileRequest {
   full_name: string;
-  cpf: string;
   signature_font?: string;
   signature?: string;
   signature_image_url?: string | null;
-  crmv?: string;
-  crmv_state?: string;
 }
 
 export interface AccountProfileFields {

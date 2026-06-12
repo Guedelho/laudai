@@ -1,35 +1,17 @@
 "use client";
 
-import { Fragment, useState, useRef, useEffect, useLayoutEffect, useMemo } from "react";
+import { Fragment, useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type FileUIPart } from "ai";
-import Link from "next/link";
-import { focusRing } from "@/lib/ui";
-import ImageLightbox from "@/components/ImageLightbox";
-import {
-  MAX_REPORT_IMAGES,
-  MAX_IMAGE_FILE_SIZE,
-  CHAT_HISTORY_PAGE_SIZE,
-  TABLES,
-  REPORT_STATUSES,
-  type ReportStatus,
-} from "@/shared/constants";
-import { uploadReportImages } from "@/lib/services/reports";
+import { focusRing, btnPrimary, btnSecondary, btnIcon } from "@/lib/ui";
+import { CHAT_HISTORY_PAGE_SIZE, CHAT_SESSION_GAP_MS } from "@/shared/constants";
 import { fetchChatHistory } from "@/lib/services/chat";
 import { recordingToWav } from "@/lib/client/audio-wav";
-import { Streamdown } from "streamdown";
 import type { LaudoAgentUIMessage } from "@/lib/agents/laudo-agent";
-import { type Report, type ChatHistoryMessage } from "@/shared/models";
-import { createClient } from "@/lib/supabase/client";
-import { useReportEditor } from "@/lib/hooks/use-report-editor";
-import { useDirectory } from "@/lib/hooks/use-directory";
-import { useOrgReportsChannel } from "@/lib/hooks/use-org-reports-channel";
-import {
-  ReportEditorPatientFields,
-  ReportEditorContent,
-  ReportEditorActions,
-} from "@/app/(auth)/report/[id]/ReportEditor";
-import { SPECIALTIES } from "@/lib/report/templates";
+import { type ChatHistoryMessage } from "@/shared/models";
+import { Message, TypingDots, SessionDivider } from "./ChatMessage";
+import { AutoAttachImages, ImageStep, collectChatImages } from "./ImageStep";
+import { ReportPreviewInChat } from "./ReportPreviewInChat";
 
 function formatDuration(s: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -42,6 +24,10 @@ function fileToDataUrl(file: File): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+function historyToUIMessage(m: ChatHistoryMessage): LaudoAgentUIMessage {
+  return { id: m.id, role: m.role, parts: m.parts };
 }
 
 function splitAtReport(messages: LaudoAgentUIMessage[]): {
@@ -64,24 +50,29 @@ function splitAtReport(messages: LaudoAgentUIMessage[]): {
   return { before: messages, after: [], reportId: null };
 }
 
-const SESSION_DIVIDER_GAP_MS = 60 * 60 * 1000;
+const STICK_TO_BOTTOM_THRESHOLD_PX = 100;
+
+function isSessionStart(prev: ChatHistoryMessage | undefined, current: ChatHistoryMessage, hasMore: boolean): boolean {
+  if (!prev) return !hasMore;
+  return new Date(current.created_at).getTime() - new Date(prev.created_at).getTime() > CHAT_SESSION_GAP_MS;
+}
 
 export default function InteractiveLaudoChat({
   greeting,
   orgId,
-  initialMessages = [],
-  historyCursor = null,
-  hasHistory = false,
-  autoStartMessage = null,
+  initialMessages,
+  historyCursor,
+  hasHistory,
+  autoStartMessage,
 }: {
   greeting: string;
   orgId: string;
-  initialMessages?: LaudoAgentUIMessage[];
-  historyCursor?: number | null;
-  hasHistory?: boolean;
-  autoStartMessage?: string | null;
+  initialMessages: LaudoAgentUIMessage[];
+  historyCursor: number | null;
+  hasHistory: boolean;
+  autoStartMessage: string | null;
 }) {
-  const { messages, sendMessage, status } = useChat<LaudoAgentUIMessage>({
+  const { messages, sendMessage, status, error, stop, regenerate } = useChat<LaudoAgentUIMessage>({
     messages: initialMessages,
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
@@ -108,6 +99,7 @@ export default function InteractiveLaudoChat({
   const [historyError, setHistoryError] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
   const prevScrollHeightRef = useRef(0);
   const adjustScrollRef = useRef(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -151,15 +143,22 @@ export default function InteractiveLaudoChat({
   const showThinking =
     busy && (!last || last.role !== "assistant" || !last.parts.some((p) => p.type === "text" && p.text.trim()));
 
+  function handleScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_TO_BOTTOM_THRESHOLD_PX;
+  }
+
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, busy, reportId, imagesUploaded]);
+    if (stickToBottomRef.current) endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, busy, reportId, imagesUploaded, error]);
 
   const text = input.trim();
   const canSend = !busy && !recording && (text.length > 0 || attached.length > 0);
 
   async function send() {
     if (!canSend) return;
+    stickToBottomRef.current = true;
     if (attached.length > 0) {
       const files: FileUIPart[] = await Promise.all(
         attached.map(async (f) => ({
@@ -219,10 +218,16 @@ export default function InteractiveLaudoChat({
   return (
     <main className="mx-auto flex h-[calc(100dvh-61px)] w-full max-w-3xl flex-col px-6 md:h-[100dvh]">
       <div className="shrink-0 pt-6 pb-3">
-        <h1 className="text-lg font-semibold text-gray-900">Assistente IA</h1>
+        <h1 className="text-lg font-semibold text-gray-900">Assistente</h1>
       </div>
 
-      <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-4">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        role="log"
+        aria-label="Conversa"
+        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-4"
+      >
         {hasMore && (
           <button
             type="button"
@@ -237,7 +242,7 @@ export default function InteractiveLaudoChat({
         {history.map((m, i) => (
           <Fragment key={m.id}>
             {isSessionStart(history[i - 1], m, hasMore) && <SessionDivider date={m.created_at} />}
-            <Message message={m as unknown as LaudoAgentUIMessage} />
+            <Message message={historyToUIMessage(m)} />
           </Fragment>
         ))}
         {history.length > 0 && <SessionDivider label="Conversa atual" />}
@@ -277,6 +282,18 @@ export default function InteractiveLaudoChat({
           <Message key={message.id} message={message} />
         ))}
         {showThinking && imagesUploaded && <TypingDots />}
+        {error && !busy && (
+          <div className="max-w-[85%] space-y-1 self-start rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+            <p>Não foi possível obter a resposta.</p>
+            <button
+              type="button"
+              onClick={() => regenerate()}
+              className={`rounded font-medium underline hover:text-red-800 ${focusRing}`}
+            >
+              Tentar novamente
+            </button>
+          </div>
+        )}
         <div ref={endRef} />
       </div>
 
@@ -321,7 +338,7 @@ export default function InteractiveLaudoChat({
               disabled={busy}
               aria-label="Anexar imagens"
               title="Anexar imagens para perguntar"
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600 hover:border-blue-400 hover:text-blue-600 disabled:opacity-50"
+              className={btnIcon}
             >
               📎
             </button>
@@ -335,12 +352,19 @@ export default function InteractiveLaudoChat({
                 setAttached((prev) => [...prev, ...Array.from(e.target.files ?? [])]);
               }}
             />
-            <input
+            <textarea
+              rows={1}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              disabled={busy}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  send();
+                }
+              }}
               placeholder="Digite sua mensagem..."
-              className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
+              aria-label="Mensagem"
+              className="max-h-40 flex-1 resize-none field-sizing-content rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
               type="button"
@@ -348,452 +372,26 @@ export default function InteractiveLaudoChat({
               disabled={busy}
               aria-label={recording ? "Parar gravação" : "Gravar áudio"}
               title={recording ? "Parar gravação" : "Gravar áudio"}
-              className={`rounded-lg border px-3 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={
                 recording
-                  ? "border-red-500 bg-red-500 text-white hover:bg-red-600"
-                  : "border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-600"
-              }`}
+                  ? `rounded-lg border border-red-500 bg-red-500 px-3 py-2 text-sm text-white transition-colors hover:bg-red-600 ${focusRing}`
+                  : btnIcon
+              }
             >
               {recording ? "⏹" : "🎤"}
             </button>
-            <button
-              type="submit"
-              disabled={!canSend}
-              className={`rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`}
-            >
-              Enviar
-            </button>
+            {busy ? (
+              <button type="button" onClick={() => stop()} className={btnSecondary}>
+                Parar
+              </button>
+            ) : (
+              <button type="submit" disabled={!canSend} className={btnPrimary}>
+                Enviar
+              </button>
+            )}
           </form>
         </div>
       )}
     </main>
-  );
-}
-
-function isSessionStart(prev: ChatHistoryMessage | undefined, current: ChatHistoryMessage, hasMore: boolean): boolean {
-  if (!prev) return !hasMore;
-  return new Date(current.created_at).getTime() - new Date(prev.created_at).getTime() > SESSION_DIVIDER_GAP_MS;
-}
-
-function SessionDivider({ date, label }: { date?: string; label?: string }) {
-  const text =
-    label ??
-    new Date(date!).toLocaleString("pt-BR", {
-      day: "numeric",
-      month: "long",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  return (
-    <div className="flex items-center gap-3 py-1">
-      <span className="h-px flex-1 bg-gray-200" />
-      <span className="text-xs text-gray-400">{text}</span>
-      <span className="h-px flex-1 bg-gray-200" />
-    </div>
-  );
-}
-
-function TypingDots() {
-  return (
-    <div className="flex items-center gap-1 self-start rounded-2xl bg-gray-100 px-4 py-3">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
-          style={{ animationDelay: `${i * 150}ms` }}
-        />
-      ))}
-    </div>
-  );
-}
-
-function Message({ message }: { message: LaudoAgentUIMessage }) {
-  const isUser = message.role === "user";
-  return (
-    <>
-      {message.parts.map((part, i) => {
-        if (part.type === "text") {
-          if (!part.text.trim()) return null;
-          return (
-            <div
-              key={`${message.id}-${i}`}
-              className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm ${
-                isUser ? "self-end bg-blue-600 text-white" : "self-start bg-gray-100 text-gray-900"
-              }`}
-            >
-              {isUser ? <span className="whitespace-pre-wrap">{part.text}</span> : <Streamdown>{part.text}</Streamdown>}
-            </div>
-          );
-        }
-        if (part.type === "file" && part.mediaType?.startsWith("image/")) {
-          return (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={`${message.id}-${i}`}
-              src={part.url}
-              alt={part.filename ?? ""}
-              className="max-w-[60%] shrink-0 self-end rounded-lg border border-gray-200"
-            />
-          );
-        }
-        if (part.type === "file" && part.mediaType?.startsWith("audio/")) {
-          return <audio key={`${message.id}-${i}`} controls src={part.url} className="w-64 shrink-0 self-end" />;
-        }
-        return null;
-      })}
-    </>
-  );
-}
-
-type ChatImage = { url: string; filename: string; mediaType: string };
-
-function collectChatImages(messages: LaudoAgentUIMessage[]): ChatImage[] {
-  const out: ChatImage[] = [];
-  for (const message of messages) {
-    if (message.role !== "user") continue;
-    for (const part of message.parts) {
-      if (part.type === "file" && part.mediaType?.startsWith("image/")) {
-        out.push({
-          url: part.url,
-          filename: part.filename ?? `imagem-${out.length + 1}.jpg`,
-          mediaType: part.mediaType,
-        });
-      }
-    }
-  }
-  return out;
-}
-
-// The vet already attached the exam images in the chat (so the agent could read
-// the measurements). Persist those same images to the report instead of asking
-// for them again in the panel.
-function AutoAttachImages({
-  reportId,
-  images,
-  onDone,
-  onFallback,
-}: {
-  reportId: string;
-  images: ChatImage[];
-  onDone: (files: File[]) => void;
-  onFallback: () => void;
-}) {
-  const [error, setError] = useState("");
-  const startedRef = useRef(false);
-
-  useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
-    (async () => {
-      try {
-        const files = await Promise.all(
-          images.map(async (img) => {
-            const blob = await (await fetch(img.url)).blob();
-            return new File([blob], img.filename, { type: img.mediaType || blob.type });
-          }),
-        );
-        await uploadReportImages(reportId, files);
-        onDone(files);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro ao anexar as imagens.");
-      }
-    })();
-  }, [reportId, images, onDone]);
-
-  if (error) {
-    return (
-      <div className="space-y-2 self-start rounded-2xl bg-gray-100 px-4 py-3 text-sm">
-        <p className="text-red-600">{error}</p>
-        <button type="button" onClick={onFallback} className="font-medium text-blue-600 hover:text-blue-700">
-          Anexar imagens manualmente
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-2 self-start rounded-2xl bg-gray-100 px-4 py-3 text-sm text-gray-600">
-      <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
-      Anexando as imagens do exame ao laudo...
-    </div>
-  );
-}
-
-function ImageStep({ reportId, onDone }: { reportId: string; onDone: (files: File[]) => void }) {
-  const [files, setFiles] = useState<File[]>([]);
-  const [objectUrls, setObjectUrls] = useState<string[]>([]);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-  const objectUrlsRef = useRef<string[]>([]);
-
-  useEffect(() => {
-    objectUrlsRef.current = objectUrls;
-  }, [objectUrls]);
-  useEffect(() => () => objectUrlsRef.current.forEach(URL.revokeObjectURL), []);
-
-  function handleSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    setError("");
-    const selected = Array.from(e.target.files ?? []);
-    if (inputRef.current) inputRef.current.value = "";
-    const valid = selected.filter((f) => {
-      if (f.size > MAX_IMAGE_FILE_SIZE) {
-        setError(`Imagem "${f.name}" excede 5 MB.`);
-        return false;
-      }
-      return true;
-    });
-    const remaining = MAX_REPORT_IMAGES - files.length;
-    if (remaining <= 0) {
-      setError(`Limite de ${MAX_REPORT_IMAGES} imagens atingido.`);
-      return;
-    }
-    const capped = valid.slice(0, remaining);
-    setFiles((prev) => [...prev, ...capped]);
-    setObjectUrls((prev) => [...prev, ...capped.map((f) => URL.createObjectURL(f))]);
-  }
-
-  function removeFile(index: number) {
-    URL.revokeObjectURL(objectUrls[index]);
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-    setObjectUrls((prev) => prev.filter((_, i) => i !== index));
-    if (lightboxIndex === index) setLightboxIndex(null);
-  }
-
-  async function handleSubmit() {
-    if (!files.length) return;
-    setUploading(true);
-    setError("");
-    try {
-      await uploadReportImages(reportId, files);
-      onDone(files);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao enviar imagens.");
-      setUploading(false);
-    }
-  }
-
-  return (
-    <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-gray-700">
-          Imagens do exame (obrigatório)
-          {files.length > 0 && (
-            <span className="ml-2 text-xs font-normal text-gray-500">
-              {files.length}/{MAX_REPORT_IMAGES}
-            </span>
-          )}
-        </p>
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={files.length >= MAX_REPORT_IMAGES}
-          className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Adicionar imagens
-        </button>
-        <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleSelect} />
-      </div>
-
-      {files.length > 0 ? (
-        <div className="grid grid-cols-3 gap-2">
-          {files.map((file, i) => (
-            <div key={objectUrls[i]} className="group relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={objectUrls[i]}
-                alt={file.name}
-                onClick={() => setLightboxIndex(i)}
-                className="aspect-[4/3] w-full cursor-pointer rounded-lg border border-gray-200 bg-black object-cover"
-              />
-              <button
-                type="button"
-                onClick={() => removeFile(i)}
-                aria-label="Remover imagem"
-                className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-sm text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-red-600"
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-sm text-gray-500 italic">Selecione ao menos uma imagem para continuar.</p>
-      )}
-
-      {lightboxIndex !== null && (
-        <ImageLightbox
-          images={objectUrls.map((url) => ({ key: url, src: url }))}
-          selectedIndex={lightboxIndex}
-          onClose={() => setLightboxIndex(null)}
-          onDelete={(i) => {
-            removeFile(i);
-            setLightboxIndex(null);
-          }}
-        />
-      )}
-
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      <button
-        type="button"
-        onClick={handleSubmit}
-        disabled={uploading || files.length === 0}
-        className={`w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`}
-      >
-        {uploading ? "Enviando imagens..." : "Enviar imagens"}
-      </button>
-    </div>
-  );
-}
-
-function ReportPreviewInChat({
-  reportId,
-  orgId,
-  previewFiles,
-}: {
-  reportId: string;
-  orgId: string;
-  previewFiles: File[];
-}) {
-  const [phase, setPhase] = useState<"waiting" | "completed" | "failed" | "error">("waiting");
-  const [report, setReport] = useState<Report | null>(null);
-
-  async function fetchAndResolve() {
-    const supabase = createClient();
-    const { data, error } = await supabase.from(TABLES.reports).select("*").eq("id", reportId).single();
-    if (error) {
-      setPhase("error");
-      return;
-    }
-    if (data.status === REPORT_STATUSES.completed && data.edited_content) {
-      setReport(data as Report);
-      setPhase("completed");
-    } else if (data.status === REPORT_STATUSES.failed) {
-      setPhase("failed");
-    }
-  }
-
-  // The hook subscribes first, then fires onSubscribed — so any completion that
-  // landed before the channel went live is caught by the poll, and anything
-  // after by onEvent. No race window.
-  useOrgReportsChannel<{ id: string; status: ReportStatus }>(orgId, {
-    onSubscribed: () => {
-      fetchAndResolve().catch(() => setPhase("error"));
-    },
-    onEvent: (payload) => {
-      if (payload.id !== reportId) return;
-      if (payload.status === REPORT_STATUSES.completed) {
-        fetchAndResolve().catch(() => setPhase("error"));
-      } else if (payload.status === REPORT_STATUSES.failed) {
-        setPhase("failed");
-      }
-    },
-  });
-
-  if (phase === "waiting") {
-    return <TypingDots />;
-  }
-
-  if (phase === "failed" || phase === "error") {
-    return (
-      <div className="max-w-[85%] self-start rounded-2xl bg-gray-100 px-4 py-3 text-sm text-gray-900">
-        {phase === "failed" ? "Falha ao gerar o laudo." : "Erro ao carregar o laudo."}{" "}
-        <Link href={`/report/${reportId}`} className="underline hover:text-gray-700">
-          Ver laudo →
-        </Link>
-      </div>
-    );
-  }
-
-  if (!report) return null;
-
-  return <ReportEditorInChat report={report} previewFiles={previewFiles} />;
-}
-
-function ReportEditorInChat({ report, previewFiles }: { report: Report; previewFiles: File[] }) {
-  const editor = useReportEditor(report, () => {});
-  const { pets, clients, breedSuggestions } = useDirectory();
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-
-  const fileUrls = useMemo(() => previewFiles.map((f) => URL.createObjectURL(f)), [previewFiles]);
-  useEffect(() => () => fileUrls.forEach(URL.revokeObjectURL), [fileUrls]);
-
-  return (
-    <div className="self-start w-full space-y-3 rounded-2xl bg-gray-100 px-4 py-3">
-      <p className="text-sm font-medium text-gray-900">Laudo pronto. Revise e edite antes de confirmar:</p>
-
-      <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-700">
-        Gerado por IA — revise todas as informações com atenção antes de confirmar.
-      </div>
-
-      {editor.error && <p className="text-sm text-red-600">{editor.error}</p>}
-
-      <ReportEditorPatientFields
-        fields={editor.fields}
-        setFields={editor.setFields}
-        pets={pets}
-        clients={clients}
-        breedSuggestions={breedSuggestions}
-        selectedClientId={editor.selectedClientId}
-        selectPet={editor.selectPet}
-        selectClient={editor.selectClient}
-        selectVet={editor.selectVet}
-      />
-
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <div className="border-b border-gray-200 bg-gray-50 px-4 py-2 text-center">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-700">
-            {SPECIALTIES[report.specialty].reportTitle}
-          </h2>
-        </div>
-        <div className="p-4">
-          <ReportEditorContent
-            editedParsed={editor.editedParsed}
-            setEditedParsed={editor.setEditedParsed}
-            updateSection={editor.updateSection}
-            removeSection={editor.removeSection}
-            updateList={editor.updateList}
-            addToList={editor.addToList}
-            removeFromList={editor.removeFromList}
-          />
-        </div>
-      </div>
-
-      {fileUrls.length > 0 && (
-        <div className="rounded-xl bg-white px-3 py-2.5">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Imagens do exame</p>
-          <div className="grid grid-cols-3 gap-2">
-            {fileUrls.map((url, i) => (
-              <div key={url} className="cursor-pointer" onClick={() => setLightboxIndex(i)}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt={previewFiles[i]?.name ?? ""}
-                  className="aspect-[4/3] w-full rounded-lg border border-gray-200 bg-black object-cover"
-                />
-              </div>
-            ))}
-          </div>
-          {lightboxIndex !== null && (
-            <ImageLightbox
-              images={fileUrls.map((src) => ({ key: src, src }))}
-              selectedIndex={lightboxIndex}
-              onClose={() => setLightboxIndex(null)}
-            />
-          )}
-        </div>
-      )}
-
-      <div className="flex items-center justify-end gap-2">
-        <ReportEditorActions
-          saving={editor.saving}
-          printing={editor.printing}
-          onSalvar={editor.handleSalvar}
-          onImprimir={editor.handleImprimir}
-        />
-      </div>
-    </div>
   );
 }

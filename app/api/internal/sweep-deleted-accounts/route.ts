@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "crypto";
 import { createAdmin } from "@/lib/supabase/admin";
+import { bearerOk } from "@/lib/cron-auth";
 import { STORAGE_BUCKETS, TABLES } from "@/shared/constants";
 import { logError, logInfo } from "@/lib/log";
 
@@ -9,14 +9,6 @@ type Admin = ReturnType<typeof createAdmin>;
 const USER_BUCKETS = [STORAGE_BUCKETS.reportImages, STORAGE_BUCKETS.reportPdfs, STORAGE_BUCKETS.profileLogos] as const;
 const RETENTION_DAYS = 30;
 const PAGE = 1000;
-
-function bearerOk(header: string | null): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret || !header) return false;
-  const a = Buffer.from(header);
-  const b = Buffer.from(`Bearer ${secret}`);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
 
 async function clearUserBucket(admin: Admin, bucket: string, userId: string): Promise<boolean> {
   const paths: string[] = [];

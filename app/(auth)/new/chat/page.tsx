@@ -4,7 +4,6 @@ import { createAdmin } from "@/lib/supabase/admin";
 import { laudoGreeting } from "@/lib/laudo-greeting";
 import { loadRecentSession } from "@/lib/chat/history";
 import { TABLES } from "@/shared/constants";
-import type { LaudoAgentUIMessage } from "@/lib/agents/laudo-agent";
 import InteractiveLaudoChat from "./InteractiveLaudoChat";
 
 const START_LAUDO_MESSAGE = "Quero gerar um laudo de ultrassom abdominal.";
@@ -43,7 +42,7 @@ export default async function InteractiveLaudoPage({
     <InteractiveLaudoChat
       greeting={laudoGreeting(profile?.full_name ?? "")}
       orgId={orgId}
-      initialMessages={(fresh ? [] : session.messages) as unknown as LaudoAgentUIMessage[]}
+      initialMessages={fresh ? [] : session.messages}
       historyCursor={fresh ? (session.latestSeq !== null ? session.latestSeq + 1 : null) : session.cursor}
       hasHistory={fresh ? session.latestSeq !== null : session.hasHistory}
       autoStartMessage={autoStartMessage}

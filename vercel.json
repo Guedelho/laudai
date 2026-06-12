@@ -3,6 +3,10 @@
     {
       "path": "/api/internal/sweep-deleted-accounts",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/internal/sweep-stuck-reports",
+      "schedule": "30 3 * * *"
     }
   ]
 }

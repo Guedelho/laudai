@@ -82,7 +82,7 @@ export interface ReportSummary {
   client_name: string;
   specialty: ReportType;
   created_at: string;
-  exam_date?: string;
+  exam_date: string;
   status: ReportStatus;
   error_message: string | null;
 }

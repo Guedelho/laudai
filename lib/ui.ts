@@ -22,5 +22,11 @@ export const btnSecondary = `inline-flex items-center gap-1.5 border border-gray
 // so it never out-shouts the primary blue.
 export const btnDanger = `inline-flex items-center gap-1.5 border border-red-200 text-red-600 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`;
 
+// Gradient accent shared by every entry point into the assistant.
+export const btnAssistant = `inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`;
+
+// Bordered icon-only button (attach, mic) used in compact toolbars.
+export const btnIcon = `rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`;
+
 // Full-width primary button for the auth/onboarding forms.
 export const btnBlock = `w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`;

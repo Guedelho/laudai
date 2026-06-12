@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { after } from "next/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import { getServerUser, getCurrentOrgId } from "@/lib/supabase/auth";
+import { sweepStuckReports } from "@/lib/report/sweep";
 import { btnPrimary } from "@/lib/ui";
 import { TABLES, ENTITLED_SUBSCRIPTION_STATUSES } from "@/shared/constants";
 import ReportList from "./ReportList";
@@ -23,6 +25,8 @@ async function DashboardContents() {
   if (!ENTITLED_SUBSCRIPTION_STATUSES.has(org?.stripe_subscription_status ?? "")) {
     return <SubscribeGate />;
   }
+
+  after(() => sweepStuckReports(admin, orgId));
 
   return <ReportList userId={user.id} orgId={orgId} />;
 }

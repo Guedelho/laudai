@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { createAdmin } from "@/lib/supabase/admin";
-import { CHAT_HISTORY_PAGE_SIZE, TABLES } from "@/shared/constants";
+import { CHAT_HISTORY_PAGE_SIZE, CHAT_SESSION_GAP_MS, TABLES } from "@/shared/constants";
 import type { ChatHistoryMessage } from "@/shared/models";
 import { logError, logWarn } from "@/lib/log";
 
@@ -9,7 +9,6 @@ type Admin = ReturnType<typeof createAdmin>;
 
 type StoredMessage = Pick<ChatHistoryMessage, "id" | "role" | "parts">;
 
-const SESSION_GAP_MS = 60 * 60 * 1000;
 const RESUME_FETCH_LIMIT = 50;
 
 type RawMessage = { id?: string; role?: string; parts?: Array<{ type?: string; text?: unknown }> };
@@ -53,7 +52,7 @@ export async function loadRecentSession(admin: Admin, userId: string): Promise<R
   let prev = Date.now();
   for (const row of rows) {
     const ts = new Date(row.created_at).getTime();
-    if (prev - ts > SESSION_GAP_MS) break;
+    if (prev - ts > CHAT_SESSION_GAP_MS) break;
     tail.push(row);
     prev = ts;
   }
@@ -95,21 +94,26 @@ export async function saveChatMessages(
   try {
     const stored = toTextOnly(messages);
     if (!stored.length) return;
-    const { data: foreign } = await admin
+    const { data: existing, error: lookupError } = await admin
       .from(TABLES.chat_messages)
-      .select("id")
+      .select("id, user_id")
       .in(
         "id",
         stored.map((m) => m.id),
-      )
-      .neq("user_id", userId);
-    const foreignIds = new Set((foreign ?? []).map((r) => r.id));
+      );
+    if (lookupError) logError("saveChatMessages lookup failed", lookupError, { userId });
+    const foreignIds = new Set<string>();
+    const savedIds = new Set<string>();
+    for (const row of existing ?? []) {
+      if (row.user_id === userId) savedIds.add(row.id);
+      else foreignIds.add(row.id);
+    }
     if (foreignIds.size) logWarn("saveChatMessages: dropped messages owned by another user", { userId });
     const rows = stored
-      .filter((m) => !foreignIds.has(m.id))
+      .filter((m) => !foreignIds.has(m.id) && !savedIds.has(m.id))
       .map((m) => ({ id: m.id, user_id: userId, org_id: orgId, role: m.role, parts: m.parts }));
     if (!rows.length) return;
-    const { error } = await admin.from(TABLES.chat_messages).upsert(rows, { onConflict: "id" });
+    const { error } = await admin.from(TABLES.chat_messages).upsert(rows, { onConflict: "id", ignoreDuplicates: true });
     if (error) logError("saveChatMessages upsert failed", error, { userId });
   } catch (err) {
     logError("saveChatMessages failed", err, { userId });

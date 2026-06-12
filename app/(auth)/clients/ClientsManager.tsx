@@ -5,106 +5,76 @@ import { Client, ClientVet } from "@/shared/models";
 import * as api from "@/lib/services/clients";
 import { inputCls, btnPrimary, btnSecondary } from "@/lib/ui";
 import ConfirmDelete from "@/components/ConfirmDelete";
+import { useEntityCrud } from "@/lib/hooks/use-entity-crud";
 
 export default function ClientsManager({ initialClients }: { initialClients: Client[] }) {
-  const [clients, setClients] = useState<Client[]>(initialClients);
-  const [showForm, setShowForm] = useState(false);
+  const crud = useEntityCrud<Client>(initialClients, "Erro ao salvar cliente.");
   const [name, setName] = useState("");
   const [vetName, setVetName] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
-  const [editSaving, setEditSaving] = useState(false);
-  const [editError, setEditError] = useState("");
   const [newVetName, setNewVetName] = useState("");
   const [addingVet, setAddingVet] = useState(false);
 
   function startEdit(client: Client) {
-    setEditingId(client.id);
+    crud.startEdit(client.id);
     setEditName(client.name);
     setNewVetName("");
-    setEditError("");
   }
 
-  async function handleRename(e: React.FormEvent) {
+  function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    if (!editingId) return;
-    setEditSaving(true);
-    setEditError("");
+    crud.submitAdd(
+      async () => (await api.createClient(name, vetName)).client,
+      () => {
+        setName("");
+        setVetName("");
+      },
+    );
+  }
 
-    try {
-      const client = await api.renameClient(editingId, editName);
-      setClients((prev) =>
-        prev
-          .map((c) => (c.id === editingId ? { ...c, name: client.name } : c))
-          .sort((a, b) => a.name.localeCompare(b.name)),
-      );
-    } catch (err) {
-      setEditError(err instanceof Error ? err.message : "Erro ao salvar cliente.");
-    } finally {
-      setEditSaving(false);
-    }
+  function handleRename(e: React.FormEvent) {
+    e.preventDefault();
+    crud.submitEdit(
+      async () => {
+        const client = await api.renameClient(crud.editingId!, editName);
+        return (c) => ({ ...c, name: client.name });
+      },
+      { close: false },
+    );
   }
 
   async function handleAddVet(e: React.FormEvent) {
     e.preventDefault();
-    if (!editingId || !newVetName.trim()) return;
+    if (!newVetName.trim()) return;
     setAddingVet(true);
-    setEditError("");
-
-    try {
-      const vet = await api.addVet(editingId, newVetName);
-      setClients((prev) => prev.map((c) => (c.id === editingId ? { ...c, client_vets: [...c.client_vets, vet] } : c)));
-      setNewVetName("");
-    } catch (err) {
-      setEditError(err instanceof Error ? err.message : "Erro ao adicionar médico.");
-    } finally {
-      setAddingVet(false);
-    }
+    await crud.submitEdit(
+      async () => {
+        const vet = await api.addVet(crud.editingId!, newVetName);
+        setNewVetName("");
+        return (c) => ({ ...c, client_vets: [...c.client_vets, vet] });
+      },
+      { close: false },
+    );
+    setAddingVet(false);
   }
 
   async function handleRemoveVet(clientId: string, vetId: string) {
     await api.removeVet(clientId, vetId);
-    setClients((prev) =>
+    crud.setItems((prev) =>
       prev.map((c) => (c.id === clientId ? { ...c, client_vets: c.client_vets.filter((v) => v.id !== vetId) } : c)),
     );
-  }
-
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setError("");
-
-    try {
-      const { client } = await api.createClient(name, vetName);
-      setClients((prev) => [...prev, client].sort((a, b) => a.name.localeCompare(b.name)));
-      setName("");
-      setVetName("");
-      setShowForm(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao salvar cliente.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDelete(id: string) {
-    await api.deleteClient(id);
-    setClients((prev) => prev.filter((c) => c.id !== id));
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-gray-900">Clientes</h1>
-        <button type="button" onClick={() => setShowForm((v) => !v)} className={btnPrimary}>
-          {showForm ? "Cancelar" : "Novo cliente"}
+        <button type="button" onClick={() => crud.setShowForm((v) => !v)} className={btnPrimary}>
+          {crud.showForm ? "Cancelar" : "Novo cliente"}
         </button>
       </div>
 
-      {showForm && (
+      {crud.showForm && (
         <form onSubmit={handleAdd} className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
           <p className="text-sm font-semibold text-gray-700">Cadastrar cliente</p>
           <div className="grid grid-cols-2 gap-3">
@@ -117,26 +87,30 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
               <input value={vetName} onChange={(e) => setVetName(e.target.value)} className={inputCls} />
             </div>
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button type="submit" disabled={saving} className={btnPrimary}>
-            {saving ? "Salvando..." : "Salvar cliente"}
+          {crud.error && <p className="text-sm text-red-600">{crud.error}</p>}
+          <button type="submit" disabled={crud.saving} className={btnPrimary}>
+            {crud.saving ? "Salvando..." : "Salvar cliente"}
           </button>
         </form>
       )}
 
-      {!clients.length && !showForm && (
+      {!crud.items.length && !crud.showForm && (
         <div className="text-center py-16 text-gray-500">
           <p className="mb-3">Nenhum cliente cadastrado ainda</p>
-          <button type="button" onClick={() => setShowForm(true)} className="text-sm text-blue-600 hover:underline">
+          <button
+            type="button"
+            onClick={() => crud.setShowForm(true)}
+            className="text-sm text-blue-600 hover:underline"
+          >
             Cadastrar primeiro cliente
           </button>
         </div>
       )}
 
       <div className="space-y-3">
-        {clients.map((client) => (
+        {crud.items.map((client) => (
           <div key={client.id} className="bg-white border border-gray-200 rounded-xl p-4">
-            {editingId === client.id ? (
+            {crud.editingId === client.id ? (
               <div className="space-y-4">
                 <form onSubmit={handleRename} className="flex gap-2 items-end">
                   <div className="flex-1">
@@ -148,8 +122,8 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
                       required
                     />
                   </div>
-                  <button type="submit" disabled={editSaving} className={`${btnPrimary} shrink-0`}>
-                    {editSaving ? "Salvando..." : "Salvar nome"}
+                  <button type="submit" disabled={crud.editSaving} className={`${btnPrimary} shrink-0`}>
+                    {crud.editSaving && !addingVet ? "Salvando..." : "Salvar nome"}
                   </button>
                 </form>
 
@@ -179,7 +153,7 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
                     />
                     <button
                       type="submit"
-                      disabled={addingVet || !newVetName.trim()}
+                      disabled={crud.editSaving || !newVetName.trim()}
                       className={`${btnSecondary} shrink-0`}
                     >
                       {addingVet ? "Adicionando..." : "Adicionar"}
@@ -187,11 +161,11 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
                   </form>
                 </div>
 
-                {editError && <p className="text-sm text-red-600">{editError}</p>}
+                {crud.editError && <p className="text-sm text-red-600">{crud.editError}</p>}
 
                 <button
                   type="button"
-                  onClick={() => setEditingId(null)}
+                  onClick={() => crud.setEditingId(null)}
                   className="text-sm text-gray-500 hover:text-gray-700"
                 >
                   Fechar
@@ -213,7 +187,10 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
                   >
                     Editar
                   </button>
-                  <ConfirmDelete noun="Cliente" onConfirm={() => handleDelete(client.id)} />
+                  <ConfirmDelete
+                    noun="Cliente"
+                    onConfirm={() => crud.remove(client.id, () => api.deleteClient(client.id))}
+                  />
                 </div>
               </div>
             )}

@@ -5,31 +5,27 @@ import { invalidateUserPdfCache } from "@/lib/report/cache";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "@/lib/audit";
 import { TABLES } from "@/shared/constants";
 import { logError } from "@/lib/log";
-import { normalizeCpf } from "@/lib/cpf";
-import { normalizeCrmv } from "@/lib/crmv";
 
 export const PUT = withApiHandler(async ({ userId, admin, audit, req }) => {
   const body: UpdateProfileRequest = await req.json();
   const { full_name, signature_font, signature_image_url, signature } = body;
 
   const { data: existing } = await admin.from(TABLES.profiles).select("*").eq("id", userId).maybeSingle();
+  if (!existing) {
+    return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
+  }
 
-  const upsertData = {
-    id: userId,
-    full_name,
-    signature_font,
-    signature,
-    ...(!existing
-      ? {
-          cpf: normalizeCpf(body.cpf ?? ""),
-          crmv: normalizeCrmv(body.crmv ?? ""),
-          crmv_state: (body.crmv_state ?? "").trim().toUpperCase(),
-        }
-      : {}),
-    ...("signature_image_url" in body ? { signature_image_url } : {}),
-  };
-
-  const { data, error } = await admin.from(TABLES.profiles).upsert(upsertData, { onConflict: "id" }).select().single();
+  const { data, error } = await admin
+    .from(TABLES.profiles)
+    .update({
+      full_name,
+      signature_font,
+      signature,
+      ...("signature_image_url" in body ? { signature_image_url } : {}),
+    })
+    .eq("id", userId)
+    .select()
+    .single();
 
   if (error) {
     logError("Profile save failed", error, { userId });
@@ -38,10 +34,10 @@ export const PUT = withApiHandler(async ({ userId, admin, audit, req }) => {
 
   await invalidateUserPdfCache(admin, userId);
   await audit({
-    action: existing ? AUDIT_ACTIONS.update : AUDIT_ACTIONS.create,
+    action: AUDIT_ACTIONS.update,
     entityType: AUDIT_ENTITIES.profile,
     entityId: userId,
-    changes: existing ? { before: existing, after: data } : data,
+    changes: { before: existing, after: data },
   });
 
   return NextResponse.json(data);

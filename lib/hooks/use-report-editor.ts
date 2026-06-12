@@ -21,7 +21,7 @@ export type ReportFieldsState = {
 
 export type ListKey = "impression" | "recommendations" | "observations";
 
-export function useReportEditor(report: Report, onAfterImprimir: () => void) {
+export function useReportEditor(report: Report, onAfterImprimir?: () => void) {
   const [printing, setPrinting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -135,7 +135,7 @@ export function useReportEditor(report: Report, onAfterImprimir: () => void) {
     try {
       await persistReport();
       openReportPdfTab(report.id);
-      onAfterImprimir();
+      onAfterImprimir?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao imprimir.");
     } finally {

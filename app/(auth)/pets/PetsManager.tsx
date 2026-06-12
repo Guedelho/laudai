@@ -6,6 +6,7 @@ import { sexLabel, uniqueBreeds } from "@/lib/utils";
 import * as api from "@/lib/services/pets";
 import { btnPrimary } from "@/lib/ui";
 import ConfirmDelete from "@/components/ConfirmDelete";
+import { useEntityCrud } from "@/lib/hooks/use-entity-crud";
 import PetFormFields, { PetFormValues } from "./PetFormFields";
 
 const EMPTY_FORM: PetFormValues = {
@@ -14,7 +15,7 @@ const EMPTY_FORM: PetFormValues = {
   species: "Canina",
   breed: "",
   age: "",
-  sex: "",
+  sex: "M",
   neutered: false,
 };
 
@@ -25,24 +26,29 @@ function petToForm(pet: Pet): PetFormValues {
     species: pet.species,
     breed: pet.breed,
     age: pet.age,
-    sex: pet.sex ?? "",
-    neutered: pet.neutered ?? false,
+    sex: pet.sex,
+    neutered: pet.neutered,
+  };
+}
+
+function formToRequest(form: PetFormValues) {
+  return {
+    name: form.name,
+    species: form.species,
+    breed: form.breed,
+    age: form.age,
+    ownerName: form.owner_name,
+    sex: form.sex,
+    neutered: form.neutered,
   };
 }
 
 export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
-  const [pets, setPets] = useState<Pet[]>(initialPets);
-  const [showForm, setShowForm] = useState(false);
+  const crud = useEntityCrud<Pet>(initialPets, "Erro ao salvar paciente.");
   const [newForm, setNewForm] = useState<PetFormValues>(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<PetFormValues>(EMPTY_FORM);
-  const [editSaving, setEditSaving] = useState(false);
-  const [editError, setEditError] = useState("");
 
-  const breedSuggestions = uniqueBreeds(pets);
+  const breedSuggestions = uniqueBreeds(crud.items);
 
   function updateNew<K extends keyof PetFormValues>(field: K, value: PetFormValues[K]) {
     setNewForm((f) => ({ ...f, [field]: value }));
@@ -53,112 +59,74 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
   }
 
   function startEdit(pet: Pet) {
-    setEditingId(pet.id);
+    crud.startEdit(pet.id);
     setEditForm(petToForm(pet));
-    setEditError("");
   }
 
-  async function handleEdit(e: React.FormEvent) {
+  function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    if (!editingId) return;
-    setEditSaving(true);
-    setEditError("");
-
-    try {
-      const pet = await api.updatePet(editingId, {
-        name: editForm.name,
-        species: editForm.species,
-        breed: editForm.breed,
-        age: editForm.age,
-        ownerName: editForm.owner_name,
-        sex: editForm.sex,
-        neutered: editForm.neutered,
-      });
-
-      setPets((prev) => prev.map((p) => (p.id === editingId ? pet : p)).sort((a, b) => a.name.localeCompare(b.name)));
-      setEditingId(null);
-    } catch (err) {
-      setEditError(err instanceof Error ? err.message : "Erro ao salvar paciente.");
-    } finally {
-      setEditSaving(false);
-    }
+    crud.submitAdd(
+      () => api.createPet(formToRequest(newForm)),
+      () => setNewForm(EMPTY_FORM),
+    );
   }
 
-  async function handleDelete(id: string) {
-    await api.deletePet(id);
-    setPets((prev) => prev.filter((p) => p.id !== id));
-  }
-
-  async function handleAdd(e: React.FormEvent) {
+  function handleEdit(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
-    setError("");
-
-    try {
-      const pet = await api.createPet({
-        name: newForm.name,
-        species: newForm.species,
-        breed: newForm.breed,
-        age: newForm.age,
-        ownerName: newForm.owner_name,
-        sex: newForm.sex,
-        neutered: newForm.neutered,
-      });
-
-      setPets((prev) => [...prev, pet].sort((a, b) => a.name.localeCompare(b.name)));
-      setNewForm(EMPTY_FORM);
-      setShowForm(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao salvar paciente.");
-    } finally {
-      setSaving(false);
-    }
+    crud.submitEdit(async () => {
+      const pet = await api.updatePet(crud.editingId!, formToRequest(editForm));
+      return () => pet;
+    });
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-gray-900">Pacientes</h1>
-        <button type="button" onClick={() => setShowForm((v) => !v)} className={btnPrimary}>
-          {showForm ? "Cancelar" : "Novo paciente"}
+        <button type="button" onClick={() => crud.setShowForm((v) => !v)} className={btnPrimary}>
+          {crud.showForm ? "Cancelar" : "Novo paciente"}
         </button>
       </div>
 
-      {showForm && (
+      {crud.showForm && (
         <form onSubmit={handleAdd} className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
           <p className="text-sm font-semibold text-gray-700">Cadastrar paciente</p>
           <PetFormFields values={newForm} onChange={updateNew} breedSuggestions={breedSuggestions} />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button type="submit" disabled={saving} className={btnPrimary}>
-            {saving ? "Salvando..." : "Salvar paciente"}
+          {crud.error && <p className="text-sm text-red-600">{crud.error}</p>}
+          <button type="submit" disabled={crud.saving} className={btnPrimary}>
+            {crud.saving ? "Salvando..." : "Salvar paciente"}
           </button>
         </form>
       )}
 
-      {!pets.length && !showForm && (
+      {!crud.items.length && !crud.showForm && (
         <div className="text-center py-16 text-gray-500">
           <p className="mb-3">Nenhum paciente cadastrado ainda</p>
-          <button type="button" onClick={() => setShowForm(true)} className="text-sm text-blue-600 hover:underline">
+          <button
+            type="button"
+            onClick={() => crud.setShowForm(true)}
+            className="text-sm text-blue-600 hover:underline"
+          >
             Cadastrar primeiro paciente
           </button>
         </div>
       )}
 
       <div className="space-y-3">
-        {pets.map((pet) => (
+        {crud.items.map((pet) => (
           <div key={pet.id} className="bg-white border border-gray-200 rounded-xl p-4">
-            {editingId === pet.id ? (
+            {crud.editingId === pet.id ? (
               <form onSubmit={handleEdit} className="space-y-3">
                 <p className="text-sm font-semibold text-gray-700">Editar paciente</p>
                 <PetFormFields values={editForm} onChange={updateEdit} breedSuggestions={breedSuggestions} />
-                {editError && <p className="text-sm text-red-600">{editError}</p>}
+                {crud.editError && <p className="text-sm text-red-600">{crud.editError}</p>}
                 <div className="flex gap-2">
-                  <button type="submit" disabled={editSaving} className={btnPrimary}>
-                    {editSaving ? "Salvando..." : "Salvar"}
+                  <button type="submit" disabled={crud.editSaving} className={btnPrimary}>
+                    {crud.editSaving ? "Salvando..." : "Salvar"}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setEditingId(null)}
+                    onClick={() => crud.setEditingId(null)}
                     className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2"
                   >
                     Cancelar
@@ -183,7 +151,7 @@ export default function PetsManager({ initialPets }: { initialPets: Pet[] }) {
                   >
                     Editar
                   </button>
-                  <ConfirmDelete noun="Paciente" onConfirm={() => handleDelete(pet.id)} />
+                  <ConfirmDelete noun="Paciente" onConfirm={() => crud.remove(pet.id, () => api.deletePet(pet.id))} />
                 </div>
               </div>
             )}

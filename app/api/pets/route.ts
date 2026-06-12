@@ -22,8 +22,11 @@ export const GET = withApiHandler(async ({ userId, orgId, admin }) => {
 
 export const POST = withApiHandler(async ({ userId, orgId, admin, audit, req }) => {
   const { name, species, breed, age, sex, neutered, ownerName }: PetRequest = await req.json();
-  if (!name || !species || !ownerName) {
-    return NextResponse.json({ error: "Campos obrigatórios: nome, espécie, tutor" }, { status: 400 });
+  if (!name || !species || !ownerName || !sex || typeof neutered !== "boolean") {
+    return NextResponse.json(
+      { error: "Campos obrigatórios: nome, espécie, tutor, sexo, castrado(a)" },
+      { status: 400 },
+    );
   }
 
   const pet = await findOrCreatePet(admin, userId, orgId, name.trim(), ownerName.trim(), {

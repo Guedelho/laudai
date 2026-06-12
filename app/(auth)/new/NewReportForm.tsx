@@ -1,18 +1,19 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import ImageLightbox from "@/components/ImageLightbox";
+import { useState, useEffect } from "react";
 import Typeahead from "@/components/Typeahead";
 import EntityTypeahead from "@/components/EntityTypeahead";
+import ImagePicker from "@/components/ImagePicker";
+import { SparkleIcon } from "@/components/icons";
 import Link from "next/link";
 import { Pet, Client } from "@/shared/models";
-import { SPECIES_OPTIONS, SEX_OPTIONS, MAX_REPORT_IMAGES, MAX_IMAGE_FILE_SIZE } from "@/shared/constants";
+import { SPECIES_OPTIONS, SEX_OPTIONS } from "@/shared/constants";
 import { listPets } from "@/lib/services/pets";
 import { listClients, createClient, addVet } from "@/lib/services/clients";
 import { enqueueGeneration, uploadReportImages } from "@/lib/services/reports";
 import { redirectToDashboard } from "@/app/actions/reports";
 import { useDictation } from "@/lib/client/use-dictation";
-import { inputCls } from "@/lib/ui";
+import { inputCls, btnAssistant, btnBlock } from "@/lib/ui";
 import { uniqueBreeds } from "@/lib/utils";
 
 export default function NewReportPage() {
@@ -49,21 +50,7 @@ export default function NewReportPage() {
 
   // Images (selected before submit)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [objectUrls, setObjectUrls] = useState<string[]>([]);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const objectUrlsRef = useRef<string[]>([]);
-  useEffect(() => {
-    objectUrlsRef.current = objectUrls;
-  }, [objectUrls]);
-
-  // Revoke all remaining URLs only on unmount, not on every change.
-  // removeFile() already revokes individual URLs when they're removed.
-  useEffect(() => {
-    return () => {
-      objectUrlsRef.current.forEach(URL.revokeObjectURL);
-    };
-  }, []);
+  const [pickerKey, setPickerKey] = useState(0);
 
   const dictation = useDictation(setRawInput);
 
@@ -101,44 +88,6 @@ export default function NewReportPage() {
       setSex(pet.sex);
       setNeutered(pet.neutered);
       setOwnerName(pet.owner_name);
-    }
-  }
-
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
-    if (!files.length) return;
-    const valid = files.filter((f) => {
-      if (f.size > MAX_IMAGE_FILE_SIZE) {
-        setError(`Imagem "${f.name}" excede 5 MB.`);
-        return false;
-      }
-      return true;
-    });
-    if (!valid.length) return;
-    const remaining = MAX_REPORT_IMAGES - selectedFiles.length;
-    if (remaining <= 0) {
-      setError(`Limite de ${MAX_REPORT_IMAGES} imagens atingido.`);
-      if (imageInputRef.current) imageInputRef.current.value = "";
-      return;
-    }
-    const capped = valid.slice(0, remaining);
-    if (capped.length < valid.length) {
-      setError(
-        `Limite de ${MAX_REPORT_IMAGES} imagens. Apenas ${capped.length} adicionada${capped.length !== 1 ? "s" : ""}.`,
-      );
-    }
-    setSelectedFiles((prev) => [...prev, ...capped]);
-    setObjectUrls((prev) => [...prev, ...capped.map((f) => URL.createObjectURL(f))]);
-    if (imageInputRef.current) imageInputRef.current.value = "";
-  }
-
-  function removeFile(index: number) {
-    URL.revokeObjectURL(objectUrls[index]);
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-    setObjectUrls((prev) => prev.filter((_, i) => i !== index));
-    if (lightboxIndex !== null) {
-      if (index === lightboxIndex) setLightboxIndex(null);
-      else if (index < lightboxIndex) setLightboxIndex(lightboxIndex - 1);
     }
   }
 
@@ -256,11 +205,8 @@ export default function NewReportPage() {
     setExamDate(new Date().toISOString().slice(0, 10));
     setRawInput("");
     setError("");
-    objectUrlsRef.current.forEach(URL.revokeObjectURL);
     setSelectedFiles([]);
-    setObjectUrls([]);
-    setLightboxIndex(null);
-    if (imageInputRef.current) imageInputRef.current.value = "";
+    setPickerKey((k) => k + 1);
     dictation.reset();
   }
 
@@ -270,17 +216,8 @@ export default function NewReportPage() {
         <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700">
           ← Laudos
         </Link>
-        <Link
-          href="/new/chat?laudo=1"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
-        >
-          <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"
-            />
-          </svg>
+        <Link href="/new/chat?laudo=1" className={btnAssistant}>
+          <SparkleIcon className="h-4 w-4 shrink-0" />
           Gerar por conversa
         </Link>
       </div>
@@ -490,77 +427,18 @@ export default function NewReportPage() {
           </p>
         </div>
 
-        {/* Images */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-gray-700">
-              Imagens do exame
-              {selectedFiles.length > 0 && (
-                <span className="ml-2 text-xs font-normal text-gray-500">
-                  {selectedFiles.length}/{MAX_REPORT_IMAGES}
-                </span>
-              )}
-            </p>
-            <button
-              type="button"
-              onClick={() => imageInputRef.current?.click()}
-              disabled={selectedFiles.length >= MAX_REPORT_IMAGES}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Adicionar imagens
-            </button>
-            <input
-              ref={imageInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handleFileSelect}
-            />
-          </div>
-          {selectedFiles.length > 0 ? (
-            <div className="grid grid-cols-3 gap-2">
-              {selectedFiles.map((file, i) => (
-                <div key={objectUrls[i]} className="relative group">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={objectUrls[i]}
-                    alt={file.name}
-                    onClick={() => setLightboxIndex(i)}
-                    className="w-full aspect-[4/3] object-cover rounded-lg border border-gray-200 bg-black cursor-pointer"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeFile(i)}
-                    aria-label="Remover imagem"
-                    className="absolute top-1.5 right-1.5 bg-red-500 text-white text-sm w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:bg-red-600"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500 italic">Nenhuma imagem selecionada</p>
-          )}
-          {lightboxIndex !== null && (
-            <ImageLightbox
-              images={objectUrls.map((url) => ({ key: url, src: url }))}
-              selectedIndex={lightboxIndex}
-              onClose={() => setLightboxIndex(null)}
-            />
-          )}
-        </div>
+        <ImagePicker
+          key={pickerKey}
+          title="Imagens do exame"
+          emptyText="Nenhuma imagem selecionada"
+          onFilesChange={setSelectedFiles}
+        />
 
         {(error || dictation.micPermissionError) && (
           <p className="text-sm text-red-600">{error || dictation.micPermissionError}</p>
         )}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
+        <button type="submit" disabled={submitting} className={`${btnBlock} flex items-center justify-center gap-2`}>
           {submitting ? (
             <>
               <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
