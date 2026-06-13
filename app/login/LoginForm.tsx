@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { trackEvent } from "@/lib/client/analytics";
 import { useRouter, useSearchParams } from "next/navigation";
 import PasswordInput from "@/components/PasswordInput";
 import AuthCard from "@/components/AuthCard";
@@ -44,6 +45,7 @@ export default function LoginPage() {
       setError(translateAuthError(error.code, error.message));
       setLoading(false);
     } else {
+      trackEvent({ event: "login" });
       router.push("/dashboard");
     }
   }

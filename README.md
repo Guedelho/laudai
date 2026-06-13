@@ -11,6 +11,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 - **Stripe** — subscriptions (monthly/yearly), automatic 7-day trial at signup (no card), hosted Checkout + Customer Portal, webhook-driven entitlements
 - **pdfmake** — server-side PDF generation (cached in storage)
 - **Vercel BotID** — invisible bot protection on generation + upload routes
+- **Google Tag Manager** — GA4 + Google Ads via `@next/third-parties`, production only (`NEXT_PUBLIC_GTM_ID` set only in Vercel's Production environment)
 - **Prettier** — code formatting with pre-commit hook
 
 ## Prerequisites

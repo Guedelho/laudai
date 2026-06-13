@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { trackEvent } from "@/lib/client/analytics";
 
 type Plan = "monthly" | "yearly";
 
@@ -24,6 +25,7 @@ export default function SubscribeGate() {
       });
       const body = await res.json();
       if (!res.ok || !body.url) throw new Error(body.error ?? "Erro ao iniciar checkout.");
+      trackEvent({ event: "begin_checkout", plan });
       window.location.href = body.url;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao iniciar checkout.");

@@ -6,6 +6,7 @@ import { DefaultChatTransport, type FileUIPart } from "ai";
 import { focusRing, btnPrimary, btnSecondary, btnIcon } from "@/lib/ui";
 import { CHAT_HISTORY_PAGE_SIZE, CHAT_SESSION_GAP_MS } from "@/shared/constants";
 import { fetchChatHistory } from "@/lib/services/chat";
+import { trackEvent } from "@/lib/client/analytics";
 import { recordingToWav } from "@/lib/client/audio-wav";
 import type { LaudoAgentUIMessage } from "@/lib/agents/laudo-agent";
 import { type ChatHistoryMessage } from "@/shared/models";
@@ -103,6 +104,7 @@ export default function InteractiveLaudoChat({
   const prevScrollHeightRef = useRef(0);
   const adjustScrollRef = useRef(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const trackedLaudoRef = useRef(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -142,6 +144,12 @@ export default function InteractiveLaudoChat({
   const last = messages[messages.length - 1];
   const showThinking =
     busy && (!last || last.role !== "assistant" || !last.parts.some((p) => p.type === "text" && p.text.trim()));
+
+  useEffect(() => {
+    if (!reportId || trackedLaudoRef.current) return;
+    trackedLaudoRef.current = true;
+    trackEvent({ event: "generate_laudo", method: "chat" });
+  }, [reportId]);
 
   function handleScroll() {
     const el = scrollRef.current;

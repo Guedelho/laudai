@@ -7,6 +7,7 @@ import { sweepStuckReports } from "@/lib/report/sweep";
 import { btnPrimary } from "@/lib/ui";
 import { TABLES, ENTITLED_SUBSCRIPTION_STATUSES } from "@/shared/constants";
 import ReportList from "./ReportList";
+import CheckoutSuccessPing from "./CheckoutSuccessPing";
 import SubscribeGate from "./SubscribeGate";
 import Loading from "./loading";
 
@@ -40,6 +41,7 @@ export default function DashboardPage() {
           Novo laudo
         </Link>
       </div>
+      <CheckoutSuccessPing />
       <Suspense fallback={<Loading />}>
         <DashboardContents />
       </Suspense>

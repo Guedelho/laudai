@@ -15,6 +15,7 @@ import { redirectToDashboard } from "@/app/actions/reports";
 import { useDictation } from "@/lib/client/use-dictation";
 import { inputCls, btnAssistant, btnBlock } from "@/lib/ui";
 import { uniqueBreeds } from "@/lib/utils";
+import { trackEvent } from "@/lib/client/analytics";
 
 export default function NewReportPage() {
   const specialty = "ultrasound_abdominal" as const;
@@ -167,6 +168,7 @@ export default function NewReportPage() {
         clientId: resolvedClientId,
         vetId: resolvedVetId,
       });
+      trackEvent({ event: "generate_laudo", method: "form" });
 
       if (selectedFiles.length > 0) {
         setUploadingImages(true);

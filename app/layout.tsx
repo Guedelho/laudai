@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { GoogleTagManager } from "@next/third-parties/google";
 import "./globals.css";
+
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
 
 export const metadata: Metadata = {
   title: "Laudai",
@@ -14,6 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className="h-full antialiased" style={{ colorScheme: "light" }}>
+      {GTM_ID && <GoogleTagManager gtmId={GTM_ID} />}
       <body className="min-h-full flex flex-col">
         {children}
         <SpeedInsights />

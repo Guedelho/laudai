@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { trackEvent } from "@/lib/client/analytics";
 import { inputCls, btnBlock } from "@/lib/ui";
 import { validateAccountFields, normalizeAccount, type FieldErrors } from "@/lib/account";
 import * as authApi from "@/lib/services/auth";
@@ -106,6 +107,7 @@ export default function SignupForm() {
         setFieldErrors({ email: "Este email já está cadastrado. Faça login." });
         return;
       }
+      trackEvent({ event: "sign_up" });
       setDone(true);
       setCooldown(60);
     } catch (err) {
