@@ -864,6 +864,48 @@ select cron.schedule(
 );
 
 -- ═══════════════════════════════════════════════════════════════════════════
+-- chat_token_usage
+-- ═══════════════════════════════════════════════════════════════════════════
+
+create table if not exists chat_token_usage (
+  user_id       uuid not null references auth.users(id) on delete cascade,
+  usage_date    date not null,
+  input_tokens  bigint not null default 0,
+  output_tokens bigint not null default 0,
+  updated_at    timestamptz not null default now(),
+  primary key (user_id, usage_date)
+);
+
+create index if not exists chat_token_usage_date_idx on chat_token_usage(usage_date);
+
+alter table chat_token_usage enable row level security;
+
+create or replace function add_chat_token_usage(
+  p_user_id       uuid,
+  p_usage_date    date,
+  p_input_tokens  bigint,
+  p_output_tokens bigint
+) returns table (input_tokens bigint, output_tokens bigint)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  return query
+  insert into chat_token_usage (user_id, usage_date, input_tokens, output_tokens, updated_at)
+  values (p_user_id, p_usage_date, p_input_tokens, p_output_tokens, now())
+  on conflict (user_id, usage_date)
+  do update set
+    input_tokens  = chat_token_usage.input_tokens  + excluded.input_tokens,
+    output_tokens = chat_token_usage.output_tokens + excluded.output_tokens,
+    updated_at    = now()
+  returning chat_token_usage.input_tokens, chat_token_usage.output_tokens;
+end;
+$$;
+
+revoke all on function add_chat_token_usage(uuid, date, bigint, bigint) from public, anon, authenticated;
+
+-- ═══════════════════════════════════════════════════════════════════════════
 -- chat_messages
 -- ═══════════════════════════════════════════════════════════════════════════
 

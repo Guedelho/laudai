@@ -5,10 +5,12 @@ import {
   type InferAgentUIMessage,
   type LanguageModelMiddleware,
 } from "ai";
+import { after } from "next/server";
 import { google } from "@ai-sdk/google";
 import { GENERATE_MODEL, GEMINI_SAFETY_SETTINGS } from "@/shared/constants";
 import { createLaudoTools, type LaudoToolCtx } from "@/lib/tools/laudo-tools";
 import { laudoGreeting } from "@/lib/laudo-greeting";
+import { recordChatUsage } from "@/lib/chat/usage";
 import { brazilToday } from "@/lib/utils";
 import { logWarn } from "@/lib/log";
 
@@ -101,6 +103,13 @@ export function createLaudoAgent(ctx: LaudoToolCtx, vetName: string) {
     temperature: 0,
     seed: 42,
     providerOptions: { google: { safetySettings: [...GEMINI_SAFETY_SETTINGS] } },
+    onFinish: ({ totalUsage }) =>
+      after(() =>
+        recordChatUsage(ctx.admin, ctx.userId, {
+          inputTokens: totalUsage.inputTokens,
+          outputTokens: totalUsage.outputTokens,
+        }),
+      ),
   });
 }
 

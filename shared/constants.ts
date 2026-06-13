@@ -62,6 +62,13 @@ export const MAX_REPORT_IMAGES = 50;
 export const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 export const DASHBOARD_PAGE_SIZE = 5;
 export const CHAT_HISTORY_PAGE_SIZE = 30;
+
+// ─── AI usage budget ──────────────────────────────────────────────────────────
+
+export const GEMINI_INPUT_PRICE_NANO_USD_PER_TOKEN = 500;
+export const GEMINI_OUTPUT_PRICE_NANO_USD_PER_TOKEN = 3000;
+export const CHAT_DAILY_BUDGET_NANO_USD = 200_000_000;
+export const CHAT_BUDGET_EXCEEDED_MESSAGE = "Limite diário de uso da IA atingido. Tente novamente amanhã.";
 export const CHAT_SESSION_GAP_MS = 60 * 60 * 1000;
 
 // ─── LGPD ────────────────────────────────────────────────────────────────────
@@ -95,6 +102,7 @@ export const TABLES = {
   audit_log: "audit_log",
   rate_limits: "rate_limits",
   chat_messages: "chat_messages",
+  chat_token_usage: "chat_token_usage",
 } as const;
 
 export const REPORT_TYPES = {

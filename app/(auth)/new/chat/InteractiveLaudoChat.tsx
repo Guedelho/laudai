@@ -4,7 +4,7 @@ import { Fragment, useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type FileUIPart } from "ai";
 import { focusRing, btnPrimary, btnSecondary, btnIcon } from "@/lib/ui";
-import { CHAT_HISTORY_PAGE_SIZE, CHAT_SESSION_GAP_MS } from "@/shared/constants";
+import { CHAT_HISTORY_PAGE_SIZE, CHAT_SESSION_GAP_MS, CHAT_BUDGET_EXCEEDED_MESSAGE } from "@/shared/constants";
 import { fetchChatHistory } from "@/lib/services/chat";
 import { trackEvent } from "@/lib/client/analytics";
 import { recordingToWav } from "@/lib/client/audio-wav";
@@ -141,6 +141,7 @@ export default function InteractiveLaudoChat({
   const { before, after, reportId } = splitAtReport(messages);
   const chatImages = collectChatImages(before);
   const busy = status === "submitted" || status === "streaming";
+  const isBudgetError = !!error && error.message.includes(CHAT_BUDGET_EXCEEDED_MESSAGE);
   const last = messages[messages.length - 1];
   const showThinking =
     busy && (!last || last.role !== "assistant" || !last.parts.some((p) => p.type === "text" && p.text.trim()));
@@ -290,18 +291,24 @@ export default function InteractiveLaudoChat({
           <Message key={message.id} message={message} />
         ))}
         {showThinking && imagesUploaded && <TypingDots />}
-        {error && !busy && (
-          <div className="max-w-[85%] space-y-1 self-start rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
-            <p>Não foi possível obter a resposta.</p>
-            <button
-              type="button"
-              onClick={() => regenerate()}
-              className={`rounded font-medium underline hover:text-red-800 ${focusRing}`}
-            >
-              Tentar novamente
-            </button>
-          </div>
-        )}
+        {error &&
+          !busy &&
+          (isBudgetError ? (
+            <div className="max-w-[85%] self-start rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+              <p>{CHAT_BUDGET_EXCEEDED_MESSAGE}</p>
+            </div>
+          ) : (
+            <div className="max-w-[85%] space-y-1 self-start rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+              <p>Não foi possível obter a resposta.</p>
+              <button
+                type="button"
+                onClick={() => regenerate()}
+                className={`rounded font-medium underline hover:text-red-800 ${focusRing}`}
+              >
+                Tentar novamente
+              </button>
+            </div>
+          ))}
         <div ref={endRef} />
       </div>
 
