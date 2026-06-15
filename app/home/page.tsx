@@ -32,11 +32,13 @@ export const metadata: Metadata = {
     siteName: "Laudai",
     locale: "pt_BR",
     type: "website",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Laudai" }],
   },
   twitter: {
     card: "summary_large_image",
     title: SOCIAL_TITLE,
     description: DESCRIPTION,
+    images: ["/og.png"],
   },
 };
 
