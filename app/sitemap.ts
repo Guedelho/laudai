@@ -1,7 +1,6 @@
 import type { MetadataRoute } from "next";
 
-// Only the landing page is canonically served on the marketing host; every other
-// path 307s to app.laudai.vet (see proxy.ts), so it does not belong here.
+// Other paths 307 to app.laudai.vet, so only the landing belongs on this host.
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {

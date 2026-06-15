@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GoogleTagManager } from "@next/third-parties/google";
 import "./globals.css";
@@ -20,6 +21,7 @@ export default function RootLayout({
       {GTM_ID && <GoogleTagManager gtmId={GTM_ID} />}
       <body className="min-h-full flex flex-col">
         {children}
+        <Analytics />
         <SpeedInsights />
       </body>
     </html>

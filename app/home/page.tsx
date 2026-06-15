@@ -11,10 +11,7 @@ const WHATSAPP_URL = "https://wa.me/5561992688663?text=Ol%C3%A1%21%20Tenho%20uma
 
 const ORIGIN = "https://laudai.vet";
 
-// Page <title> leads with the search query ("laudo de ultrassom veterinário"),
-// brand last, kept under ~60 chars so it isn't truncated in the SERP.
 const SEO_TITLE = "Laudo de ultrassom veterinário por especialistas | Laudai";
-// Social cards favor the benefit hook over the brand prefix.
 const SOCIAL_TITLE = "Laudos de ultrassom com padrão de especialista, em segundos";
 
 const DESCRIPTION =
