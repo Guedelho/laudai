@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @source "../node_modules/streamdown/dist/index.js";
 
+html {
+  font-size: 110%;
+}
+
 body {
   background: #ffffff;
   color: #171717;
