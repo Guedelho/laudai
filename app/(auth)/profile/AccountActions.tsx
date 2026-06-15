@@ -61,21 +61,7 @@ export default function AccountActions({ deletionScheduledAt }: { deletionSchedu
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-  const [exportError, setExportError] = useState("");
-  const [downloading, setDownloading] = useState(false);
   const router = useRouter();
-
-  async function handleExport() {
-    setExportError("");
-    setDownloading(true);
-    try {
-      await profileApi.downloadAccountExport();
-    } catch {
-      setExportError("Erro ao baixar seus dados. Tente novamente.");
-    } finally {
-      setDownloading(false);
-    }
-  }
 
   async function handleDeleteAccount() {
     setDeleting(true);
@@ -96,15 +82,6 @@ export default function AccountActions({ deletionScheduledAt }: { deletionSchedu
       <div className="space-y-4">
         <h2 className="text-base font-semibold text-gray-900">Privacidade</h2>
         <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={handleExport}
-            disabled={downloading}
-            className="text-sm text-blue-600 hover:underline w-fit text-left disabled:opacity-50"
-          >
-            {downloading ? "Baixando..." : "Baixar meus dados (JSON)"}
-          </button>
-          {exportError && <p className="text-xs text-red-600">{exportError}</p>}
           {deletionScheduledAt ? (
             <DeletionScheduledBanner scheduledAt={deletionScheduledAt} onCancelled={() => router.refresh()} />
           ) : !deleteConfirm ? (
