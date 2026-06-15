@@ -934,6 +934,8 @@ select c.user_id, c.org_id, c.created_at as ts, 'chat:' || c.role as kind,
        c.id as ref
 from public.chat_messages c;
 
+alter view internal.user_activity set (security_invoker = on);
+
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Permissions
 -- anon: no access. authenticated: SELECT only (further restricted by RLS).
