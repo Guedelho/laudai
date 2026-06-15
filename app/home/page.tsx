@@ -9,15 +9,24 @@ const PRIVACY_URL = `${APP_URL}/legal/politica-de-privacidade`;
 
 const WHATSAPP_URL = "https://wa.me/5561992688663?text=Ol%C3%A1%21%20Tenho%20uma%20d%C3%BAvida%20sobre%20o%20Laudai.";
 
+const ORIGIN = "https://laudai.vet";
+
+// Page <title> leads with the search query ("laudo de ultrassom veterinário"),
+// brand last, kept under ~60 chars so it isn't truncated in the SERP.
+const SEO_TITLE = "Laudo de ultrassom veterinário por especialistas | Laudai";
+// Social cards favor the benefit hook over the brand prefix.
+const SOCIAL_TITLE = "Laudos de ultrassom com padrão de especialista, em segundos";
+
 const DESCRIPTION =
-  "Laudos de ultrassom veterinário criados por médicos especialistas em diagnóstico por imagem. Estruturados em segundos, com seus dados protegidos. Você revisa, assina e exporta em PDF. 7 dias grátis, sem cartão.";
+  "Laudos de ultrassom veterinário por médicos especialistas em diagnóstico por imagem. Estruture, revise e exporte em PDF em segundos. 7 dias grátis, sem cartão.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://laudai.vet"),
-  title: "Laudai: laudos de ultrassom criados por veterinários especialistas",
+  metadataBase: new URL(ORIGIN),
+  title: SEO_TITLE,
   description: DESCRIPTION,
+  alternates: { canonical: "/" },
   openGraph: {
-    title: "Laudai: laudos de ultrassom criados por veterinários especialistas",
+    title: SOCIAL_TITLE,
     description: DESCRIPTION,
     url: "/",
     siteName: "Laudai",
@@ -26,9 +35,47 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Laudai: laudos de ultrassom criados por veterinários especialistas",
+    title: SOCIAL_TITLE,
     description: DESCRIPTION,
   },
+};
+
+const siteJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${ORIGIN}/#organization`,
+      name: "Laudai",
+      url: ORIGIN,
+      logo: `${ORIGIN}/apple-icon.png`,
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${ORIGIN}/#website`,
+      name: "Laudai",
+      url: ORIGIN,
+      inLanguage: "pt-BR",
+      publisher: { "@id": `${ORIGIN}/#organization` },
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${ORIGIN}/#app`,
+      name: "Laudai",
+      applicationCategory: "HealthApplication",
+      operatingSystem: "Web",
+      url: ORIGIN,
+      inLanguage: "pt-BR",
+      description: DESCRIPTION,
+      publisher: { "@id": `${ORIGIN}/#organization` },
+      offers: {
+        "@type": "Offer",
+        price: "99.90",
+        priceCurrency: "BRL",
+        url: SIGNUP_URL,
+      },
+    },
+  ],
 };
 
 const ctaPrimary = `inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 px-5 py-3 text-base font-semibold text-white shadow-sm transition-opacity hover:opacity-90 ${focusRing}`;
@@ -632,6 +679,7 @@ function Footer() {
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }} />
       <a
         href="#conteudo"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-blue-700 focus:shadow"

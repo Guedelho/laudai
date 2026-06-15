@@ -6,9 +6,11 @@ const PUBLIC_EXACT = new Set(["/login", "/signup", "/forgot-password", "/home"])
 // Vercel BotID doesn't challenge the request before our signature check runs.
 // /auth/ — OAuth + email-confirmation callback, which runs before a session exists.
 const PUBLIC_PREFIXES = ["/legal", "/webhook/", "/auth/"];
+// Crawler / agent discovery files. Served on the marketing host and never gated.
+const SEO_FILES = new Set(["/robots.txt", "/sitemap.xml", "/llms.txt"]);
 
 function isPublicPath(path: string): boolean {
-  return PUBLIC_EXACT.has(path) || PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix));
+  return SEO_FILES.has(path) || PUBLIC_EXACT.has(path) || PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix));
 }
 
 export default async function proxy(request: NextRequest) {
@@ -19,6 +21,11 @@ export default async function proxy(request: NextRequest) {
   if (host === "laudai.vet" || host === "www.laudai.vet") {
     if (path === "/") {
       return NextResponse.rewrite(new URL("/home", request.url));
+    }
+    // robots.txt / sitemap.xml / llms.txt belong to the marketing host; serve
+    // them here instead of bouncing them to the app domain.
+    if (SEO_FILES.has(path)) {
+      return NextResponse.next({ request });
     }
     const url = request.nextUrl.clone();
     url.host = "app.laudai.vet";

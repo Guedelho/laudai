@@ -1,0 +1,24 @@
+# Laudai
+
+> Laudai gera laudos de ultrassom veterinário com padrão de especialista em segundos. Foi criado por médicos veterinários especialistas em diagnóstico por imagem: o veterinário descreve os achados por voz, texto ou imagem, o Laudai estrutura o laudo, e o veterinário revisa, assina e exporta em PDF.
+
+Fatos principais:
+
+- Público: médicos veterinários e clínicas no Brasil.
+- Idioma da interface e dos laudos: português (pt-BR).
+- Especialidade disponível hoje: ultrassom abdominal.
+- As medidas são lidas das imagens do exame e nunca inventadas; a palavra final é sempre do veterinário.
+- Preço: R$ 99,90 por mês ou R$ 990,90 por ano. Teste grátis de 7 dias, sem cartão.
+- Segurança: conforme a LGPD, armazenamento privado e histórico de versões.
+
+## Páginas
+
+- [Site](https://laudai.vet/): produto, recursos, como funciona, segurança, preço e dúvidas frequentes.
+- [Criar conta](https://app.laudai.vet/signup): cadastro com teste grátis de 7 dias.
+- [Entrar](https://app.laudai.vet/login)
+- [Termos de uso](https://app.laudai.vet/legal/termos-de-uso)
+- [Política de privacidade](https://app.laudai.vet/legal/politica-de-privacidade)
+
+## Contato
+
+- WhatsApp: https://wa.me/5561992688663
