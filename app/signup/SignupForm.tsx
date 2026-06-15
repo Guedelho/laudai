@@ -172,7 +172,7 @@ export default function SignupForm() {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             className={inputCls}
-            placeholder="Tatiana Brasil"
+            placeholder="Nome e sobrenome"
             aria-invalid={!!fieldErrors.full_name}
             aria-describedby={fieldErrors.full_name ? `${fullNameId}-error` : undefined}
             required
@@ -207,6 +207,16 @@ export default function SignupForm() {
           )}
         </div>
 
+        <CpfCrmvFields
+          cpf={cpf}
+          setCpf={setCpf}
+          crmvState={crmvState}
+          setCrmvState={setCrmvState}
+          crmv={crmv}
+          setCrmv={setCrmv}
+          errors={fieldErrors}
+        />
+
         <PasswordInput
           value={password}
           onChange={setPassword}
@@ -220,16 +230,6 @@ export default function SignupForm() {
           label="Confirmar senha"
           autoComplete="new-password"
           error={confirmError}
-        />
-
-        <CpfCrmvFields
-          cpf={cpf}
-          setCpf={setCpf}
-          crmvState={crmvState}
-          setCrmvState={setCrmvState}
-          crmv={crmv}
-          setCrmv={setCrmv}
-          errors={fieldErrors}
         />
 
         {error && (
