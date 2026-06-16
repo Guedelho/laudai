@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { CheckIcon } from "@/components/icons";
 
 export default function PasswordInput({
   value,
@@ -8,12 +9,14 @@ export default function PasswordInput({
   label = "Senha",
   autoComplete,
   error,
+  requirements,
 }: {
   value: string;
   onChange: (value: string) => void;
   label?: string;
   autoComplete: "current-password" | "new-password";
   error?: string;
+  requirements?: { label: string; met: boolean }[];
 }) {
   const [show, setShow] = useState(false);
   const id = useId();
@@ -61,6 +64,23 @@ export default function PasswordInput({
           )}
         </button>
       </div>
+      {requirements && requirements.length > 0 && (
+        <ul className="mt-2 space-y-1">
+          {requirements.map((r) => (
+            <li
+              key={r.label}
+              className={`flex items-center gap-1.5 text-xs ${r.met ? "text-green-600" : "text-gray-500"}`}
+            >
+              {r.met ? (
+                <CheckIcon className="w-3.5 h-3.5 shrink-0" />
+              ) : (
+                <span className="w-3.5 h-3.5 shrink-0 rounded-full border border-gray-300" aria-hidden />
+              )}
+              <span>{r.label}</span>
+            </li>
+          ))}
+        </ul>
+      )}
       {error && (
         <p id={`${id}-error`} role="alert" className="mt-1 text-xs text-red-600">
           {error}

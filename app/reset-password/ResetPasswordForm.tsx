@@ -52,6 +52,7 @@ export default function ResetPasswordForm() {
           autoComplete="new-password"
           label="Nova senha"
           error={fieldErrors.password}
+          requirements={[{ label: "Pelo menos 8 caracteres", met: password.length >= 8 }]}
         />
         <PasswordInput
           value={confirm}
@@ -59,6 +60,7 @@ export default function ResetPasswordForm() {
           autoComplete="new-password"
           label="Confirmar senha"
           error={fieldErrors.confirm}
+          requirements={confirm ? [{ label: "As senhas coincidem", met: confirm === password }] : undefined}
         />
 
         {error && (

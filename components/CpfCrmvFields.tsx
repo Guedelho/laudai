@@ -1,9 +1,10 @@
 "use client";
 
 import { useId } from "react";
-import { formatCpf } from "@/lib/cpf";
+import { formatCpf, normalizeCpf, validateCpf } from "@/lib/cpf";
 import { CRMV_STATE_OPTIONS } from "@/shared/constants";
 import { inputCls } from "@/lib/ui";
+import { CheckIcon } from "@/components/icons";
 import type { FieldErrors } from "@/lib/account";
 
 export default function CpfCrmvFields({
@@ -27,30 +28,45 @@ export default function CpfCrmvFields({
   const crmvStateId = useId();
   const crmvId = useId();
 
+  const cpfComplete = normalizeCpf(cpf).length === 11;
+  const cpfValid = cpfComplete && validateCpf(cpf);
+  const cpfInvalid = cpfComplete && !cpfValid;
+
   return (
     <>
       <div>
         <label htmlFor={cpfId} className="block text-sm font-medium text-gray-700 mb-1">
           CPF
         </label>
-        <input
-          id={cpfId}
-          type="text"
-          inputMode="numeric"
-          autoComplete="off"
-          value={cpf}
-          onChange={(e) => setCpf(formatCpf(e.target.value))}
-          className={inputCls}
-          placeholder="000.000.000-00"
-          aria-invalid={!!errors.cpf}
-          aria-describedby={errors.cpf ? `${cpfId}-error` : undefined}
-          required
-        />
-        {errors.cpf && (
-          <p id={`${cpfId}-error`} role="alert" className="mt-1 text-xs text-red-600">
-            {errors.cpf}
-          </p>
-        )}
+        <div className="relative">
+          <input
+            id={cpfId}
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            value={cpf}
+            onChange={(e) => setCpf(formatCpf(e.target.value))}
+            className="w-full border border-gray-300 rounded-lg pl-3 pr-10 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="000.000.000-00"
+            aria-invalid={!!errors.cpf || cpfInvalid}
+            aria-describedby={`${cpfId}-status`}
+            required
+          />
+          {cpfValid && (
+            <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-green-600" aria-hidden>
+              <CheckIcon className="w-4 h-4" />
+            </span>
+          )}
+        </div>
+        <p id={`${cpfId}-status`} aria-live="polite" className="mt-1 text-xs">
+          {errors.cpf ? (
+            <span className="text-red-600">{errors.cpf}</span>
+          ) : cpfInvalid ? (
+            <span className="text-red-600">CPF inválido.</span>
+          ) : cpfValid ? (
+            <span className="text-green-600">CPF válido.</span>
+          ) : null}
+        </p>
       </div>
 
       <div className="flex gap-3">

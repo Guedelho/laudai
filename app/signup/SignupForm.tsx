@@ -222,6 +222,7 @@ export default function SignupForm() {
           onChange={setPassword}
           autoComplete="new-password"
           error={fieldErrors.password}
+          requirements={[{ label: "Pelo menos 8 caracteres", met: password.length >= 8 }]}
         />
 
         <PasswordInput
@@ -230,6 +231,9 @@ export default function SignupForm() {
           label="Confirmar senha"
           autoComplete="new-password"
           error={confirmError}
+          requirements={
+            confirmPassword ? [{ label: "As senhas coincidem", met: password === confirmPassword }] : undefined
+          }
         />
 
         {error && (
