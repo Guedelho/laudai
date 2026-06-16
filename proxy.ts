@@ -52,12 +52,18 @@ export default async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  function redirectTo(target: string): NextResponse {
+    const response = NextResponse.redirect(new URL(target, request.url));
+    supabaseResponse.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+    return response;
+  }
+
   if (!user && !isPublicPath(path) && !path.startsWith("/api/")) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return redirectTo("/login");
   }
 
   if (user && (path === "/login" || path === "/signup")) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return redirectTo("/dashboard");
   }
 
   return supabaseResponse;
