@@ -34,11 +34,7 @@ export default function Typeahead({
   const listboxId = `${base}-listbox`;
   const optionId = (i: number) => `${base}-opt-${i}`;
 
-  const filtered = value
-    ? suggestions.filter(
-        (s) => s.toLowerCase().includes(value.toLowerCase()) && s.toLowerCase() !== value.toLowerCase(),
-      )
-    : suggestions;
+  const filtered = value ? suggestions.filter((s) => s.toLowerCase().includes(value.toLowerCase())) : suggestions;
   const visible = filtered.slice(0, 8);
   const showDropdown = open && focused && visible.length > 0;
 

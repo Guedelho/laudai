@@ -46,7 +46,7 @@ export const BR_STATE_CODES: ReadonlySet<string> = new Set(BR_STATES.map((s) => 
 
 // ─── AI models ──────────────────────────────────────────────────────────────
 
-export const GENERATE_MODEL = "gemini-3-flash-preview";
+export const GENERATE_MODEL = "gemini-3.5-flash";
 
 export const GEMINI_SAFETY_SETTINGS = [
   { category: "HARM_CATEGORY_HARASSMENT", threshold: "OFF" },
@@ -65,8 +65,8 @@ export const CHAT_HISTORY_PAGE_SIZE = 30;
 
 // ─── AI usage budget ──────────────────────────────────────────────────────────
 
-export const GEMINI_INPUT_PRICE_NANO_USD_PER_TOKEN = 500;
-export const GEMINI_OUTPUT_PRICE_NANO_USD_PER_TOKEN = 3000;
+export const GEMINI_INPUT_PRICE_NANO_USD_PER_TOKEN = 1500;
+export const GEMINI_OUTPUT_PRICE_NANO_USD_PER_TOKEN = 9000;
 export const CHAT_DAILY_BUDGET_NANO_USD = 200_000_000;
 export const CHAT_BUDGET_EXCEEDED_MESSAGE = "Limite diário de uso da IA atingido. Tente novamente amanhã.";
 export const CHAT_SESSION_GAP_MS = 60 * 60 * 1000;

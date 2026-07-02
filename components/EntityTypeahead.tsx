@@ -38,7 +38,7 @@ export default function EntityTypeahead<T>({
       value={value}
       onChange={(v) => {
         onChange(v);
-        onPick(findByLabel(v));
+        onPick(null);
       }}
       onSelect={(label) => onPick(findByLabel(label))}
       suggestions={items.map(getLabel)}
