@@ -7,7 +7,7 @@ import { ReportSummary } from "@/shared/models";
 import { REPORT_STATUSES, DASHBOARD_PAGE_SIZE } from "@/shared/constants";
 import { listReports, regenerateReport } from "@/lib/services/reports";
 import { formatExamDate } from "@/lib/utils";
-import { inputCls } from "@/lib/ui";
+import { inputCls, focusRing } from "@/lib/ui";
 import { useOrgReportsChannel } from "@/lib/hooks/use-org-reports-channel";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 
@@ -94,6 +94,7 @@ export default function ReportList({ userId, orgId }: Props) {
     if (row.event === "delete" || row.deleted_at) {
       knownCompletedRef.current.delete(row.id);
       setReports((prev) => prev.filter((r) => r.id !== row.id));
+      setSearchResults((prev) => (prev ? prev.filter((r) => r.id !== row.id) : prev));
       return;
     }
     const summary = toSummary(row);
@@ -107,6 +108,8 @@ export default function ReportList({ userId, orgId }: Props) {
         next[idx] = summary;
         return next;
       });
+      // Search results are query-scoped: update rows in place, never inject.
+      setSearchResults((prev) => (prev ? prev.map((r) => (r.id === summary.id ? summary : r)) : prev));
     }
     maybeToastCompletion(row);
   }
@@ -203,7 +206,7 @@ export default function ReportList({ userId, orgId }: Props) {
                 type="button"
                 onClick={() => loadMoreRef.current()}
                 disabled={loadingMore}
-                className="text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                className={`rounded text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50 ${focusRing}`}
               >
                 {loadingMore ? "Carregando..." : "Carregar mais"}
               </button>
@@ -263,7 +266,7 @@ function ReportRow({ report, retrying, onRetry }: { report: ReportSummary; retry
               type="button"
               onClick={onRetry}
               disabled={retrying}
-              className="text-sm text-blue-600 hover:underline disabled:opacity-50"
+              className={`rounded text-sm text-blue-600 hover:underline disabled:opacity-50 ${focusRing}`}
             >
               {retrying ? "Reenviando..." : "Tentar novamente"}
             </button>

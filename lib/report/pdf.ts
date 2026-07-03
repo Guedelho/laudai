@@ -1,32 +1,29 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { ParsedReport } from "@/shared/models";
 import { PdfData } from "@/shared/interfaces";
 import { splitBoldSegments } from "@/lib/utils";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfmake = require("pdfmake");
 
-const FONT_URLS: Record<string, string> = {
-  "Roboto-Regular.ttf": "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/fonts/Roboto/Roboto-Regular.ttf",
-  "Roboto-Bold.ttf": "https://cdn.jsdelivr.net/gh/openmaptiles/fonts@master/roboto/Roboto-Bold.ttf",
+// Vendored in lib/report/fonts/ (traced into the function bundle via
+// outputFileTracingIncludes) — no runtime CDN dependency for PDF generation.
+const SIGNATURE_FONT_FILES: Record<string, string> = {
+  sacramento: "Sacramento-Regular.ttf",
+  "pinyon-script": "PinyonScript-Regular.ttf",
+  "alex-brush": "AlexBrush-Regular.ttf",
+  "homemade-apple": "HomemadeApple-Regular.ttf",
 };
 
-const SIGNATURE_FONT_URLS: Record<string, string> = {
-  sacramento: "https://raw.githubusercontent.com/google/fonts/main/ofl/sacramento/Sacramento-Regular.ttf",
-  "pinyon-script": "https://raw.githubusercontent.com/google/fonts/main/ofl/pinyonscript/PinyonScript-Regular.ttf",
-  "alex-brush": "https://raw.githubusercontent.com/google/fonts/main/ofl/alexbrush/AlexBrush-Regular.ttf",
-  "homemade-apple":
-    "https://raw.githubusercontent.com/google/fonts/main/apache/homemadeapple/HomemadeApple-Regular.ttf",
-};
+const FONTS_DIR = path.join(process.cwd(), "lib", "report", "fonts");
 
 const fontCache = new Map<string, Buffer>();
 
-async function fetchFont(name: string): Promise<Buffer> {
-  if (fontCache.has(name)) return fontCache.get(name)!;
-  const url = FONT_URLS[name] ?? SIGNATURE_FONT_URLS[name];
-  if (!url) throw new Error(`Unknown font: ${name}`);
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch font ${name}: ${res.status}`);
-  const buf = Buffer.from(await res.arrayBuffer());
-  fontCache.set(name, buf);
+async function loadFont(file: string): Promise<Buffer> {
+  const cached = fontCache.get(file);
+  if (cached) return cached;
+  const buf = await readFile(path.join(FONTS_DIR, file));
+  fontCache.set(file, buf);
   return buf;
 }
 
@@ -143,8 +140,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
   } = data;
   const crmvLabel = crmvState ? `CRMV-${crmvState} ${crmv}` : `CRMV ${crmv}`;
 
-  // Fetch fonts from CDN (cached after first call)
-  const [fontRegular, fontBold] = await Promise.all([fetchFont("Roboto-Regular.ttf"), fetchFont("Roboto-Bold.ttf")]);
+  const [fontRegular, fontBold] = await Promise.all([loadFont("Roboto-Regular.ttf"), loadFont("Roboto-Bold.ttf")]);
 
   // Register fonts via VFS Buffers on the singleton each call
   pdfmake.virtualfs.writeFileSync("Roboto-Regular.ttf", fontRegular);
@@ -159,8 +155,8 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
     },
   };
 
-  if (signatureFont && SIGNATURE_FONT_URLS[signatureFont]) {
-    const sigFontBuf = await fetchFont(signatureFont);
+  if (signatureFont && SIGNATURE_FONT_FILES[signatureFont]) {
+    const sigFontBuf = await loadFont(SIGNATURE_FONT_FILES[signatureFont]);
     pdfmake.virtualfs.writeFileSync(`${signatureFont}.ttf`, sigFontBuf);
     fontDefs["SignatureFont"] = {
       normal: `${signatureFont}.ttf`,
@@ -226,7 +222,12 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
 
   const docDefinition: Content = {
     pageSize: "A4",
-    pageMargins: [50, 36, 50, (signatureFont && SIGNATURE_FONT_URLS[signatureFont]) || signatureImageBase64 ? 130 : 48],
+    pageMargins: [
+      50,
+      36,
+      50,
+      (signatureFont && SIGNATURE_FONT_FILES[signatureFont]) || signatureImageBase64 ? 130 : 48,
+    ],
 
     // Centered watermark on every page
     background: logoBase64
@@ -287,7 +288,7 @@ export async function generatePdfBuffer(data: PdfData): Promise<Buffer> {
     ],
 
     footer: (currentPage: number, pageCount: number) => {
-      const hasSignatureFont = !!(signatureFont && SIGNATURE_FONT_URLS[signatureFont]);
+      const hasSignatureFont = !!(signatureFont && SIGNATURE_FONT_FILES[signatureFont]);
       const hasSignature = hasSignatureFont || !!signatureImageBase64;
 
       // On non-last pages when signature is active, push footer to bottom of the larger area

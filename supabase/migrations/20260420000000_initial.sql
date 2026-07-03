@@ -125,8 +125,14 @@ alter table organization_members enable row level security;
 
 -- Membership check, used by RLS policies that must not recurse through
 -- organization_members' own SELECT policy. SECURITY DEFINER + ownership by
--- postgres bypasses RLS during the lookup.
-create or replace function is_org_member(p_user_id uuid, p_org_id uuid)
+-- postgres bypasses RLS during the lookup. Lives in the non-REST-exposed
+-- internal schema so there is no /rest/v1/rpc endpoint for it (advisor 0029);
+-- authenticated gets schema USAGE (needed for policy evaluation) but no
+-- SELECT on internal's other objects.
+create schema if not exists internal;
+grant usage on schema internal to authenticated;
+
+create or replace function internal.is_org_member(p_user_id uuid, p_org_id uuid)
 returns boolean
 language sql
 stable
@@ -140,8 +146,8 @@ as $$
   );
 $$;
 
-revoke all on function is_org_member(uuid, uuid) from public, anon;
-grant execute on function is_org_member(uuid, uuid) to authenticated;
+revoke all on function internal.is_org_member(uuid, uuid) from public, anon;
+grant execute on function internal.is_org_member(uuid, uuid) to authenticated;
 
 -- Policies on organizations (defined after members table so EXISTS subqueries are valid).
 create policy "members read their orgs"
@@ -161,7 +167,7 @@ create policy "owner updates own org"
 -- Policies on organization_members.
 create policy "members read same-org memberships"
   on organization_members for select to authenticated
-  using (is_org_member((select auth.uid()), org_id));
+  using (internal.is_org_member((select auth.uid()), org_id));
 
 create policy "org_members insert by owner"
   on organization_members for insert to authenticated
@@ -300,7 +306,7 @@ alter table organization_report_types enable row level security;
 
 create policy "org members read entitlements"
   on organization_report_types for select to authenticated
-  using (is_org_member((select auth.uid()), org_id));
+  using (internal.is_org_member((select auth.uid()), org_id));
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- member_specialties
@@ -327,7 +333,7 @@ alter table member_specialties enable row level security;
 
 create policy "org members read specialties"
   on member_specialties for select to authenticated
-  using (is_org_member((select auth.uid()), org_id));
+  using (internal.is_org_member((select auth.uid()), org_id));
 
 -- Profile + solo org + owner membership in one tx; a cpf/crmv unique violation
 -- aborts it whole, leaving no orphan org.
@@ -625,7 +631,7 @@ create policy "org members receive report broadcasts"
   on realtime.messages for select to authenticated
   using (
     realtime.topic() like 'org:%:reports'
-    and is_org_member(
+    and internal.is_org_member(
       (select auth.uid()),
       nullif(split_part(realtime.topic(), ':', 2), '')::uuid
     )
@@ -919,6 +925,7 @@ create table if not exists public.chat_messages (
   created_at timestamptz not null default now()
 );
 create index if not exists chat_messages_user_seq_idx on public.chat_messages (user_id, seq);
+create index if not exists chat_messages_org_id_idx on public.chat_messages (org_id);
 alter table public.chat_messages enable row level security;
 
 create schema if not exists internal;

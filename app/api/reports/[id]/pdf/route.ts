@@ -12,6 +12,7 @@ import sharp from "sharp";
 const IMAGES_BUCKET = STORAGE_BUCKETS.reportImages;
 const PDF_BUCKET = STORAGE_BUCKETS.reportPdfs;
 const SUPPORTED_MIME = new Set(["image/jpeg", "image/jpg", "image/png"]);
+const IMAGE_ENCODE_BATCH = 5;
 
 function slugify(s: string) {
   return s
@@ -89,8 +90,8 @@ export const GET = withApiHandler<{ id: string }>(
           .createSignedUrl(report.pdf_storage_path, SIGNED_URL_TTL.serverFetch);
         if (signed?.signedUrl) {
           const cached = await fetch(signed.signedUrl, { cache: "no-store" });
-          if (cached.ok) {
-            return new NextResponse(await cached.arrayBuffer(), {
+          if (cached.ok && cached.body) {
+            return new NextResponse(cached.body, {
               headers: {
                 "Content-Type": "application/pdf",
                 "Content-Disposition": `inline; filename="${filename}"`,
@@ -118,20 +119,27 @@ export const GET = withApiHandler<{ id: string }>(
     const dateSource = report.exam_date ? new Date(report.exam_date + "T12:00:00") : new Date(report.created_at);
     const date = dateSource.toLocaleDateString("pt-BR");
 
-    const imageResults = await Promise.all(
-      (rawImages ?? []).map(async (img) => {
-        try {
-          const { data } = await admin.storage
-            .from(IMAGES_BUCKET)
-            .createSignedUrl(img.storage_path, SIGNED_URL_TTL.oneShot);
-          if (!data) return null;
-          return await fetchAsBase64(data.signedUrl);
-        } catch (err) {
-          logError("Failed to load report image", err, { storagePath: img.storage_path });
-          return null;
-        }
-      }),
-    );
+    // Bounded batches: up to MAX_REPORT_IMAGES × 5 MB buffered + sharp
+    // conversions at once would pressure the 2 GB function memory.
+    const imageResults: (string | null)[] = [];
+    const allImages = rawImages ?? [];
+    for (let i = 0; i < allImages.length; i += IMAGE_ENCODE_BATCH) {
+      const batch = await Promise.all(
+        allImages.slice(i, i + IMAGE_ENCODE_BATCH).map(async (img) => {
+          try {
+            const { data } = await admin.storage
+              .from(IMAGES_BUCKET)
+              .createSignedUrl(img.storage_path, SIGNED_URL_TTL.oneShot);
+            if (!data) return null;
+            return await fetchAsBase64(data.signedUrl);
+          } catch (err) {
+            logError("Failed to load report image", err, { storagePath: img.storage_path });
+            return null;
+          }
+        }),
+      );
+      imageResults.push(...batch);
+    }
 
     const imageBase64List = imageResults.filter((b): b is string => b !== null);
 

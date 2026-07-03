@@ -48,6 +48,7 @@ export default function NewReportPage() {
   const [error, setError] = useState("");
   const [loadError, setLoadError] = useState(false);
   const [imageWarningReportId, setImageWarningReportId] = useState<string | null>(null);
+  const [entityWarning, setEntityWarning] = useState("");
 
   // Images (selected before submit)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -102,6 +103,7 @@ export default function NewReportPage() {
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setEntityWarning("");
     const required: [string, string][] = [
       [patientName, "Nome do paciente"],
       [ownerName, "Nome do responsável"],
@@ -124,6 +126,7 @@ export default function NewReportPage() {
       const resolvedPetId = selectedPetId || undefined;
       let resolvedClientId = selectedClientId || undefined;
       let resolvedVetId = selectedVetId || undefined;
+      let saveWarning = "";
 
       if (!selectedClientId && newClientName.trim()) {
         try {
@@ -136,7 +139,7 @@ export default function NewReportPage() {
             resolvedVetId = vet.id;
           }
         } catch {
-          /* non-blocking — continue with typed names */
+          saveWarning = "Não foi possível salvar o cliente no cadastro.";
         }
       } else if (selectedClientId && !selectedVetId && newVetName.trim()) {
         try {
@@ -147,7 +150,7 @@ export default function NewReportPage() {
           resolvedVetName = vet.name;
           resolvedVetId = vet.id;
         } catch {
-          /* non-blocking — continue with typed names */
+          saveWarning = "Não foi possível salvar o médico responsável no cadastro.";
         }
       }
 
@@ -184,6 +187,11 @@ export default function NewReportPage() {
       }
 
       resetForm();
+      if (saveWarning) {
+        setSubmitting(false);
+        setEntityWarning(`${saveWarning} O laudo está sendo gerado com os nomes digitados.`);
+        return;
+      }
       await redirectToDashboard();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao enviar laudo.");
@@ -231,6 +239,21 @@ export default function NewReportPage() {
         >
           Não foi possível carregar seus pacientes e clientes. As sugestões podem estar indisponíveis.
         </p>
+      )}
+
+      {entityWarning && (
+        <div
+          role="alert"
+          className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900"
+        >
+          <p className="font-medium">{entityWarning}</p>
+          <p className="mt-1">
+            <Link href="/dashboard" className="font-medium text-blue-600 hover:underline">
+              Acompanhar na lista de laudos
+            </Link>
+            .
+          </p>
+        </div>
       )}
 
       {imageWarningReportId && (

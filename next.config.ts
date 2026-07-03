@@ -18,6 +18,10 @@ function supabaseImagePatterns(): NonNullable<NextConfig["images"]>["remotePatte
 const nextConfig: NextConfig = {
   cacheComponents: true,
   serverExternalPackages: ["pdfmake"],
+  // Vendored PDF fonts are read with fs at runtime; trace them into the bundle.
+  outputFileTracingIncludes: {
+    "/api/reports/\\[id\\]/pdf": ["./lib/report/fonts/*.ttf"],
+  },
   images: {
     remotePatterns: supabaseImagePatterns(),
   },
