@@ -31,7 +31,7 @@ Conversa normal:
 - NÃO inicie o fluxo de laudo por conta própria. Só comece a coletar dados de laudo quando o usuário demonstrar que quer gerar um (ex.: "quero um laudo", "gerar laudo", "novo laudo de ultrassom").
 
 Quando o usuário pedir para gerar um laudo de ultrassom abdominal, colete as informações UMA POR VEZ, nesta ordem:
-1. Paciente. Use searchPets antes de assumir que é novo. Se encontrar, mostre os dados (espécie, raça, idade, sexo, castração, tutor) e reutilize o petId. Se for novo, pergunte os campos obrigatórios que faltarem: espécie (canina ou felina), raça, idade, sexo (macho ou fêmea), se é castrado(a) e o nome do tutor.
+1. Paciente. Use searchPets antes de assumir que é novo. Se encontrar, mostre os dados (espécie, raça, idade, macho/fêmea e castração, tutor) e reutilize o petId. Se for novo, pergunte os campos obrigatórios que faltarem: espécie (canina ou felina), raça, idade, se é macho ou fêmea, se é castrado(a) e o nome do tutor.
 2. Médico responsável. Pergunte quem é o médico responsável e guarde o nome (ainda não cadastre nada nesta etapa).
 3. Cliente. Use a tool searchClients antes de assumir que é novo. Se houver correspondências, confirme com o usuário; só use createClient depois que o usuário confirmar que o cliente não existe. Em seguida, associe o médico responsável ao cliente: se o cliente for novo, passe o vetName ao createClient; se o cliente já existir e o médico não estiver na lista dele, use addVet com o clientId.
 4. Data do exame. Pergunte a data do exame. Se o usuário disser "hoje", omita examDate (o servidor usará a data atual). Se disser "ontem", "anteontem" ou outra data relativa, calcule a data correta usando a data do servidor (${today}) e passe no formato YYYY-MM-DD. Nunca use seu conhecimento interno para inferir a data — use sempre ${today} como referência.
@@ -54,19 +54,31 @@ Regras:
 - Use "cadastro"/"cadastrar" somente quando for realmente criar um registro novo (createClient, addVet ou um paciente novo). Quando o paciente, o médico ou o cliente já existem, apenas confirme os dados e siga — nunca pergunte se "pode seguir com o cadastro".
 - Para montar o laudo, use as imagens APENAS para extrair nomes de órgãos e medidas — e somente o que estiver claramente legível. NUNCA invente um valor que não consegue ler; quando não conseguir, avise o usuário e peça a informação. As descrições de anomalias/achados alterados que entram no laudo são sempre fornecidas pelo usuário, nunca deduzidas por você.
 - Você só gera laudos de ultrassom abdominal. Se o usuário pedir outro tipo de laudo, explique que por enquanto apenas este está disponível.
+- NUNCA escreva a palavra "sexo" nas suas respostas — ela dispara o filtro de conteúdo do provedor. Ao apresentar dados de um paciente, mostre um único item corrido: "Macho castrado", "Fêmea castrada", "Macho não castrado" ou "Fêmea não castrada" — sem rótulos como "Sexo:" ou "Castrado:". Para perguntar, use "É macho ou fêmea?" e "É castrado(a)?".
 - Mantenha-se no domínio veterinário/clínico. Se o usuário pedir algo claramente fora desse domínio, recuse educadamente.
 - Responda em markdown (use **negrito** e listas quando ajudar a clareza).`;
 }
 
 // Retry below the tool loop on Gemini's PROHIBITED_CONTENT block (no tool re-run).
+// The agent samples deterministically (temperature 0 + fixed seed), so a plain
+// re-roll replays the exact blocked text — retries re-call the model with
+// temperature + a per-attempt seed so each roll can phrase past the filter.
 const CONTENT_FILTER_ATTEMPTS = 5;
+const CONTENT_FILTER_RETRY_TEMPERATURE = 0.7;
 
 const retryContentFilter: LanguageModelMiddleware = {
   specificationVersion: "v3",
-  wrapStream: async ({ doStream }) => {
+  wrapStream: async ({ doStream, params, model }) => {
     type Part = Awaited<ReturnType<typeof doStream>>["stream"] extends ReadableStream<infer T> ? T : never;
     for (let attempt = 1; ; attempt++) {
-      const result = await doStream();
+      const result =
+        attempt === 1
+          ? await doStream()
+          : await model.doStream({
+              ...params,
+              temperature: CONTENT_FILTER_RETRY_TEMPERATURE,
+              seed: (params.seed ?? 0) + attempt,
+            });
       const parts: Part[] = [];
       let filtered = false;
       const reader = result.stream.getReader();
@@ -102,7 +114,14 @@ export function createLaudoAgent(ctx: LaudoToolCtx, vetName: string) {
     maxOutputTokens: 2048,
     temperature: 0,
     seed: 42,
-    providerOptions: { google: { safetySettings: [...GEMINI_SAFETY_SETTINGS] } },
+    providerOptions: {
+      google: {
+        safetySettings: [...GEMINI_SAFETY_SETTINGS],
+        // gemini-3.5-flash thinks by default; thoughts bill as output tokens
+        // and count against maxOutputTokens + the daily chat budget.
+        thinkingConfig: { thinkingLevel: "low" },
+      },
+    },
     onFinish: ({ totalUsage }) =>
       after(() =>
         recordChatUsage(ctx.admin, ctx.userId, {

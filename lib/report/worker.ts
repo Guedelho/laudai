@@ -28,15 +28,16 @@ export async function runGeneration(
     .eq("id", reportId)
     .eq("user_id", userId);
 
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
   try {
     const content = await Promise.race([
       generateReport(params),
-      new Promise<never>((_, reject) =>
-        setTimeout(
+      new Promise<never>((_, reject) => {
+        timeoutHandle = setTimeout(
           () => reject(new Error("Tempo limite de geração excedido. Tente novamente.")),
           GENERATION_TIMEOUT_MS,
-        ),
-      ),
+        );
+      }),
     ]);
 
     const { error } = await supabase
@@ -63,6 +64,8 @@ export async function runGeneration(
       })
       .eq("id", reportId)
       .eq("user_id", userId);
+  } finally {
+    clearTimeout(timeoutHandle);
   }
 
   revalidateTag(reportCacheTag(reportId), "max");

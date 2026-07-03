@@ -60,6 +60,8 @@ export const GEMINI_SAFETY_SETTINGS = [
 
 export const MAX_REPORT_IMAGES = 50;
 export const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+export const MAX_CHAT_REQUEST_MESSAGES = 200;
+export const MAX_CHAT_ATTACHMENTS = 12;
 export const DASHBOARD_PAGE_SIZE = 5;
 export const CHAT_HISTORY_PAGE_SIZE = 30;
 

@@ -7,7 +7,7 @@ Veterinary ultrasound report generator. Vets describe exam findings (by typing o
 - **Next.js 16** (App Router) · **React 19** · **TypeScript**
 - **Tailwind CSS 4**
 - **Supabase** — auth, Postgres, storage
-- **Google Gemini AI** — `gemini-3-flash-preview` (single-call report generation)
+- **Google Gemini AI** — `gemini-3.5-flash` (single-call report generation)
 - **Stripe** — subscriptions (monthly/yearly), automatic 7-day trial at signup (no card), hosted Checkout + Customer Portal, webhook-driven entitlements
 - **pdfmake** — server-side PDF generation (cached in storage)
 - **Vercel BotID** — invisible bot protection on generation + upload routes

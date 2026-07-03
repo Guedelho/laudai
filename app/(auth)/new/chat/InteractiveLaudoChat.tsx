@@ -4,7 +4,13 @@ import { Fragment, useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type FileUIPart } from "ai";
 import { focusRing, btnPrimary, btnSecondary, btnIcon } from "@/lib/ui";
-import { CHAT_HISTORY_PAGE_SIZE, CHAT_SESSION_GAP_MS, CHAT_BUDGET_EXCEEDED_MESSAGE } from "@/shared/constants";
+import {
+  CHAT_HISTORY_PAGE_SIZE,
+  CHAT_SESSION_GAP_MS,
+  CHAT_BUDGET_EXCEEDED_MESSAGE,
+  MAX_CHAT_ATTACHMENTS,
+  MAX_IMAGE_FILE_SIZE,
+} from "@/shared/constants";
 import { fetchChatHistory } from "@/lib/services/chat";
 import { trackEvent } from "@/lib/client/analytics";
 import { recordingToWav } from "@/lib/client/audio-wav";
@@ -53,6 +59,17 @@ function splitAtReport(messages: LaudoAgentUIMessage[]): {
 
 const STICK_TO_BOTTOM_THRESHOLD_PX = 100;
 
+// Attachments are processed on the turn they arrive (measurement transcription
+// or image opinion, which resolves within a few exchanges). Older file parts
+// are stripped from the request so every past image isn't re-uploaded — and
+// re-billed as Gemini input — with each new message.
+const FILE_PART_CONTEXT_WINDOW = 6;
+
+function stripOldFileParts(messages: LaudoAgentUIMessage[]): LaudoAgentUIMessage[] {
+  const cutoff = messages.length - FILE_PART_CONTEXT_WINDOW;
+  return messages.map((m, i) => (i >= cutoff ? m : { ...m, parts: m.parts.filter((p) => p.type !== "file") }));
+}
+
 function isSessionStart(prev: ChatHistoryMessage | undefined, current: ChatHistoryMessage, hasMore: boolean): boolean {
   if (!prev) return !hasMore;
   return new Date(current.created_at).getTime() - new Date(prev.created_at).getTime() > CHAT_SESSION_GAP_MS;
@@ -75,7 +92,12 @@ export default function InteractiveLaudoChat({
 }) {
   const { messages, sendMessage, status, error, stop, regenerate } = useChat<LaudoAgentUIMessage>({
     messages: initialMessages,
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      prepareSendMessagesRequest: ({ id, messages: outgoing, body, trigger, messageId }) => ({
+        body: { ...body, id, trigger, messageId, messages: stripOldFileParts(outgoing) },
+      }),
+    }),
   });
   const autoStartedRef = useRef(false);
 
@@ -89,7 +111,7 @@ export default function InteractiveLaudoChat({
   const [attached, setAttached] = useState<File[]>([]);
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
-  const [audioError, setAudioError] = useState("");
+  const [inputError, setInputError] = useState("");
   const [imagesUploaded, setImagesUploaded] = useState(false);
   const [previewFiles, setPreviewFiles] = useState<File[]>([]);
   const [forcePanel, setForcePanel] = useState(false);
@@ -183,11 +205,10 @@ export default function InteractiveLaudoChat({
     }
     setInput("");
     setAttached([]);
-    if (fileRef.current) fileRef.current.value = "";
   }
 
   async function startRecording() {
-    setAudioError("");
+    setInputError("");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const rec = new MediaRecorder(stream);
@@ -212,7 +233,7 @@ export default function InteractiveLaudoChat({
       setRecordSeconds(0);
       timerRef.current = setInterval(() => setRecordSeconds((s) => s + 1), 1000);
     } catch {
-      setAudioError("Não foi possível acessar o microfone.");
+      setInputError("Não foi possível acessar o microfone.");
     }
   }
 
@@ -320,7 +341,7 @@ export default function InteractiveLaudoChat({
               Gravando {formatDuration(recordSeconds)}
             </div>
           )}
-          {audioError && <p className="mb-2 text-xs text-red-600">{audioError}</p>}
+          {inputError && <p className="mb-2 text-xs text-red-600">{inputError}</p>}
           {attached.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-2">
               {attached.map((f, i) => (
@@ -364,7 +385,18 @@ export default function InteractiveLaudoChat({
               multiple
               className="hidden"
               onChange={(e) => {
-                setAttached((prev) => [...prev, ...Array.from(e.target.files ?? [])]);
+                const incoming = Array.from(e.target.files ?? []);
+                e.target.value = "";
+                const accepted = incoming.filter((f) => f.size <= MAX_IMAGE_FILE_SIZE);
+                const room = Math.max(0, MAX_CHAT_ATTACHMENTS - attached.length);
+                if (accepted.length < incoming.length) {
+                  setInputError(`Cada imagem deve ter no máximo ${MAX_IMAGE_FILE_SIZE / 1024 / 1024} MB.`);
+                } else if (accepted.length > room) {
+                  setInputError(`Máximo de ${MAX_CHAT_ATTACHMENTS} anexos por mensagem.`);
+                } else {
+                  setInputError("");
+                }
+                if (accepted.length && room > 0) setAttached((prev) => [...prev, ...accepted.slice(0, room)]);
               }}
             />
             <textarea
