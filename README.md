@@ -103,6 +103,8 @@ Generation is asynchronous regardless of which creation flow is used:
 
 Both flows converge on the same creation helper (`createReport` in `lib/report/create.ts` — validation, entitlement checks, insert, generation kickoff), the same worker (`lib/report/worker.ts`), and the same `reports_broadcast` Postgres trigger that drives the dashboard's live list.
 
+The generation prompt (`buildSingleCallPrompt` in `lib/report/templates.ts`) is driven by the **"Mapa do Laudo Memorável"** (Zelinda Arêas): the prompt embeds the book's verbatim catalog of ~212 conditions per organ (`MAP_REFERENCE`), each with its exact description, diagnostic impression, and recommendation. An organ with no reported finding gets its standard normal text copied verbatim (`DEFAULTS_*`); an organ with a finding gets the matching map condition's description/impression/recommendation, adapting only the measurements, laterality, and location the vet reported (never inventing a measurement). Bold marks (`**...**`) wrap only the words that characterize the abnormal finding — never measurements, numbers, or units.
+
 **Reliability layers:**
 
 - The worker wraps the Gemini call in `Promise.race` with a 5-min timeout — failures surface within seconds.
